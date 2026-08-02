@@ -1,0 +1,37 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ToolCard from '../../components/ToolCard.astro';
+import { categories } from '../../data/categories';
+import { getCollection } from 'astro:content';
+
+const allTools = await getCollection('tools');
+---
+<Layout title="أدوات الذكاء الاصطناعي" description="كل أدوات الذكاء الاصطناعي مصنّفة حسب النوع">
+  <section class="wrap section">
+    <h1>أدوات الذكاء الاصطناعي</h1>
+    <p class="count">{allTools.length} أداة مضافة حتى الآن</p>
+    <div class="grid">
+      {allTools.map((tool) => (
+        <ToolCard
+          slug={tool.id}
+          name={tool.data.name}
+          tagline={tool.data.tagline}
+          category={tool.data.category}
+          pricingType={tool.data.pricingType}
+          rating={tool.data.rating}
+        />
+      ))}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 40px 0 70px; }
+  h1 { margin-bottom: 4px; }
+  .count { opacity: 0.6; margin-bottom: 28px; font-size: 0.9rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+</style>

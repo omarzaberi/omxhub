@@ -1,0 +1,63 @@
+---
+import { categories, pricingLabels } from '../data/categories';
+
+interface Props {
+  slug: string;
+  name: string;
+  tagline: string;
+  category: keyof typeof categories;
+  pricingType: keyof typeof pricingLabels;
+  rating?: number;
+}
+const { slug, name, tagline, category, pricingType, rating } = Astro.props;
+const cat = categories[category];
+---
+<a href={`/ai-tools/${slug}`} class="card">
+  <div class="card-top">
+    <span class="cat-badge">{cat.icon} {cat.label}</span>
+    {rating && <span class="rating">★ {rating.toFixed(1)}</span>}
+  </div>
+  <h3>{name}</h3>
+  <p>{tagline}</p>
+  <span class="price-badge" data-type={pricingType}>{pricingLabels[pricingType]}</span>
+</a>
+
+<style>
+  .card {
+    display: block;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(27, 54, 93, 0.1);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+  }
+  .cat-badge { color: var(--navy); opacity: 0.75; }
+  .rating { color: var(--gold); font-weight: 700; }
+  h3 { margin: 0 0 6px; font-size: 1.15rem; }
+  p { margin: 0 0 14px; font-size: 0.9rem; opacity: 0.8; }
+  .price-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: rgba(198, 167, 106, 0.15);
+    color: #8a6d34;
+  }
+  .price-badge[data-type="free"] {
+    background: rgba(46, 125, 87, 0.12);
+    color: #2e7d57;
+  }
+</style>

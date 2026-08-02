@@ -1,0 +1,142 @@
+---
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+---
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title} | OMXHub</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a href="/" class="logo">OMX<span>Hub</span></a>
+        <nav>
+          <a href="/ai-tools">أدوات AI</a>
+          <a href="/prompts">مكتبة البرومبت</a>
+          <a href="/tutorials">شروحات</a>
+          <a href="/ai-news">أخبار</a>
+          <a href="/comparisons">مقارنات</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>© 2026 OMXHub — دليلك العربي لأدوات الذكاء الاصطناعي</p>
+        <a href="/privacy-policy">سياسة الخصوصية</a>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --navy: #1b365d;
+    --navy-deep: #12233d;
+    --gold: #c6a76a;
+    --gold-light: #e0c894;
+    --ink: #1a1f2b;
+    --paper: #f7f5f0;
+    --line: rgba(27, 54, 93, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.75;
+  }
+
+  h1, h2, h3, .logo {
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .site-header {
+    background: var(--navy);
+    color: white;
+  }
+
+  .site-header .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .logo {
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: white;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+  }
+  .logo span { color: var(--gold); }
+
+  nav {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  nav a {
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.15s;
+  }
+  nav a:hover { color: var(--gold-light); }
+
+  main { min-height: 60vh; }
+
+  .site-footer {
+    background: var(--navy-deep);
+    color: rgba(255,255,255,0.7);
+    margin-top: 60px;
+  }
+  .site-footer .wrap {
+    display: flex;
+    justify-content: space-between;
+    padding-block: 24px;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.9rem;
+  }
+  .site-footer a { color: var(--gold-light); }
+
+  a { color: var(--navy); }
+
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://omxhub.com/sitemap-index.xml

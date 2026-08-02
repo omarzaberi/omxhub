@@ -1,0 +1,142 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { categories, pricingLabels } from '../../data/categories';
+import { getCollection, getEntry, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const tools = await getCollection('tools');
+  return tools.map((tool) => ({
+    params: { slug: tool.id },
+    props: { tool },
+  }));
+}
+
+const { tool } = Astro.props;
+const { Content } = await render(tool);
+const cat = categories[tool.data.category];
+
+const alternativeEntries = tool.data.alternatives
+  ? await Promise.all(
+      tool.data.alternatives.map((slug: string) => getEntry('tools', slug))
+    )
+  : [];
+---
+<Layout
+  title={`${tool.data.name}: الشرح الكامل، المميزات والأسعار`}
+  description={tool.data.tagline}
+>
+  <article class="wrap tool-page">
+    <span class="cat-badge">{cat.icon} {cat.label}</span>
+    <h1>{tool.data.name}</h1>
+    <p class="tagline">{tool.data.tagline}</p>
+
+    <div class="content">
+      <Content />
+    </div>
+
+    <div class="cols">
+      <div class="pros">
+        <h2>✅ المميزات</h2>
+        <ul>
+          {tool.data.pros.map((p: string) => <li>{p}</li>)}
+        </ul>
+      </div>
+      <div class="cons">
+        <h2>❌ العيوب</h2>
+        <ul>
+          {tool.data.cons.map((c: string) => <li>{c}</li>)}
+        </ul>
+      </div>
+    </div>
+
+    <h2>💰 الأسعار</h2>
+    <table>
+      <thead>
+        <tr><th>الخطة</th><th>السعر</th><th>المميزات</th></tr>
+      </thead>
+      <tbody>
+        {tool.data.pricingPlans.map((plan: { name: string; price: string; features: string }) => (
+          <tr>
+            <td>{plan.name}</td>
+            <td>{plan.price}</td>
+            <td>{plan.features}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    {alternativeEntries.length > 0 && (
+      <>
+        <h2>🔄 بدائل مشابهة</h2>
+        <div class="alt-links">
+          {alternativeEntries.filter(Boolean).map((alt) => (
+            <a href={`/ai-tools/${alt!.id}`}>{alt!.data.name}</a>
+          ))}
+        </div>
+      </>
+    )}
+
+    <a class="cta" href={tool.data.affiliateUrl ?? tool.data.officialUrl} target="_blank" rel="noopener nofollow sponsored">
+      🔗 زيارة الموقع الرسمي
+    </a>
+  </article>
+</Layout>
+
+<style>
+  .tool-page { padding: 40px 0 80px; max-width: 780px; }
+  .cat-badge {
+    display: inline-block;
+    font-size: 0.85rem;
+    color: var(--navy);
+    background: rgba(27,54,93,0.06);
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  h1 { margin: 0 0 8px; font-size: 2rem; }
+  .tagline { opacity: 0.75; margin-bottom: 30px; font-size: 1.05rem; }
+  .content :global(h2) { margin-top: 34px; }
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 34px 0;
+  }
+  .cols h2 { font-size: 1.1rem; margin-bottom: 12px; }
+  .cols ul { margin: 0; padding-inline-start: 20px; }
+  .cols li { margin-bottom: 8px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 34px;
+  }
+  th, td {
+    text-align: start;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.92rem;
+  }
+  th { color: var(--navy); }
+  .alt-links { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px; }
+  .alt-links a {
+    background: white;
+    border: 1px solid var(--line);
+    padding: 8px 16px;
+    border-radius: 100px;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .cta {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--navy-deep);
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: 10px;
+    text-decoration: none;
+    margin-top: 10px;
+  }
+  @media (max-width: 640px) {
+    .cols { grid-template-columns: 1fr; }
+  }
+</style>

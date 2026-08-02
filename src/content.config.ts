@@ -4,6 +4,7 @@ import { glob } from 'astro/loaders';
 const tools = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/tools' }),
   schema: z.object({
+    lang: z.enum(['ar', 'en']),
     name: z.string(),
     tagline: z.string(),
     category: z.enum([

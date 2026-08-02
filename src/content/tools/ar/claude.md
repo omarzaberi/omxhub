@@ -1,4 +1,5 @@
 ---
+lang: "ar"
 name: "Claude"
 tagline: "مساعد ذكاء اصطناعي من Anthropic قوي بالتحليل والكتابة الطويلة"
 category: "writing"

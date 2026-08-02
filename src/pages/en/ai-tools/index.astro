@@ -1,10 +1,10 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import ToolCard from '../../components/ToolCard.astro';
-import { useTranslations, localizedPath } from '../../i18n/utils';
+import Layout from '../../../layouts/Layout.astro';
+import ToolCard from '../../../components/ToolCard.astro';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
 import { getCollection } from 'astro:content';
 
-const lang = 'ar' as const;
+const lang = 'en' as const;
 const t = useTranslations(lang);
 const allTools = (await getCollection('tools')).filter((tool) => tool.data.lang === lang);
 ---

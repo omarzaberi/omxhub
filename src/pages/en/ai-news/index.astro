@@ -1,10 +1,10 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { useTranslations } from '../../i18n/utils';
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations } from '../../../i18n/utils';
 
-const lang = 'ar' as const;
+const lang = 'en' as const;
 const t = useTranslations(lang);
-const title = t('nav.comparisons');
+const title = t('nav.news');
 ---
 <Layout title={title} description={title}>
   <section class="wrap section">

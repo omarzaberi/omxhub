@@ -6,4 +6,11 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://omxhub.com',
   integrations: [sitemap()],
+  i18n: {
+    locales: ['ar', 'en'],
+    defaultLocale: 'ar',
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
 });

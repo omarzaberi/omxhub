@@ -1,4 +1,5 @@
 ---
+lang: "ar"
 name: "ChatGPT"
 tagline: "روبوت محادثة ذكي من OpenAI للكتابة والتحليل والبرمجة"
 category: "writing"

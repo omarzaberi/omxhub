@@ -1,17 +1,18 @@
 export const categories = {
-  writing: { label: 'كتابة ومحتوى', icon: '✍️', slug: 'writing' },
-  design: { label: 'صور وتصميم', icon: '🎨', slug: 'design' },
-  'video-audio': { label: 'فيديو وصوت', icon: '🎬', slug: 'video-audio' },
-  coding: { label: 'برمجة', icon: '💻', slug: 'coding' },
-  productivity: { label: 'إنتاجية وأعمال', icon: '⚡', slug: 'productivity' },
-  marketing: { label: 'تسويق وسيو', icon: '📈', slug: 'marketing' },
-  research: { label: 'تعليم وبحث', icon: '📚', slug: 'research' },
+  writing: { icon: '✍️', ar: 'كتابة ومحتوى', en: 'Writing & Content' },
+  design: { icon: '🎨', ar: 'صور وتصميم', en: 'Design & Images' },
+  'video-audio': { icon: '🎬', ar: 'فيديو وصوت', en: 'Video & Audio' },
+  coding: { icon: '💻', ar: 'برمجة', en: 'Coding' },
+  productivity: { icon: '⚡', ar: 'إنتاجية وأعمال', en: 'Productivity' },
+  marketing: { icon: '📈', ar: 'تسويق وسيو', en: 'Marketing & SEO' },
+  research: { icon: '📚', ar: 'تعليم وبحث', en: 'Research & Learning' },
 } as const;
 
 export const pricingLabels = {
-  free: 'مجاني',
-  paid: 'مدفوع',
-  freemium: 'مجاني + مدفوع',
+  free: { ar: 'مجاني', en: 'Free' },
+  paid: { ar: 'مدفوع', en: 'Paid' },
+  freemium: { ar: 'مجاني + مدفوع', en: 'Freemium' },
 } as const;
 
 export type CategoryKey = keyof typeof categories;
+export type PricingKey = keyof typeof pricingLabels;

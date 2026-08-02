@@ -1,63 +1,69 @@
 ---
 import { categories, pricingLabels } from '../data/categories';
+import type { Lang } from '../i18n/ui';
 
 interface Props {
-  slug: string;
+  href: string;
   name: string;
   tagline: string;
   category: keyof typeof categories;
   pricingType: keyof typeof pricingLabels;
   rating?: number;
+  lang: Lang;
 }
-const { slug, name, tagline, category, pricingType, rating } = Astro.props;
+const { href, name, tagline, category, pricingType, rating, lang } = Astro.props;
 const cat = categories[category];
+const priceLabel = pricingLabels[pricingType][lang];
 ---
-<a href={`/ai-tools/${slug}`} class="card">
+<a href={href} class="card">
   <div class="card-top">
-    <span class="cat-badge">{cat.icon} {cat.label}</span>
+    <span class="cat-badge">{cat.icon} {cat[lang]}</span>
     {rating && <span class="rating">★ {rating.toFixed(1)}</span>}
   </div>
   <h3>{name}</h3>
   <p>{tagline}</p>
-  <span class="price-badge" data-type={pricingType}>{pricingLabels[pricingType]}</span>
+  <span class="price-badge" data-type={pricingType}>
+    <span class="dot"></span>{priceLabel}
+  </span>
 </a>
 
 <style>
   .card {
     display: block;
-    background: white;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 20px;
     text-decoration: none;
-    color: var(--ink);
-    transition: transform 0.15s, box-shadow 0.15s;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
   }
   .card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(27, 54, 93, 0.1);
+    border-color: var(--accent);
   }
   .card-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
-  .cat-badge { color: var(--navy); opacity: 0.75; }
-  .rating { color: var(--gold); font-weight: 700; }
-  h3 { margin: 0 0 6px; font-size: 1.15rem; }
-  p { margin: 0 0 14px; font-size: 0.9rem; opacity: 0.8; }
+  .cat-badge { color: var(--text-dim); }
+  .rating { color: var(--paid); font-weight: 600; }
+  h3 { margin: 0 0 6px; font-size: 1.15rem; font-weight: 700; }
+  p { margin: 0 0 14px; font-size: 0.9rem; color: var(--text-dim); }
   .price-badge {
-    display: inline-block;
-    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
     padding: 4px 10px;
     border-radius: 100px;
-    background: rgba(198, 167, 106, 0.15);
-    color: #8a6d34;
+    background: var(--surface-2);
+    color: var(--paid);
   }
-  .price-badge[data-type="free"] {
-    background: rgba(46, 125, 87, 0.12);
-    color: #2e7d57;
-  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .price-badge[data-type="free"] { color: var(--free); }
+  .price-badge[data-type="freemium"] { color: var(--accent-2); }
 </style>

@@ -35,5 +35,3 @@ git push -u origin main
 5. من **Site settings → Domain management** اربط دومين `omxhub.com` المسجل عندك
 
 بعدها، أي `git push` جديد = نشر تلقائي على Netlify خلال ثواني.
-"# omxhub" 
-"# omxhub" 

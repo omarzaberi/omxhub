@@ -1,0 +1,24 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations } from '../../../i18n/utils';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+---
+<Layout title={t('footer.privacy')} description={t('footer.privacy')}>
+  <section class="wrap section">
+    <h1>Privacy Policy</h1>
+    <p>
+      At OMXHub, we respect your privacy. This site may display ads (Google AdSense) and
+      affiliate links for some of the tools listed, and we may earn a commission when you
+      purchase through those links at no extra cost to you.
+    </p>
+    <p>This page will be updated with more detail before the site officially launches.</p>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 60px 0; max-width: 700px; }
+  h1 { margin-bottom: 16px; }
+  p { margin-bottom: 14px; color: var(--text-dim); }
+</style>

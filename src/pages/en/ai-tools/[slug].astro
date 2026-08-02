@@ -1,14 +1,14 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { categories } from '../../data/categories';
-import { useTranslations, localizedPath } from '../../i18n/utils';
+import Layout from '../../../layouts/Layout.astro';
+import { categories } from '../../../data/categories';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
 import { getCollection, getEntry, render } from 'astro:content';
 
-const lang = 'ar' as const;
+const lang = 'en' as const;
 const t = useTranslations(lang);
 
 export async function getStaticPaths() {
-  const tools = (await getCollection('tools')).filter((tool) => tool.data.lang === 'ar');
+  const tools = (await getCollection('tools')).filter((tool) => tool.data.lang === 'en');
   return tools.map((tool) => ({
     params: { slug: tool.id.split('/')[1] },
     props: { tool },

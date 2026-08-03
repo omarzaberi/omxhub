@@ -1,0 +1,80 @@
+---
+import { categories } from '../data/categories';
+import type { Lang } from '../i18n/ui';
+
+interface Props {
+  href: string;
+  title: string;
+  description: string;
+  category: keyof typeof categories;
+  tool: string;
+  difficulty: 'beginner' | 'advanced';
+  lang: Lang;
+}
+const { href, title, description, category, tool, difficulty, lang } = Astro.props;
+const cat = categories[category];
+const difficultyLabel =
+  lang === 'ar'
+    ? difficulty === 'beginner' ? 'مبتدئ' : 'متقدم'
+    : difficulty === 'beginner' ? 'Beginner' : 'Advanced';
+---
+<a href={href} class="card">
+  <div class="card-top">
+    <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+    <span class="diff-badge" data-level={difficulty}>{difficultyLabel}</span>
+  </div>
+  <h3>{title}</h3>
+  <p>{description}</p>
+  <div class="card-footer">
+    <span class="tool-tag">{tool}</span>
+    <span class="cta-hint">{lang === 'ar' ? 'عرض البرومبت' : 'View prompt'} {lang === 'ar' ? '←' : '→'}</span>
+  </div>
+</a>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
+    height: 100%;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--accent-2); }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.75rem;
+  }
+  .cat-badge { color: var(--text-dim); }
+  .diff-badge {
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: var(--surface-2);
+    color: var(--accent-2);
+  }
+  .diff-badge[data-level="advanced"] { color: var(--paid); }
+  h3 { margin: 0 0 6px; font-size: 1.05rem; font-weight: 700; }
+  p { margin: 0 0 14px; font-size: 0.88rem; color: var(--text-dim); flex: 1; }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .tool-tag {
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+  .cta-hint { font-size: 0.78rem; color: var(--accent-2); font-weight: 600; white-space: nowrap; }
+</style>

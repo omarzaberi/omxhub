@@ -1,0 +1,120 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { categories } from '../../data/categories';
+import { useTranslations } from '../../i18n/utils';
+import { getCollection, render } from 'astro:content';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+export async function getStaticPaths() {
+  const prompts = (await getCollection('prompts')).filter((p) => p.data.lang === 'ar');
+  return prompts.map((p) => ({
+    params: { slug: p.id.split('/')[1] },
+    props: { p },
+  }));
+}
+
+const { p } = Astro.props;
+const { Content } = await render(p);
+const cat = categories[p.data.category];
+const difficultyLabel = p.data.difficulty === 'beginner' ? 'مبتدئ' : 'متقدم';
+---
+<Layout title={p.data.title} description={p.data.description}>
+  <article class="wrap prompt-page">
+    <div class="meta-row">
+      <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+      <span class="diff-badge" data-level={p.data.difficulty}>{difficultyLabel}</span>
+      <span class="tool-tag">🔧 {p.data.tool}</span>
+    </div>
+    <h1>{p.data.title}</h1>
+    <p class="tagline">{p.data.description}</p>
+
+    <div class="prompt-box">
+      <div class="prompt-box-head">
+        <span class="mono">prompt.txt</span>
+        <button id="copy-btn" type="button" class="copy-btn">📋 نسخ البرومبت</button>
+      </div>
+      <pre id="prompt-text" dir="auto">{p.data.promptText}</pre>
+    </div>
+
+    <div class="content">
+      <Content />
+    </div>
+  </article>
+</Layout>
+
+<script is:inline>
+  const btn = document.getElementById('copy-btn');
+  const text = document.getElementById('prompt-text');
+  btn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(text.innerText);
+      const original = btn.innerText;
+      btn.innerText = '✅ تم النسخ!';
+      setTimeout(() => { btn.innerText = original; }, 2000);
+    } catch (e) {
+      console.error('copy failed', e);
+    }
+  });
+</script>
+
+<style>
+  .prompt-page { padding: 40px 0 80px; max-width: 760px; }
+  .meta-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .cat-badge, .tool-tag {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .diff-badge {
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 10px;
+    border-radius: 100px;
+    background: var(--surface-2);
+    color: var(--accent-2);
+  }
+  .diff-badge[data-level="advanced"] { color: var(--paid); }
+  h1 { margin: 0 0 8px; font-size: 1.9rem; }
+  .tagline { color: var(--text-dim); margin-bottom: 28px; font-size: 1.02rem; }
+
+  .prompt-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .prompt-box-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim); }
+  .copy-btn {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  pre {
+    margin: 0;
+    padding: 20px;
+    white-space: pre-wrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .content :global(h2) { font-size: 1.1rem; margin-top: 28px; }
+  .content :global(p) { color: var(--text-dim); }
+</style>

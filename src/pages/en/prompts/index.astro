@@ -1,20 +1,40 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import { useTranslations } from '../../../i18n/utils';
+import PromptCard from '../../../components/PromptCard.astro';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { getCollection } from 'astro:content';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
-const title = t('nav.prompts');
+const allPrompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
 ---
-<Layout title={title} description={title}>
+<Layout title={t('nav.prompts')} description={t('nav.prompts')}>
   <section class="wrap section">
-    <h1>{title}</h1>
-    <p>{t('soon.body')}</p>
+    <h1>{t('nav.prompts')}</h1>
+    <p class="count">{allPrompts.length} ready-to-use prompts</p>
+    <div class="grid">
+      {allPrompts.map((p) => (
+        <PromptCard
+          href={localizedPath(lang, `/prompts/${p.id.split('/')[1]}`)}
+          title={p.data.title}
+          description={p.data.description}
+          category={p.data.category}
+          tool={p.data.tool}
+          difficulty={p.data.difficulty}
+          lang={lang}
+        />
+      ))}
+    </div>
   </section>
 </Layout>
 
 <style>
-  .section { padding: 60px 0; min-height: 40vh; }
-  h1 { margin-bottom: 12px; }
-  p { color: var(--text-dim); }
+  .section { padding: 40px 0 70px; }
+  h1 { margin-bottom: 4px; }
+  .count { color: var(--text-dim); margin-bottom: 28px; font-size: 0.9rem; font-family: 'JetBrains Mono', monospace; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
 </style>

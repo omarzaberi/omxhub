@@ -36,4 +36,27 @@ const tools = defineCollection({
   }),
 });
 
-export const collections = { tools };
+const prompts = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/prompts' }),
+  schema: z.object({
+    lang: z.enum(['ar', 'en']),
+    title: z.string(),
+    description: z.string(),
+    promptText: z.string(),
+    category: z.enum([
+      'writing',
+      'design',
+      'video-audio',
+      'coding',
+      'productivity',
+      'marketing',
+      'research',
+    ]),
+    tool: z.string(), // recommended tool name, e.g. "ChatGPT"
+    difficulty: z.enum(['beginner', 'advanced']),
+    publishDate: z.date(),
+    featured: z.boolean().default(false),
+  }),
+});
+
+export const collections = { tools, prompts };

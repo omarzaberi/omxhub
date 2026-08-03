@@ -14,50 +14,93 @@ interface Props {
 const { href, name, tagline, category, pricingType, rating, lang } = Astro.props;
 const cat = categories[category];
 const priceLabel = pricingLabels[pricingType][lang];
+
+// Deterministic avatar color + initials from the tool name (no external logo files needed)
+const palette = ['#4fd1c5', '#9b8cfb', '#f5a623', '#34d399', '#f472b6'];
+const hash = [...name].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+const avatarColor = palette[hash % palette.length];
+const initials = name
+  .replace(/[^\p{L}\p{N} ]/gu, '')
+  .split(' ')
+  .slice(0, 2)
+  .map((w) => w[0])
+  .join('')
+  .toUpperCase();
+
+const ctaLabel = lang === 'ar' ? 'التفاصيل الكاملة' : 'View details';
+const arrow = lang === 'ar' ? '←' : '→';
 ---
 <a href={href} class="card">
-  <div class="card-top">
-    <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+  <div class="card-head">
+    <div class="avatar" style={`background:${avatarColor}22; color:${avatarColor}`}>{initials}</div>
+    <div class="head-text">
+      <h3>{name}</h3>
+      <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+    </div>
     {rating && <span class="rating">★ {rating.toFixed(1)}</span>}
   </div>
-  <h3>{name}</h3>
   <p>{tagline}</p>
-  <span class="price-badge" data-type={pricingType}>
-    <span class="dot"></span>{priceLabel}
-  </span>
+  <div class="card-footer">
+    <span class="price-badge" data-type={pricingType}>
+      <span class="dot"></span>{priceLabel}
+    </span>
+    <span class="cta-hint">{ctaLabel} {arrow}</span>
+  </div>
 </a>
 
 <style>
   .card {
-    display: block;
+    display: flex;
+    flex-direction: column;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 12px;
-    padding: 20px;
+    padding: 18px;
     text-decoration: none;
     color: var(--text);
     transition: transform 0.15s, border-color 0.15s;
+    height: 100%;
   }
   .card:hover {
     transform: translateY(-3px);
     border-color: var(--accent);
   }
-  .card-top {
+  .card-head {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 10px;
     margin-bottom: 10px;
-    font-size: 0.75rem;
   }
-  .cat-badge { color: var(--text-dim); }
-  .rating { color: var(--paid); font-weight: 600; }
-  h3 { margin: 0 0 6px; font-size: 1.15rem; font-weight: 700; }
-  p { margin: 0 0 14px; font-size: 0.9rem; color: var(--text-dim); }
+  .avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .head-text { flex: 1; min-width: 0; }
+  h3 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 700; }
+  .cat-badge { font-size: 0.72rem; color: var(--text-dim); }
+  .rating { color: var(--paid); font-weight: 600; font-size: 0.8rem; white-space: nowrap; }
+  p { margin: 0 0 14px; font-size: 0.88rem; color: var(--text-dim); flex: 1; }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
   .price-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     padding: 4px 10px;
     border-radius: 100px;
     background: var(--surface-2);
@@ -66,4 +109,10 @@ const priceLabel = pricingLabels[pricingType][lang];
   .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .price-badge[data-type="free"] { color: var(--free); }
   .price-badge[data-type="freemium"] { color: var(--accent-2); }
+  .cta-hint {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+  }
 </style>

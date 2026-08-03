@@ -49,9 +49,6 @@ const switchHref = localizedPath(otherLang, currentPath);
         <nav>
           <a href={localizedPath(lang, '/ai-tools')}>{t('nav.tools')}</a>
           <a href={localizedPath(lang, '/prompts')}>{t('nav.prompts')}</a>
-          <a href={localizedPath(lang, '/tutorials')}>{t('nav.tutorials')}</a>
-          <a href={localizedPath(lang, '/ai-news')}>{t('nav.news')}</a>
-          <a href={localizedPath(lang, '/comparisons')}>{t('nav.comparisons')}</a>
         </nav>
         <div class="controls">
           <a href={switchHref} class="lang-switch">{t('lang.switch')}</a>
@@ -68,7 +65,11 @@ const switchHref = localizedPath(otherLang, currentPath);
     <footer class="site-footer">
       <div class="wrap">
         <p>© 2026 OMXHub — {t('footer.tagline')}</p>
-        <a href={localizedPath(lang, '/privacy-policy')}>{t('footer.privacy')}</a>
+        <div class="footer-links">
+          <a href={localizedPath(lang, '/about')}>{t('footer.about')}</a>
+          <a href={localizedPath(lang, '/contact')}>{t('footer.contact')}</a>
+          <a href={localizedPath(lang, '/privacy-policy')}>{t('footer.privacy')}</a>
+        </div>
       </div>
     </footer>
 
@@ -234,6 +235,7 @@ const switchHref = localizedPath(otherLang, currentPath);
     font-size: 0.9rem;
   }
   .site-footer a { color: var(--accent); text-decoration: none; }
+  .footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
 
   a { color: var(--accent); }
 

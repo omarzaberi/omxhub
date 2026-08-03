@@ -1,0 +1,37 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations } from '../../../i18n/utils';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+---
+<Layout title={t('footer.about')} description="Learn about the team and vision behind OMXHub">
+  <section class="wrap section">
+    <h1>About OMXHub</h1>
+    <p>
+      OMXHub is an Arabic-first directory dedicated to AI tools, built to help
+      Arabic-speaking users discover, compare, and understand the best AI tools
+      available today — with clear, direct explanations and no unnecessary
+      technical complexity.
+    </p>
+    <p>
+      The site is an independent project run by Omar Al-Zaberi, started with a
+      simple goal: provide a trustworthy Arabic-language resource that covers
+      every AI tool in depth — features, drawbacks, pricing, and how to use it —
+      instead of forcing readers to piece things together from scattered
+      English sources.
+    </p>
+    <p>
+      We review every tool ourselves and update content regularly to keep up
+      with the fast pace of AI. If you have a suggestion or a tool you'd like
+      added, feel free to reach out via the <a href="/en/contact">contact page</a>.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 60px 0; max-width: 700px; }
+  h1 { margin-bottom: 20px; }
+  p { margin-bottom: 16px; color: var(--text-dim); }
+  p a { color: var(--accent); }
+</style>

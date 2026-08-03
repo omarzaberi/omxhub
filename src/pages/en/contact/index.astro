@@ -1,0 +1,33 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations } from '../../../i18n/utils';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+---
+<Layout title={t('footer.contact')} description="Get in touch with the OMXHub team">
+  <section class="wrap section">
+    <h1>Contact Us</h1>
+    <p>
+      We'd love to hear from you — questions, tool suggestions, corrections,
+      or partnership opportunities. Email us directly and we'll get back to
+      you as soon as possible.
+    </p>
+    <a class="email-btn" href="mailto:contact@omxhub.com">📧 contact@omxhub.com</a>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 60px 0; max-width: 700px; }
+  h1 { margin-bottom: 20px; }
+  p { margin-bottom: 24px; color: var(--text-dim); }
+  .email-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: 10px;
+    text-decoration: none;
+  }
+</style>

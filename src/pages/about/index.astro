@@ -1,0 +1,34 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations } from '../../i18n/utils';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+---
+<Layout title={t('footer.about')} description="تعرف على فريق ورؤية OMXHub">
+  <section class="wrap section">
+    <h1>من نحن</h1>
+    <p>
+      OMXHub دليل عربي متخصص بأدوات الذكاء الاصطناعي، أنشأناه لمساعدة المستخدمين
+      العرب يكتشفون، يقارنون، ويفهمون أفضل أدوات AI المتوفرة اليوم — بشرح واضح
+      ومباشر بدون تعقيد تقني غير ضروري.
+    </p>
+    <p>
+      الموقع مشروع مستقل يديره عمر الزبيري، وبدأ بهدف بسيط: توفير مصدر عربي
+      موثوق يغطي كل أداة ذكاء اصطناعي بشكل تفصيلي — المميزات، العيوب، الأسعار،
+      وطريقة الاستخدام — بدل ما يضطر القارئ يبحث بمصادر إنجليزية متفرقة.
+    </p>
+    <p>
+      نراجع كل أداة بأنفسنا ونحدّث المحتوى بشكل دوري لمواكبة التطور السريع
+      بمجال الذكاء الاصطناعي. لو عندك اقتراح أو أداة تبي نضيفها، تقدر تتواصل
+      معنا من <a href="/contact">صفحة التواصل</a>.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 60px 0; max-width: 700px; }
+  h1 { margin-bottom: 20px; }
+  p { margin-bottom: 16px; color: var(--text-dim); }
+  p a { color: var(--accent); }
+</style>

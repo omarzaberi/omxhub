@@ -685,9 +685,21 @@ const why = [
   }
   @media (max-width: 560px) {
     .section { padding: 42px 0; }
+    .sec-head { margin-bottom: 20px; }
     .quick-grid { grid-template-columns: 1fr 1fr; }
-    .float-stage { height: 270px; transform: scale(0.76); }
+    .qcard { padding: 16px 8px; }
     .cta-row .btn { flex: 1; justify-content: center; }
+    .lede { font-size: 0.96rem; margin-bottom: 22px; }
+    .support-box { padding: 34px 20px; }
+    .stats-band { padding: 30px 16px; gap: 14px; }
+
+    /* Two floating cards read as an accent; five read as clutter
+       and risk overflowing a narrow screen. */
+    .float-stage { height: 190px; transform: none; }
+    .fcard { padding: 10px 13px; }
+    .f1 { top: 0; inset-inline-end: auto; inset-inline-start: 0; }
+    .f2 { top: 86px; inset-inline-end: 0; inset-inline-start: auto; }
+    .f3, .f4, .f5 { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -31,6 +31,9 @@ const tools = defineCollection({
       })
     ),
     alternatives: z.array(z.string()).optional(), // slugs of other tools
+    faq: z
+      .array(z.object({ q: z.string(), a: z.string() }))
+      .optional(),
     publishDate: z.date(),
     featured: z.boolean().default(false),
   }),

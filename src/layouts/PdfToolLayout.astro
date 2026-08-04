@@ -144,11 +144,19 @@ const faqSchema = faq.length
   .related-links a:hover { border-color: var(--accent); color: var(--accent); }
   .all-tools-link { color: var(--accent) !important; }
 
+  @media (max-width: 820px) {
+    .pdf-tool-page { padding: 24px 0 56px; }
+    .pdf-tool-page h1 { font-size: 1.45rem; }
+    .tool-desc { font-size: 0.95rem; margin-bottom: 22px; }
+    .tool-panel { padding: 18px 16px; border-radius: 14px; }
+    .faq details { padding: 12px 14px; }
+  }
+
   /* Shared drop-zone + tool UI styles used by every PDF tool page */
   .drop-zone {
     border: 2px dashed var(--line);
     border-radius: 12px;
-    padding: 40px 20px;
+    padding: 40px 16px;
     text-align: center;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
@@ -162,6 +170,7 @@ const faqSchema = faq.length
   .drop-zone input[type="file"] { display: none; }
   .choose-btn {
     display: inline-block;
+    min-height: 44px;
     background: var(--accent);
     color: var(--accent-ink);
     border: none;

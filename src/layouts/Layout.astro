@@ -25,6 +25,14 @@ const switchHref = localizedPath(otherLang, currentPath);
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1192147959258733"
      crossorigin="anonymous"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W8MG2DBF3F"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-W8MG2DBF3F');
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -136,7 +144,11 @@ const switchHref = localizedPath(otherLang, currentPath);
   html[dir='ltr'] h1, html[dir='ltr'] h2, html[dir='ltr'] h3, html[dir='ltr'] .logo {
     font-family: 'Space Grotesk', sans-serif;
   }
-  .mono, code, .price-badge, .cat-badge, table { font-family: 'JetBrains Mono', monospace; }
+  /* Latin glyphs use JetBrains Mono; Arabic falls back to the Arabic UI face
+     so mixed-language badges never render with broken letterforms. */
+  .mono, code, .price-badge, .cat-badge, table {
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+  }
 
   .wrap {
     max-width: 1100px;
@@ -199,7 +211,7 @@ const switchHref = localizedPath(otherLang, currentPath);
     border: 1px solid var(--line);
     border-radius: 100px;
     padding: 6px 14px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
   }
   .lang-switch:hover { border-color: var(--accent); color: var(--accent); }
 

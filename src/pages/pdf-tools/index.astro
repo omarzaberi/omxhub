@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations, localizedPath } from '../../i18n/utils';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const tools = [
+  { icon: '🔗', name: 'دمج PDF', desc: 'ادمج عدة ملفات PDF بملف واحد بالترتيب اللي تبيه', href: '/pdf-tools/merge-pdf' },
+  { icon: '✂️', name: 'تقسيم PDF', desc: 'قسّم ملف PDF لصفحات أو نطاقات منفصلة', href: '/pdf-tools/split-pdf' },
+  { icon: '🔄', name: 'تدوير PDF', desc: 'دوّر صفحات ملف PDF 90 أو 180 أو 270 درجة', href: '/pdf-tools/rotate-pdf' },
+  { icon: '💧', name: 'علامة مائية', desc: 'أضف نص كعلامة مائية على كل صفحات ملف PDF', href: '/pdf-tools/watermark-pdf' },
+  { icon: '🖼️', name: 'صور إلى PDF', desc: 'حوّل صورة أو أكثر (JPG/PNG) لملف PDF واحد', href: '/pdf-tools/images-to-pdf' },
+  { icon: '📄', name: 'PDF إلى صور', desc: 'حوّل كل صفحة بملف PDF لصورة PNG منفصلة', href: '/pdf-tools/pdf-to-images' },
+];
+---
+<Layout title={t('nav.pdf')} description="أدوات PDF مجانية تشتغل بالكامل داخل متصفحك — دمج، تقسيم، تدوير، وأكثر">
+  <section class="wrap section">
+    <h1>{t('nav.pdf')}</h1>
+    <p class="subtitle">
+      أدوات مجانية بالكامل تعالج ملفاتك مباشرة داخل متصفحك — ما فيه رفع لأي سيرفر،
+      وما فيه حد يومي للاستخدام.
+    </p>
+    <div class="grid">
+      {tools.map((tool) => (
+        <a href={localizedPath(lang, tool.href)} class="tool-card">
+          <span class="icon">{tool.icon}</span>
+          <h3>{tool.name}</h3>
+          <p>{tool.desc}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 40px 0 70px; }
+  h1 { margin-bottom: 10px; }
+  .subtitle { color: var(--text-dim); max-width: 600px; margin-bottom: 34px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .tool-card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .tool-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .icon { font-size: 1.8rem; display: block; margin-bottom: 12px; }
+  h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  p { margin: 0; font-size: 0.85rem; color: var(--text-dim); }
+</style>

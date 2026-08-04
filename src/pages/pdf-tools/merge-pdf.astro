@@ -1,0 +1,119 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations, localizedPath } from '../../i18n/utils';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  { q: 'هل ملفاتي آمنة؟', a: 'نعم تمامًا. الدمج يتم بالكامل داخل متصفحك بجافاسكربت — ملفاتك ما ترفع لأي سيرفر أبدًا.' },
+  { q: 'كم ملف أقدر أدمج بمرة وحدة؟', a: 'ما فيه حد أقصى محدد، بس كل ما زاد عدد وحجم الملفات، احتمال يبطئ المتصفح شوي.' },
+  { q: 'هل ترتيب الملفات مهم؟', a: 'نعم، الملفات تندمج بنفس ترتيب رفعها. تقدر تحذف وتعيد رفعها بترتيب مختلف لو تبي.' },
+];
+const related = [
+  { label: 'تقسيم PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
+  { label: 'تدوير PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
+];
+---
+<PdfToolLayout
+  lang={lang}
+  title="دمج ملفات PDF"
+  description="ادمج عدة ملفات PDF بملف واحد مرتب، مجانًا وبالكامل داخل متصفحك"
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHere')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFiles')}</button>
+    <input type="file" id="file-input" accept="application/pdf" multiple />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>دمج الملفات</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let files: File[] = [];
+
+  function renderFileList() {
+    fileListEl.innerHTML = files
+      .map(
+        (f, i) => `
+        <div class="file-item">
+          <span class="file-name">📄 ${f.name}</span>
+          <button type="button" class="file-remove" data-index="${i}">✕</button>
+        </div>`
+      )
+      .join('');
+    actionBtn.disabled = files.length < 2;
+    fileListEl.querySelectorAll('.file-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number((btn as HTMLElement).dataset.index);
+        files.splice(idx, 1);
+        renderFileList();
+      });
+    });
+  }
+
+  function addFiles(newFiles: FileList | File[]) {
+    for (const f of Array.from(newFiles)) {
+      if (f.type === 'application/pdf') files.push(f);
+    }
+    renderFileList();
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => addFiles(fileInput.files!));
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري الدمج...';
+    actionBtn.disabled = true;
+    try {
+      const merged = await PDFDocument.create();
+      for (const file of files) {
+        const bytes = await file.arrayBuffer();
+        const doc = await PDFDocument.load(bytes);
+        const pages = await merged.copyPages(doc, doc.getPageIndices());
+        pages.forEach((p) => merged.addPage(p));
+      }
+      const outBytes = await merged.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="merged.pdf">⬇ تحميل الملف المدموج</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملفات PDF صالحة وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = files.length < 2;
+    }
+  });
+</script>

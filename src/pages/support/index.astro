@@ -1,0 +1,167 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations } from '../../i18n/utils';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const KOFI_URL = 'https://ko-fi.com/omxhub';
+
+const amounts = [
+  { emoji: '☕', label: '2$' },
+  { emoji: '☕', label: '5$' },
+  { emoji: '☕', label: '10$' },
+  { emoji: '🚀', label: '20$' },
+];
+
+const reasons = [
+  { icon: '💻', title: 'التطوير', desc: 'بناء أدوات ذكاء اصطناعي وإنتاجية جديدة باستمرار' },
+  { icon: '☁️', title: 'البنية التحتية', desc: 'الاستضافة، الدومين، والصيانة الدورية' },
+  { icon: '🚀', title: 'مميزات جديدة', desc: 'المزيد من أدوات PDF، الصور، الفيديو، والمطورين' },
+  { icon: '🔒', title: 'الأمان', desc: 'تحسينات الأداء وتحديثات الحماية المستمرة' },
+];
+
+const roadmap = [
+  { status: 'done', label: 'دليل أدوات AI' },
+  { status: 'progress', label: 'أدوات PDF' },
+  { status: 'upcoming', label: 'أدوات الصور' },
+  { status: 'upcoming', label: 'أدوات الفيديو' },
+  { status: 'upcoming', label: 'أدوات الصوت' },
+  { status: 'upcoming', label: 'أدوات المطورين' },
+  { status: 'upcoming', label: 'إضافة متصفح' },
+  { status: 'upcoming', label: 'تطبيق جوال' },
+];
+---
+<Layout title={t('footer.support')} description="ادعم OMXHub وساعدنا نخلي كل الأدوات مجانية للأبد">
+  <section class="hero wrap">
+    <h1>❤️ ادعم OMXHub</h1>
+    <p>
+      OMXHub منصة مستقلة مكرّسة لبناء أدوات ذكاء اصطناعي وإنتاجية مجانية للجميع.
+      كل دعم يساعدنا نبني أدوات أكثر، نحسّن الأداء، وندفع تكاليف الاستضافة
+      والدومين — ونكمل نقدم خدماتنا مجانًا.
+    </p>
+    <a class="kofi-btn" href={KOFI_URL} target="_blank" rel="noopener">❤️ ادعمنا على Ko-fi</a>
+  </section>
+
+  <section class="wrap section">
+    <h2>اختر مبلغ الدعم</h2>
+    <div class="amounts-grid">
+      {amounts.map((a) => (
+        <a href={KOFI_URL} target="_blank" rel="noopener" class="amount-card">
+          <span class="emoji">{a.emoji}</span>
+          <span class="label">{a.label}</span>
+        </a>
+      ))}
+      <a href={KOFI_URL} target="_blank" rel="noopener" class="amount-card custom">
+        <span class="emoji">❤️</span>
+        <span class="label">مبلغ آخر</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <h2>ليش تدعمنا؟</h2>
+    <div class="reasons-grid">
+      {reasons.map((r) => (
+        <div class="reason-card">
+          <span class="icon">{r.icon}</span>
+          <h3>{r.title}</h3>
+          <p>{r.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap section">
+    <h2>خارطة الطريق</h2>
+    <div class="roadmap">
+      {roadmap.map((r) => (
+        <div class="roadmap-item" data-status={r.status}>
+          <span class="dot"></span>
+          <span>{r.label}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap section community">
+    <h2>كن أحد داعمي OMXHub ❤️</h2>
+    <p>كل فنجان قهوة يساعدنا نبني أدوات مجانية أفضل للجميع.</p>
+    <a class="kofi-btn" href={KOFI_URL} target="_blank" rel="noopener">ادعمنا على Ko-fi</a>
+  </section>
+</Layout>
+
+<style>
+  .hero { padding: 60px 0 40px; text-align: center; max-width: 640px; }
+  .hero h1 { font-size: 2rem; margin-bottom: 16px; }
+  .hero p { color: var(--text-dim); margin-bottom: 28px; }
+  .kofi-btn {
+    display: inline-block;
+    background: var(--accent-2);
+    color: white;
+    font-weight: 700;
+    padding: 14px 30px;
+    border-radius: 100px;
+    text-decoration: none;
+  }
+
+  .section { padding: 30px 0; }
+  .section h2 { font-size: 1.3rem; margin-bottom: 20px; }
+
+  .amounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    max-width: 600px;
+  }
+  .amount-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 10px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .amount-card:hover { border-color: var(--accent-2); transform: translateY(-2px); }
+  .amount-card .emoji { display: block; font-size: 1.6rem; margin-bottom: 6px; }
+  .amount-card .label { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .amount-card.custom { border-style: dashed; }
+
+  .reasons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .reason-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .reason-card .icon { font-size: 1.6rem; display: block; margin-bottom: 10px; }
+  .reason-card h3 { margin: 0 0 6px; font-size: 1rem; }
+  .reason-card p { margin: 0; color: var(--text-dim); font-size: 0.88rem; }
+
+  .roadmap { display: flex; flex-wrap: wrap; gap: 10px; }
+  .roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+  .roadmap-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .roadmap-item[data-status="done"] .dot { background: var(--free); }
+  .roadmap-item[data-status="progress"] .dot { background: var(--paid); }
+  .roadmap-item[data-status="upcoming"] .dot { background: var(--text-dim); }
+  .roadmap-item[data-status="upcoming"] { opacity: 0.6; }
+
+  .community { text-align: center; padding: 50px 0 70px; }
+  .community h2 { margin-bottom: 8px; }
+  .community p { color: var(--text-dim); margin-bottom: 22px; }
+</style>

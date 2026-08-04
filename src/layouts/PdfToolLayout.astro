@@ -1,0 +1,273 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { useTranslations, localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+
+interface FaqItem { q: string; a: string; }
+interface RelatedTool { label: string; href: string; }
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  faq?: FaqItem[];
+  related?: RelatedTool[];
+}
+const { lang, title, description, faq = [], related = [] } = Astro.props;
+const t = useTranslations(lang);
+
+const faqSchema = faq.length
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faq.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    }
+  : null;
+---
+<Layout title={title} description={description}>
+  <div class="wrap pdf-tool-page">
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href={localizedPath(lang, '/')}>{lang === 'ar' ? 'الرئيسية' : 'Home'}</a>
+      <span>/</span>
+      <a href={localizedPath(lang, '/pdf-tools')}>{t('nav.pdf')}</a>
+      <span>/</span>
+      <span class="current">{title}</span>
+    </nav>
+
+    <h1>{title}</h1>
+    <p class="tool-desc">{description}</p>
+
+    <div class="tool-panel">
+      <slot />
+    </div>
+
+    <p class="privacy-note">{t('pdf.privacyNote')}</p>
+    <p class="support-hint">
+      {lang === 'ar' ? 'عجبتك الأداة؟ ساعدنا نخليها مجانية للأبد — ' : 'Enjoying the tool? Help us keep it free forever — '}
+      <a href={lang === 'ar' ? '/support' : '/en/support'}>{lang === 'ar' ? 'ادعم OMXHub ❤️' : 'Support OMXHub ❤️'}</a>
+    </p>
+
+    {faq.length > 0 && (
+      <section class="faq">
+        <h2>{lang === 'ar' ? 'أسئلة شائعة' : 'Frequently Asked Questions'}</h2>
+        {faq.map((item) => (
+          <details>
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </section>
+    )}
+
+    {related.length > 0 && (
+      <section class="related">
+        <h2>{t('pdf.relatedTools')}</h2>
+        <div class="related-links">
+          {related.map((r) => <a href={r.href}>{r.label}</a>)}
+          <a href={localizedPath(lang, '/pdf-tools')} class="all-tools-link">{t('pdf.allTools')} ←</a>
+        </div>
+      </section>
+    )}
+  </div>
+
+  {faqSchema && (
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  )}
+</Layout>
+
+<style is:global>
+  .pdf-tool-page { padding: 32px 0 70px; max-width: 760px; }
+  .breadcrumb {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .current { color: var(--text); }
+
+  .pdf-tool-page h1 { font-size: 1.8rem; margin: 0 0 10px; }
+  .tool-desc { color: var(--text-dim); margin-bottom: 28px; font-size: 1rem; }
+
+  .tool-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .privacy-note {
+    font-size: 0.82rem;
+    color: var(--free);
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .support-hint {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 50px;
+  }
+  .support-hint a { color: var(--accent-2); }
+
+  .faq { margin-bottom: 50px; }
+  .faq h2, .related h2 { font-size: 1.2rem; margin-bottom: 16px; }
+  .faq details {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+  }
+  .faq summary { cursor: pointer; font-weight: 600; }
+  .faq p { color: var(--text-dim); margin: 10px 0 0; font-size: 0.92rem; }
+
+  .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .related-links a {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 9px 16px;
+    border-radius: 100px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.88rem;
+  }
+  .related-links a:hover { border-color: var(--accent); color: var(--accent); }
+  .all-tools-link { color: var(--accent) !important; }
+
+  /* Shared drop-zone + tool UI styles used by every PDF tool page */
+  .drop-zone {
+    border: 2px dashed var(--line);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .drop-zone svg { color: var(--text-dim); margin-bottom: 10px; }
+  .drop-zone .drop-text { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 14px; }
+  .drop-zone input[type="file"] { display: none; }
+  .choose-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .file-list { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+  .file-item .file-name {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: ltr;
+    text-align: left;
+  }
+  .file-item .file-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .file-item .file-remove:hover { color: var(--paid); }
+
+  .tool-options { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .tool-options label { font-size: 0.88rem; color: var(--text-dim); display: block; margin-bottom: 6px; }
+  .tool-options input[type="text"],
+  .tool-options input[type="password"],
+  .tool-options select {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+  .tool-options input[type="range"] { width: 100%; }
+
+  .action-btn {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 22px;
+  }
+  .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .action-btn.secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
+
+  .status-msg { text-align: center; padding: 20px 0; color: var(--text-dim); font-size: 0.9rem; }
+  .status-msg.error { color: var(--paid); }
+  .status-msg .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-inline-end: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-box {
+    text-align: center;
+    padding: 24px 0 0;
+  }
+  .thumb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .thumb-grid img {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+</style>

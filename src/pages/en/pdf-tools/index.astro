@@ -1,0 +1,59 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const tools = [
+  { icon: '🔗', name: 'Merge PDF', desc: 'Combine multiple PDF files into one, in the order you want', href: '/pdf-tools/merge-pdf' },
+  { icon: '✂️', name: 'Split PDF', desc: 'Split a PDF file into separate pages or ranges', href: '/pdf-tools/split-pdf' },
+  { icon: '🔄', name: 'Rotate PDF', desc: 'Rotate PDF pages by 90, 180, or 270 degrees', href: '/pdf-tools/rotate-pdf' },
+  { icon: '💧', name: 'Watermark PDF', desc: 'Add a text watermark across every page of a PDF', href: '/pdf-tools/watermark-pdf' },
+  { icon: '🖼️', name: 'Images to PDF', desc: 'Convert one or more images (JPG/PNG) into a single PDF', href: '/pdf-tools/images-to-pdf' },
+  { icon: '📄', name: 'PDF to Images', desc: 'Convert every page of a PDF into a separate PNG image', href: '/pdf-tools/pdf-to-images' },
+];
+---
+<Layout title={t('nav.pdf')} description="Free PDF tools that run entirely in your browser — merge, split, rotate, and more">
+  <section class="wrap section">
+    <h1>{t('nav.pdf')}</h1>
+    <p class="subtitle">
+      Completely free tools that process your files directly in your browser —
+      nothing is uploaded to any server, and there's no daily usage limit.
+    </p>
+    <div class="grid">
+      {tools.map((tool) => (
+        <a href={localizedPath(lang, tool.href)} class="tool-card">
+          <span class="icon">{tool.icon}</span>
+          <h3>{tool.name}</h3>
+          <p>{tool.desc}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 40px 0 70px; }
+  h1 { margin-bottom: 10px; }
+  .subtitle { color: var(--text-dim); max-width: 600px; margin-bottom: 34px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .tool-card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .tool-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .icon { font-size: 1.8rem; display: block; margin-bottom: 12px; }
+  h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  p { margin: 0; font-size: 0.85rem; color: var(--text-dim); }
+</style>

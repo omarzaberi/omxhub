@@ -1,0 +1,124 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations, localizedPath } from '../../i18n/utils';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  { q: 'وش جودة الصور الناتجة؟', a: 'الصور تنحفظ بصيغة PNG بجودة عالية (بدقة تقريبًا 150 DPI) تناسب أغلب الاستخدامات.' },
+  { q: 'كيف أحمّل كل الصور مرة وحدة؟', a: 'لو الملف فيه أكثر من صفحة، يتحمل ملف ZIP فيه كل الصور. لو صفحة وحدة، تنحمل مباشرة كـ PNG.' },
+];
+const related = [
+  { label: 'صور إلى PDF', href: localizedPath(lang, '/pdf-tools/images-to-pdf') },
+  { label: 'تقسيم PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
+];
+---
+<PdfToolLayout
+  lang={lang}
+  title="تحويل PDF إلى صور"
+  description="حوّل كل صفحة بملف PDF لصورة PNG منفصلة، مجانًا وبالكامل داخل متصفحك"
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>تحويل إلى صور</button>
+  <div id="status" class="status-msg" hidden></div>
+  <div id="thumbs" class="thumb-grid"></div>
+</PdfToolLayout>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  // @ts-ignore
+  import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+  // @ts-ignore
+  import JSZip from 'jszip';
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+  const thumbsEl = document.getElementById('thumbs')!;
+
+  let currentFile: File | null = null;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    thumbsEl.innerHTML = '';
+    actionBtn.disabled = false;
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري التحويل...';
+    actionBtn.disabled = true;
+    thumbsEl.innerHTML = '';
+    try {
+      const bytes = await currentFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const images: { name: string; blob: Blob }[] = [];
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d')!;
+        await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+        images.push({ name: `page-${i}.png`, blob });
+
+        const thumb = document.createElement('img');
+        thumb.src = URL.createObjectURL(blob);
+        thumbsEl.appendChild(thumb);
+      }
+
+      if (images.length === 1) {
+        const url = URL.createObjectURL(images[0].blob);
+        statusEl.innerHTML = `<a class="action-btn" href="${url}" download="page-1.png">⬇ تحميل الصورة</a>`;
+      } else {
+        const zip = new JSZip();
+        images.forEach((img) => zip.file(img.name, img.blob));
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        statusEl.innerHTML = `<a class="action-btn" href="${url}" download="pages.zip">⬇ تحميل الكل (ZIP)</a>`;
+      }
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

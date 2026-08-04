@@ -49,6 +49,7 @@ const switchHref = localizedPath(otherLang, currentPath);
         <nav>
           <a href={localizedPath(lang, '/ai-tools')}>{t('nav.tools')}</a>
           <a href={localizedPath(lang, '/prompts')}>{t('nav.prompts')}</a>
+          <a href={localizedPath(lang, '/pdf-tools')}>{t('nav.pdf')}</a>
         </nav>
         <div class="controls">
           <a href={switchHref} class="lang-switch">{t('lang.switch')}</a>
@@ -68,6 +69,7 @@ const switchHref = localizedPath(otherLang, currentPath);
         <div class="footer-links">
           <a href={localizedPath(lang, '/about')}>{t('footer.about')}</a>
           <a href={localizedPath(lang, '/contact')}>{t('footer.contact')}</a>
+          <a href={localizedPath(lang, '/support')} class="support-link">❤️ {t('footer.support')}</a>
           <a href={localizedPath(lang, '/privacy-policy')}>{t('footer.privacy')}</a>
         </div>
       </div>
@@ -236,6 +238,7 @@ const switchHref = localizedPath(otherLang, currentPath);
   }
   .site-footer a { color: var(--accent); text-decoration: none; }
   .footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
+  .support-link { color: var(--accent-2) !important; }
 
   a { color: var(--accent); }
 

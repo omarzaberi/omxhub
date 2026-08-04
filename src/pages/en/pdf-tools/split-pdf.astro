@@ -1,0 +1,146 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  { q: 'How do I format the page range?', a: 'Use comma-separated numbers or dashes for ranges. Example: 1-3,5,8-10' },
+  { q: 'Can I get every page as a separate file?', a: 'Yes, choose the "Split into individual pages" option and you\'ll get a ZIP with each page as its own PDF.' },
+];
+const related = [
+  { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
+  { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
+];
+---
+<PdfToolLayout
+  lang={lang}
+  title="Split PDF File"
+  description="Extract specific pages or split a PDF into separate files, free and entirely in your browser"
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label><input type="radio" name="mode" value="range" checked /> Extract a specific page range</label>
+      <input type="text" id="range-input" placeholder="e.g. 1-3,5,8-10" />
+    </div>
+    <div>
+      <label><input type="radio" name="mode" value="all" /> Split every page into a separate file (ZIP)</label>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Split File</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  // @ts-ignore
+  import JSZip from 'jszip';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const rangeInput = document.getElementById('range-input') as HTMLInputElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+  let pageCount = 0;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    const bytes = await f.arrayBuffer();
+    const doc = await PDFDocument.load(bytes);
+    pageCount = doc.getPageCount();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name} — ${pageCount} pages</span></div>`;
+    optionsEl.hidden = false;
+    actionBtn.disabled = false;
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  function parseRange(input: string, max: number): number[] {
+    const indices: number[] = [];
+    input.split(',').forEach((part) => {
+      part = part.trim();
+      if (!part) return;
+      if (part.includes('-')) {
+        const [a, b] = part.split('-').map((n) => parseInt(n.trim(), 10));
+        for (let i = a; i <= b; i++) if (i >= 1 && i <= max) indices.push(i - 1);
+      } else {
+        const n = parseInt(part, 10);
+        if (n >= 1 && n <= max) indices.push(n - 1);
+      }
+    });
+    return indices;
+  }
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    const mode = (document.querySelector('input[name="mode"]:checked') as HTMLInputElement).value;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Splitting...';
+    actionBtn.disabled = true;
+    try {
+      const bytes = await currentFile.arrayBuffer();
+      const srcDoc = await PDFDocument.load(bytes);
+
+      if (mode === 'range') {
+        const indices = parseRange(rangeInput.value, pageCount);
+        if (indices.length === 0) throw new Error('no pages');
+        const newDoc = await PDFDocument.create();
+        const pages = await newDoc.copyPages(srcDoc, indices);
+        pages.forEach((p) => newDoc.addPage(p));
+        const outBytes = await newDoc.save();
+        const blob = new Blob([outBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        statusEl.innerHTML = `<a class="action-btn" href="${url}" download="split.pdf">⬇ Download File</a>`;
+      } else {
+        const zip = new JSZip();
+        for (let i = 0; i < pageCount; i++) {
+          const newDoc = await PDFDocument.create();
+          const [p] = await newDoc.copyPages(srcDoc, [i]);
+          newDoc.addPage(p);
+          const outBytes = await newDoc.save();
+          zip.file(`page-${i + 1}.pdf`, outBytes);
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        statusEl.innerHTML = `<a class="action-btn" href="${url}" download="pages.zip">⬇ Download All (ZIP)</a>`;
+      }
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong — check your page range and try again';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

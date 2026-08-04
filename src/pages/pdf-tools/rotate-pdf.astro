@@ -1,0 +1,108 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations, localizedPath } from '../../i18n/utils';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  { q: 'هل يدور كل الصفحات وإلا أقدر أحدد صفحات معينة؟', a: 'حاليًا يدور كل صفحات الملف بنفس الزاوية. تحديد صفحات فردية ميزة قادمة.' },
+];
+const related = [
+  { label: 'دمج PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
+  { label: 'تقسيم PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
+];
+---
+<PdfToolLayout
+  lang={lang}
+  title="تدوير ملف PDF"
+  description="دوّر كل صفحات ملف PDF بزاوية 90 أو 180 أو 270 درجة، مجانًا وبالكامل داخل متصفحك"
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="angle-select">زاوية الدوران</label>
+      <select id="angle-select">
+        <option value="90">90 درجة (يمين)</option>
+        <option value="180">180 درجة</option>
+        <option value="270">270 درجة (يسار)</option>
+      </select>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>تدوير الملف</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { PDFDocument, degrees } from 'pdf-lib';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const angleSelect = document.getElementById('angle-select') as HTMLSelectElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    optionsEl.hidden = false;
+    actionBtn.disabled = false;
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    const angle = parseInt(angleSelect.value, 10);
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري التدوير...';
+    actionBtn.disabled = true;
+    try {
+      const bytes = await currentFile.arrayBuffer();
+      const doc = await PDFDocument.load(bytes);
+      doc.getPages().forEach((page) => {
+        const current = page.getRotation().angle;
+        page.setRotation(degrees(current + angle));
+      });
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="rotated.pdf">⬇ تحميل الملف المدوّر</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

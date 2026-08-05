@@ -305,6 +305,102 @@ export function howTo(input: HowToInput): Json {
   };
 }
 
+export interface ArticleInput {
+  lang: Lang;
+  headline: string;
+  description: string;
+  /** Language-neutral page path, e.g. `/comparisons/chatgpt-vs-claude`. */
+  path: string;
+  datePublished: Date;
+  dateModified?: Date;
+  /** Optional social image path, e.g. `/og/chatgpt-vs-claude.png`. */
+  image?: string;
+  /** Names of the products the article is about — becomes `about`. */
+  about?: string[];
+  /** Free-text keywords, joined into the `keywords` property. */
+  keywords?: string[];
+}
+
+/**
+ * Editorial article — used by comparison pages.
+ *
+ * We use `Article` rather than `NewsArticle` or `BlogPosting`: these are evergreen
+ * buying guides that get revised, not dated posts. `dateModified` is emitted only
+ * when the page really carries a visible "last updated" line.
+ */
+export function article(input: ArticleInput): Json {
+  const url = langUrl(input.lang, input.path);
+  return {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: input.headline,
+    description: input.description,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    url,
+    inLanguage: input.lang,
+    isPartOf: { '@id': WEBSITE_ID },
+    author: orgRef(),
+    publisher: { '@id': ORG_ID },
+    datePublished: input.datePublished.toISOString().slice(0, 10),
+    ...(input.dateModified
+      ? { dateModified: input.dateModified.toISOString().slice(0, 10) }
+      : {}),
+    image: `${SITE}${input.image ?? '/og-default.png'}`,
+    ...(input.about?.length
+      ? {
+          about: input.about.map((name) => ({
+            '@type': 'SoftwareApplication',
+            name,
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web',
+          })),
+        }
+      : {}),
+    ...(input.keywords?.length ? { keywords: input.keywords.join(', ') } : {}),
+  };
+}
+
+export interface CollectionInput {
+  lang: Lang;
+  name: string;
+  description: string;
+  /** Language-neutral path, e.g. `/comparisons`. */
+  path: string;
+  /** Entries listed on the page, in the order they are rendered. */
+  items: { name: string; path: string }[];
+}
+
+/**
+ * A listing page plus the ordered list of what it links to.
+ *
+ * `ItemList` is nested inside the `CollectionPage` rather than emitted as a
+ * sibling so the two are unambiguously connected.
+ */
+export function collectionPage(input: CollectionInput): Json {
+  const url = langUrl(input.lang, input.path);
+  return {
+    '@type': 'CollectionPage',
+    '@id': `${url}#collection`,
+    name: input.name,
+    description: input.description,
+    url,
+    inLanguage: input.lang,
+    isPartOf: { '@id': WEBSITE_ID },
+    publisher: { '@id': ORG_ID },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: input.items.length,
+      itemListOrder: 'https://schema.org/ItemListOrderDescending',
+      itemListElement: input.items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        url: langUrl(input.lang, item.path),
+      })),
+    },
+  };
+}
+
 /**
  * Wraps one or more nodes into a single `@graph` document.
  * One `<script type="application/ld+json">` per page beats several — the nodes

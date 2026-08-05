@@ -1,5 +1,9 @@
 ---
 import { getLangFromUrl, useTranslations, localizedPath } from '../i18n/utils';
+// Self-hosted @font-face rules, one generated sheet per locale.
+// Source: scripts/build-fonts.mjs (regenerate with `npm run build:fonts`).
+import fontsAr from '../styles/fonts-ar.css?raw';
+import fontsEn from '../styles/fonts-en.css?raw';
 
 interface Props {
   title: string;
@@ -46,6 +50,17 @@ const ogImage = `${SITE}${image ?? '/og-default.png'}`;
 const fullTitle = `${title} | OMXHub`;
 const ogLocale = lang === 'ar' ? 'ar_AR' : 'en_US';
 const ogAltLocale = lang === 'ar' ? 'en_US' : 'ar_AR';
+
+// --- Performance: fonts ---------------------------------------------------
+// Each locale ships only the three families it renders. Arabic pages never
+// fetch Inter / Space Grotesk, English pages never fetch the Arabic faces.
+// The @font-face block is inlined so first paint doesn't wait on a stylesheet
+// round-trip, and the two above-the-fold faces (body + heading) are preloaded.
+const fontCss = lang === 'ar' ? fontsAr : fontsEn;
+const preloadedFonts =
+  lang === 'ar'
+    ? ['ibm-plex-sans-arabic-arabic-400-normal.woff2', 'tajawal-arabic-700-normal.woff2']
+    : ['inter-latin-400-normal.woff2', 'space-grotesk-latin-700-normal.woff2'];
 ---
 <!doctype html>
 <html lang={lang} dir={dir}>
@@ -86,6 +101,14 @@ const ogAltLocale = lang === 'ar' ? 'en_US' : 'ar_AR';
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
+    <!-- Fonts: self-hosted, locale-scoped (see scripts/build-fonts.mjs).
+         Kept above the ad/analytics tags so the two above-the-fold faces are
+         discovered and fetched before any third-party script. -->
+    {preloadedFonts.map((file) => (
+      <link rel="preload" as="font" type="font/woff2" href={`/fonts/${file}`} crossorigin />
+    ))}
+    <style is:inline set:html={fontCss}></style>
+
     {schema && (
       <script
         type="application/ld+json"
@@ -102,12 +125,6 @@ const ogAltLocale = lang === 'ar' ? 'en_US' : 'ar_AR';
       gtag('js', new Date());
       gtag('config', 'G-W8MG2DBF3F');
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
     <script is:inline>
       // Set theme before paint to avoid flash. Default: dark.
       (function () {

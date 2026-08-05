@@ -481,14 +481,15 @@ const why = [
     box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 26%, transparent);
   }
   .btn-ghost {
-    border: 1px solid var(--line);
+    border: 1px solid color-mix(in srgb, var(--accent-2) 45%, var(--line));
     color: var(--text);
-    background: var(--surface);
+    background: color-mix(in srgb, var(--accent-2) 10%, var(--surface));
   }
   .btn-ghost:hover {
     transform: translateY(-2px);
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+    background: color-mix(in srgb, var(--accent-2) 16%, var(--surface));
   }
 
   /* floating cards */

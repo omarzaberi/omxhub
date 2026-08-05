@@ -1,5 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import { trail } from '../../../lib/schema';
 import { useTranslations, localizedPath } from '../../../i18n/utils';
 
 const lang = 'en' as const;
@@ -13,8 +14,10 @@ const tools = [
   { icon: '🖼️', name: 'Images to PDF', desc: 'Convert one or more images (JPG/PNG) into a single PDF', href: '/pdf-tools/images-to-pdf' },
   { icon: '📄', name: 'PDF to Images', desc: 'Convert every page of a PDF into a separate PNG image', href: '/pdf-tools/pdf-to-images' },
 ];
+
+const schema = trail(lang, [{ name: t('nav.pdf') }]);
 ---
-<Layout title={t('nav.pdf')} description="Free PDF tools that run entirely in your browser — merge, split, rotate, and more">
+<Layout title={t('nav.pdf')} description="Free PDF tools that run entirely in your browser — merge, split, rotate, and more" schema={schema}>
   <section class="wrap section">
     <h1>{t('nav.pdf')}</h1>
     <p class="subtitle">

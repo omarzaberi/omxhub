@@ -2,6 +2,15 @@
   command = "npm run build"
   publish = "dist"
 
+# Netlify serves the root `404.html` for unmatched paths automatically, which
+# covers the Arabic side. English URLs need this rule so a broken `/en/...` link
+# lands on the English 404 instead of the Arabic one. It is a shadowed rule:
+# real files always win, so it only fires when nothing matched.
+[[redirects]]
+  from = "/en/*"
+  to = "/en/404/index.html"
+  status = 404
+
 [[headers]]
   for = "/*"
   [headers.values]

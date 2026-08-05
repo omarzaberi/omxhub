@@ -9,6 +9,12 @@ const faq = [
   { q: 'وش الصيغ المدعومة؟', a: 'يدعم JPG وPNG. كل صورة تتحول لصفحة PDF منفصلة بنفس أبعادها.' },
   { q: 'هل ترتيب الصور يهم؟', a: 'نعم، الصور تنحط بنفس ترتيب رفعها كصفحات متتالية.' },
 ];
+const steps = [
+  { name: 'ارفع صورك', text: 'اسحب صور JPG أو PNG لمنطقة الرفع أو اضغط "اختر ملفات". تقدر ترفع صورة وحدة أو أكثر.' },
+  { name: 'راجع الترتيب', text: 'كل صورة تصير صفحة PDF منفصلة بنفس أبعادها، بنفس ترتيب رفعها.' },
+  { name: 'اضغط "تحويل إلى PDF"', text: 'التحويل يتم داخل متصفحك — صورك ما ترفع لأي سيرفر.' },
+  { name: 'حمّل الناتج', text: 'ينزل ملف PDF واحد فيه كل الصور كصفحات متتالية.' },
+];
 const related = [
   { label: 'PDF إلى صور', href: localizedPath(lang, '/pdf-tools/pdf-to-images') },
   { label: 'دمج PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
@@ -18,6 +24,7 @@ const related = [
   lang={lang}
   title="تحويل صور إلى PDF"
   description="حوّل صورة أو أكثر (JPG/PNG) لملف PDF واحد، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
   faq={faq}
   related={related}
 >

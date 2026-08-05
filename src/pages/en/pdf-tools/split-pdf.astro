@@ -9,6 +9,12 @@ const faq = [
   { q: 'How do I format the page range?', a: 'Use comma-separated numbers or dashes for ranges. Example: 1-3,5,8-10' },
   { q: 'Can I get every page as a separate file?', a: 'Yes, choose the "Split into individual pages" option and you\'ll get a ZIP with each page as its own PDF.' },
 ];
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file".' },
+  { name: 'Pick how to split', text: 'Either "Extract a specific page range" and type it as 1-3,5,8-10, or "Split every page into a separate file".' },
+  { name: 'Click "Split File"', text: 'All processing runs in your browser — the file never leaves your device.' },
+  { name: 'Download the result', text: 'A page range downloads as one PDF; a full split downloads as a ZIP with each page as its own file.' },
+];
 const related = [
   { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
   { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
@@ -18,6 +24,7 @@ const related = [
   lang={lang}
   title="Split PDF File"
   description="Extract specific pages or split a PDF into separate files, free and entirely in your browser"
+  steps={steps}
   faq={faq}
   related={related}
 >

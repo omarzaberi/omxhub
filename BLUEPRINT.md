@@ -151,7 +151,15 @@ platform one polished feature at a time.
 - ⬜ Support/Ko-fi page — not started
 - ⬜ Blog, AI News, Comparisons, Tutorials — not started (pages removed until real content ready)
 - ⬜ Image/Video/Audio/Text/Developer/SEO tools (Phase 2/3) — not started
-- ⬜ Google Search Console submission — not confirmed
+- ✅ Google Search Console: ownership verified via DNS TXT, sitemap submitted
 - ✅ SEO technical foundation: canonical URLs, hreflang (ar/en/x-default), Open Graph,
   Twitter Cards, default og:image, robots meta, noindex on placeholder pages,
   sitemap filtered + aligned with canonicals. Full plan tracked in `SEO.md`.
+- ✅ Structured data (Schema.org): all JSON-LD generated from one module
+  (`src/lib/schema.ts`) and emitted as a single `@graph` per page — `WebSite` +
+  `SearchAction`, `Organization`, `SoftwareApplication` + editorial `Review`,
+  `HowTo`, `FAQPage`, `BreadcrumbList`, `CollectionPage`. We only mark up content
+  that is actually visible on the page.
+- ✅ Custom 404 page in both languages, with live search and section links
+- ✅ Every PDF tool now has a visible "how to use it" section (4 real steps, both
+  languages) — better for users, and the basis for the `HowTo` markup

@@ -2,33 +2,43 @@
 import Layout from '../layouts/Layout.astro';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
+import { breadcrumbs, faqPage, graph, howTo } from '../lib/schema';
 
 interface FaqItem { q: string; a: string; }
 interface RelatedTool { label: string; href: string; }
+interface Step { name: string; text: string; }
 
 interface Props {
   lang: Lang;
   title: string;
   description: string;
+  /** Usage steps. Rendered visibly on the page and mirrored as HowTo JSON-LD. */
+  steps?: Step[];
   faq?: FaqItem[];
   related?: RelatedTool[];
 }
-const { lang, title, description, faq = [], related = [] } = Astro.props;
+const { lang, title, description, steps = [], faq = [], related = [] } = Astro.props;
 const t = useTranslations(lang);
 
-const faqSchema = faq.length
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: faq.map((item) => ({
-        '@type': 'Question',
-        name: item.q,
-        acceptedAnswer: { '@type': 'Answer', text: item.a },
-      })),
-    }
-  : null;
+// Language-neutral path (`/pdf-tools/merge-pdf`) for building canonical schema URLs.
+const path = Astro.url.pathname.replace(/^\/en/, '').replace(/\/+$/, '') || '/';
+
+const homeLabel = lang === 'ar' ? 'الرئيسية' : 'Home';
+const stepsHeading = lang === 'ar' ? 'طريقة الاستخدام' : 'How to use it';
+const faqHeading = lang === 'ar' ? 'أسئلة شائعة' : 'Frequently Asked Questions';
+
+const schema = graph(
+  breadcrumbs(lang, [
+    { name: homeLabel, path: '/' },
+    { name: t('nav.pdf'), path: '/pdf-tools' },
+    { name: title },
+  ]),
+  // Only claim HowTo when the steps are actually rendered below.
+  steps.length ? howTo({ lang, name: title, description, path, steps }) : null,
+  faqPage(faq)
+);
 ---
-<Layout title={title} description={description}>
+<Layout title={title} description={description} schema={schema}>
   <div class="wrap pdf-tool-page">
     <nav class="breadcrumb" aria-label="breadcrumb">
       <a href={localizedPath(lang, '/')}>{lang === 'ar' ? 'الرئيسية' : 'Home'}</a>
@@ -46,6 +56,21 @@ const faqSchema = faq.length
     </div>
 
     <p class="privacy-note">{t('pdf.privacyNote')}</p>
+
+    {steps.length > 0 && (
+      <section class="howto">
+        <h2>{stepsHeading}</h2>
+        <ol class="howto-steps">
+          {steps.map((step, index) => (
+            <li id={`step-${index + 1}`}>
+              <strong>{step.name}</strong>
+              <span>{step.text}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+
     <p class="support-hint">
       {lang === 'ar' ? 'عجبتك الأداة؟ ساعدنا نخليها مجانية للأبد — ' : 'Enjoying the tool? Help us keep it free forever — '}
       <a href={lang === 'ar' ? '/support' : '/en/support'}>{lang === 'ar' ? 'ادعم OMXHub ❤️' : 'Support OMXHub ❤️'}</a>
@@ -53,7 +78,7 @@ const faqSchema = faq.length
 
     {faq.length > 0 && (
       <section class="faq">
-        <h2>{lang === 'ar' ? 'أسئلة شائعة' : 'Frequently Asked Questions'}</h2>
+        <h2>{faqHeading}</h2>
         {faq.map((item) => (
           <details>
             <summary>{item.q}</summary>
@@ -73,10 +98,6 @@ const faqSchema = faq.length
       </section>
     )}
   </div>
-
-  {faqSchema && (
-    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
-  )}
 </Layout>
 
 <style is:global>
@@ -118,6 +139,45 @@ const faqSchema = faq.length
     margin-bottom: 50px;
   }
   .support-hint a { color: var(--accent-2); }
+
+  /* ---------- HOW TO ---------- */
+  .howto { margin: 34px 0 40px; }
+  .howto h2 { font-size: 1.2rem; margin-bottom: 16px; }
+  .howto-steps {
+    counter-reset: step;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .howto-steps li {
+    counter-increment: step;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    padding-inline-start: 58px;
+  }
+  .howto-steps li::before {
+    content: counter(step);
+    position: absolute;
+    inset-inline-start: 16px;
+    top: 14px;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .howto-steps strong { display: block; margin-bottom: 4px; }
+  .howto-steps span { color: var(--text-dim); font-size: 0.92rem; }
 
   .faq { margin-bottom: 50px; }
   .faq h2, .related h2 { font-size: 1.2rem; margin-bottom: 16px; }

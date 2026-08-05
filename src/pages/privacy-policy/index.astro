@@ -1,11 +1,14 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { trail } from '../../lib/schema';
 import { useTranslations } from '../../i18n/utils';
 
 const lang = 'ar' as const;
 const t = useTranslations(lang);
+
+const schema = trail(lang, [{ name: t('footer.privacy') }]);
 ---
-<Layout title={t('footer.privacy')} description="سياسة الخصوصية في OMXHub: كيف نتعامل مع بياناتك، الكوكيز، إعلانات Google AdSense، وروابط الأفلييت.">
+<Layout title={t('footer.privacy')} description="سياسة الخصوصية في OMXHub: كيف نتعامل مع بياناتك، الكوكيز، إعلانات Google AdSense، وروابط الأفلييت." schema={schema}>
   <section class="wrap section">
     <h1>سياسة الخصوصية</h1>
 

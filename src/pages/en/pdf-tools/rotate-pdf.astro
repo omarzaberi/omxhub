@@ -8,6 +8,12 @@ const t = useTranslations(lang);
 const faq = [
   { q: 'Does it rotate all pages or can I pick specific ones?', a: 'Currently it rotates every page in the file by the same angle. Per-page rotation is a planned feature.' },
 ];
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file".' },
+  { name: 'Choose a rotation angle', text: '90° (right), 180°, or 270° (left). The angle is applied to every page in the file.' },
+  { name: 'Click "Rotate File"', text: 'Rotation happens directly in your browser with no upload.' },
+  { name: 'Download the result', text: 'You get the same document with the same content — just facing the right way.' },
+];
 const related = [
   { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
   { label: 'Split PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
@@ -17,6 +23,7 @@ const related = [
   lang={lang}
   title="Rotate PDF File"
   description="Rotate every page of a PDF by 90, 180, or 270 degrees, free and entirely in your browser"
+  steps={steps}
   faq={faq}
   related={related}
 >

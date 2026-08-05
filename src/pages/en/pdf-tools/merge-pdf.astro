@@ -10,6 +10,12 @@ const faq = [
   { q: 'How many files can I merge at once?', a: "There's no strict limit, but very large or numerous files may slow your browser down." },
   { q: 'Does file order matter?', a: 'Yes, files are merged in the order you upload them. You can remove and re-add files in a different order if needed.' },
 ];
+const steps = [
+  { name: 'Upload your files', text: 'Drag your PDF files onto the drop zone or click "Choose files". You can select several at once.' },
+  { name: 'Set the order', text: 'Files are merged in the order you upload them. Remove any file with the ✕ button and re-add it to change the order.' },
+  { name: 'Click "Merge Files"', text: 'Merging happens inside your browser — nothing is uploaded to a server and there is no queue to wait in.' },
+  { name: 'Download the result', text: 'You get a single PDF containing every page in the order you set.' },
+];
 const related = [
   { label: 'Split PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
   { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
@@ -19,6 +25,7 @@ const related = [
   lang={lang}
   title="Merge PDF Files"
   description="Combine multiple PDF files into one organized document, free and entirely in your browser"
+  steps={steps}
   faq={faq}
   related={related}
 >

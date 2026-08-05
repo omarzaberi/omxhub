@@ -1,5 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import { trail } from '../../../lib/schema';
 import { categories } from '../../../data/categories';
 import { useTranslations } from '../../../i18n/utils';
 import { getCollection, render } from 'astro:content';
@@ -19,8 +20,10 @@ const { p } = Astro.props;
 const { Content } = await render(p);
 const cat = categories[p.data.category];
 const difficultyLabel = p.data.difficulty === 'beginner' ? 'Beginner' : 'Advanced';
+
+const schema = trail(lang, [{ name: t('nav.prompts'), path: '/prompts' }, { name: p.data.title }]);
 ---
-<Layout title={p.data.title} description={p.data.description}>
+<Layout title={p.data.title} description={p.data.description} schema={schema}>
   <article class="wrap prompt-page">
     <div class="meta-row">
       <span class="cat-badge">{cat.icon} {cat[lang]}</span>

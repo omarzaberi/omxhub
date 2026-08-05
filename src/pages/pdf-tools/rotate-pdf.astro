@@ -8,6 +8,12 @@ const t = useTranslations(lang);
 const faq = [
   { q: 'هل يدور كل الصفحات وإلا أقدر أحدد صفحات معينة؟', a: 'حاليًا يدور كل صفحات الملف بنفس الزاوية. تحديد صفحات فردية ميزة قادمة.' },
 ];
+const steps = [
+  { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف".' },
+  { name: 'اختر زاوية الدوران', text: '90 درجة (يمين)، 180 درجة، أو 270 درجة (يسار). الزاوية تنطبق على كل صفحات الملف.' },
+  { name: 'اضغط "تدوير الملف"', text: 'التدوير يتم داخل متصفحك مباشرة بدون رفع الملف.' },
+  { name: 'حمّل الناتج', text: 'ينزل نفس الملف بنفس المحتوى، بس بالاتجاه الصحيح.' },
+];
 const related = [
   { label: 'دمج PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
   { label: 'تقسيم PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
@@ -17,6 +23,7 @@ const related = [
   lang={lang}
   title="تدوير ملف PDF"
   description="دوّر كل صفحات ملف PDF بزاوية 90 أو 180 أو 270 درجة، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
   faq={faq}
   related={related}
 >

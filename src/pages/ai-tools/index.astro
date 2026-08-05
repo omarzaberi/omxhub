@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { trail } from '../../lib/schema';
 import ToolCard from '../../components/ToolCard.astro';
 import { useTranslations, localizedPath } from '../../i18n/utils';
 import { getCollection } from 'astro:content';
@@ -7,8 +8,10 @@ import { getCollection } from 'astro:content';
 const lang = 'ar' as const;
 const t = useTranslations(lang);
 const allTools = (await getCollection('tools')).filter((tool) => tool.data.lang === lang);
+
+const schema = trail(lang, [{ name: t('nav.tools') }]);
 ---
-<Layout title={t('tools.title')} description="دليل عربي لأدوات الذكاء الاصطناعي: شرح مفصل، المميزات، الأسعار، الإيجابيات والسلبيات، وأفضل البدائل لكل أداة.">
+<Layout title={t('tools.title')} description="دليل عربي لأدوات الذكاء الاصطناعي: شرح مفصل، المميزات، الأسعار، الإيجابيات والسلبيات، وأفضل البدائل لكل أداة." schema={schema}>
   <section class="wrap section">
     <h1>{t('tools.title')}</h1>
     <p class="count">{allTools.length} {t('tools.count')}</p>

@@ -2,10 +2,21 @@
 import Layout from '../layouts/Layout.astro';
 import HomePage from '../components/HomePage.astro';
 import { useTranslations } from '../i18n/utils';
+import { graph, organization, website } from '../lib/schema';
 
 const lang = 'ar' as const;
 const t = useTranslations(lang);
+
+const title = t('home.hero.title');
+const description = t('home.hero.subtitle');
+
+// Publisher + site identity. Every other page references these by @id
+// instead of repeating them.
+const schema = graph(
+  organization(lang),
+  website(lang, { name: 'OMXHub', description })
+);
 ---
-<Layout title={t('home.hero.title')} description={t('home.hero.subtitle')}>
+<Layout title={title} description={description} schema={schema}>
   <HomePage lang={lang} />
 </Layout>

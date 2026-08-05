@@ -5,6 +5,7 @@ import { categories, categoryMeta, type CategoryKey } from '../data/categories';
 import { localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
 import type { CollectionEntry } from 'astro:content';
+import { breadcrumbs, graph, langUrl, orgRef, WEBSITE_ID } from '../lib/schema';
 
 interface Props {
   lang: Lang;
@@ -17,7 +18,6 @@ const { lang, category, tools, available } = Astro.props;
 
 const cat = categories[category];
 const meta = categoryMeta[category][lang];
-const SITE = 'https://omxhub.com';
 
 const homeLabel = lang === 'ar' ? 'الرئيسية' : 'Home';
 const toolsLabel = lang === 'ar' ? 'أدوات الذكاء الاصطناعي' : 'AI Tools';
@@ -28,30 +28,28 @@ const otherLabel = lang === 'ar' ? 'تصنيفات أخرى' : 'Other categories
 // Only link to categories that actually have tools, so we never create dead ends.
 const others = available.filter((key) => key !== category);
 
-const schema = [
+const schema = graph(
+  breadcrumbs(lang, [
+    { name: homeLabel, path: '/' },
+    { name: toolsLabel, path: '/ai-tools' },
+    { name: cat[lang] },
+  ]),
   {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: homeLabel, item: `${SITE}${localizedPath(lang, '/')}` },
-      { '@type': 'ListItem', position: 2, name: toolsLabel, item: `${SITE}${localizedPath(lang, '/ai-tools')}` },
-      { '@type': 'ListItem', position: 3, name: cat[lang] },
-    ],
-  },
-  {
-    '@context': 'https://schema.org',
     '@type': 'CollectionPage',
+    '@id': `${langUrl(lang, `/ai-tools/category/${category}`)}#collection`,
     name: meta.h1,
     description: meta.description,
     inLanguage: lang,
+    isPartOf: { '@id': WEBSITE_ID },
+    publisher: orgRef(),
     hasPart: tools.map((tool) => ({
       '@type': 'SoftwareApplication',
       name: tool.data.name,
       applicationCategory: 'BusinessApplication',
-      url: `${SITE}${localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}`,
+      url: langUrl(lang, `/ai-tools/${tool.id.split('/')[1]}`),
     })),
-  },
-];
+  }
+);
 ---
 <Layout title={meta.h1} description={meta.description} schema={schema}>
   <section class="wrap cat-section">
@@ -118,7 +116,7 @@ const schema = [
     padding: 5px 12px;
     border-radius: 999px;
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 1px solid var(--line);
     font-size: 0.85rem;
     margin-bottom: 14px;
   }

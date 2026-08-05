@@ -1,11 +1,24 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import { useTranslations } from '../../../i18n/utils';
+import { breadcrumbs, graph, organization } from '../../../lib/schema';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
+
+const description = 'Learn about the team and vision behind OMXHub';
+
+// The About page is where the publisher identity is stated in prose, so it is
+// the natural second home for the Organization node.
+const schema = graph(
+  organization(lang),
+  breadcrumbs(lang, [
+    { name: 'Home', path: '/' },
+    { name: 'About' },
+  ])
+);
 ---
-<Layout title={t('footer.about')} description="Learn about the team and vision behind OMXHub">
+<Layout title={t('footer.about')} description={description} schema={schema}>
   <section class="wrap section">
     <h1>About OMXHub</h1>
     <p>

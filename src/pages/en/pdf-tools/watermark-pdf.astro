@@ -9,6 +9,12 @@ const faq = [
   { q: 'Can I change the watermark color or size?', a: "Currently it's a semi-transparent gray watermark at a medium size that fits most documents. More customization is coming soon." },
   { q: 'Does the watermark appear on every page?', a: 'Yes, it\'s placed diagonally across the center of every page in the file.' },
 ];
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file".' },
+  { name: 'Type your watermark text', text: 'Something like "Draft", "Confidential", or your company name. It defaults to OMXHub and you can change it.' },
+  { name: 'Click "Add Watermark"', text: 'The text is placed diagonally across the middle of every page in translucent grey, so it never hides your content.' },
+  { name: 'Download the result', text: 'You get a new watermarked PDF; your original file is left untouched.' },
+];
 const related = [
   { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
   { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
@@ -18,6 +24,7 @@ const related = [
   lang={lang}
   title="Add Watermark to PDF"
   description="Add a text watermark across every page of a PDF, free and entirely in your browser"
+  steps={steps}
   faq={faq}
   related={related}
 >

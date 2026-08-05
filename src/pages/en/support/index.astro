@@ -1,5 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import { trail } from '../../../lib/schema';
 import { useTranslations } from '../../../i18n/utils';
 
 const lang = 'en' as const;
@@ -31,8 +32,10 @@ const roadmap = [
   { status: 'upcoming', label: 'Browser Extension' },
   { status: 'upcoming', label: 'Mobile App' },
 ];
+
+const schema = trail(lang, [{ name: t('footer.support') }]);
 ---
-<Layout title={t('footer.support')} description="Support OMXHub and help us keep all tools free forever">
+<Layout title={t('footer.support')} description="Support OMXHub and help us keep all tools free forever" schema={schema}>
   <section class="hero wrap">
     <h1>❤️ Support OMXHub</h1>
     <p>

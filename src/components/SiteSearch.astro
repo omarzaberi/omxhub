@@ -40,6 +40,14 @@ const indexUrl = lang === 'ar' ? '/search-index.json' : '/en/search-index.json';
         if (!this.root.contains(e.target as Node)) this.hide();
       });
       root.querySelector('form')?.addEventListener('submit', (e) => e.preventDefault());
+
+      // Support deep links like `/?q=chatgpt`. This is what the WebSite
+      // SearchAction in our JSON-LD points at, so the endpoint has to be real.
+      const initial = new URLSearchParams(window.location.search).get('q');
+      if (initial && initial.trim().length >= 2) {
+        this.input.value = initial.trim();
+        this.onInput();
+      }
     }
 
     async loadData(): Promise<any[]> {

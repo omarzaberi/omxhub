@@ -1,0 +1,148 @@
+---
+/**
+ * Custom 404 page, shared by `/404` and `/en/404`.
+ *
+ * A 404 is a dead end by default, so this page does three things instead:
+ * explains what happened, offers the live site search, and links out to every
+ * major section — no visitor should have to reach for the back button.
+ *
+ * It is marked `noindex` and excluded from the sitemap; Netlify serves the
+ * nearest `404.html` in the directory tree, so the English copy is picked up
+ * automatically for any `/en/*` URL.
+ */
+import Layout from '../layouts/Layout.astro';
+import SiteSearch from './SiteSearch.astro';
+import { useTranslations, localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const copy =
+  lang === 'ar'
+    ? {
+        title: 'الصفحة غير موجودة',
+        description: 'الصفحة اللي تدور عليها مو موجودة. ابحث عن أداة أو ارجع لأحد أقسام OMXHub.',
+        heading: 'الصفحة اللي تدور عليها مو موجودة',
+        body: 'يمكن الرابط اتغيّر، أو انحذفت الصفحة، أو فيه خطأ بسيط بالعنوان. جرّب تبحث عن اللي تبيه، أو ابدأ من أحد الأقسام.',
+        searchLabel: 'ابحث بالموقع',
+        linksLabel: 'أو ابدأ من هنا',
+        home: 'الصفحة الرئيسية',
+      }
+    : {
+        title: 'Page not found',
+        description: 'The page you were looking for does not exist. Search for a tool or jump back into OMXHub.',
+        heading: "The page you're looking for doesn't exist",
+        body: 'The link may have changed, the page may have been removed, or there might be a small typo in the address. Try searching, or start from one of the sections below.',
+        searchLabel: 'Search the site',
+        linksLabel: 'Or start here',
+        home: 'Homepage',
+      };
+
+const links = [
+  { icon: '🤖', label: t('nav.tools'), href: localizedPath(lang, '/ai-tools') },
+  { icon: '💬', label: t('nav.prompts'), href: localizedPath(lang, '/prompts') },
+  { icon: '📄', label: t('nav.pdf'), href: localizedPath(lang, '/pdf-tools') },
+  { icon: '🏠', label: copy.home, href: localizedPath(lang, '/') },
+];
+---
+<Layout title={copy.title} description={copy.description} noindex>
+  <section class="wrap notfound">
+    <p class="code" aria-hidden="true">404</p>
+    <h1>{copy.heading}</h1>
+    <p class="body">{copy.body}</p>
+
+    <div class="search-block">
+      <h2>{copy.searchLabel}</h2>
+      <SiteSearch
+        lang={lang}
+        placeholder={t('home.hero.searchPlaceholder')}
+        noResultsText={t('search.noResults')}
+      />
+    </div>
+
+    <div class="links-block">
+      <h2>{copy.linksLabel}</h2>
+      <div class="links">
+        {links.map((link) => (
+          <a href={link.href} class="link-card">
+            <span class="link-icon" aria-hidden="true">{link.icon}</span>
+            <span>{link.label}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .notfound {
+    padding: 70px 0 90px;
+    max-width: 640px;
+    text-align: center;
+  }
+
+  .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(3.4rem, 14vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1;
+    margin: 0 0 18px;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  h1 { font-size: clamp(1.35rem, 4.5vw, 1.85rem); margin: 0 0 14px; line-height: 1.4; }
+  .body { color: var(--text-dim); margin: 0 auto 42px; max-width: 52ch; }
+
+  h2 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+
+  .search-block { margin-bottom: 46px; }
+  /* The search dropdown is absolutely positioned; keep it above the link cards. */
+  .search-block :global(.site-search) { position: relative; z-index: 2; text-align: start; }
+
+  .links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .link-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: border-color 0.18s, color 0.18s, transform 0.18s;
+  }
+  .link-card:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .link-icon { font-size: 1.1rem; }
+
+  @media (max-width: 480px) {
+    .notfound { padding: 46px 0 70px; }
+    .links { grid-template-columns: 1fr 1fr; }
+  }
+</style>

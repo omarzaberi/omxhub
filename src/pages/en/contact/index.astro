@@ -1,11 +1,14 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import { trail } from '../../../lib/schema';
 import { useTranslations } from '../../../i18n/utils';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
+
+const schema = trail(lang, [{ name: t('footer.contact') }]);
 ---
-<Layout title={t('footer.contact')} description="Get in touch with the OMXHub team">
+<Layout title={t('footer.contact')} description="Get in touch with the OMXHub team" schema={schema}>
   <section class="wrap section">
     <h1>Contact Us</h1>
     <p>

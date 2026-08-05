@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { trail } from '../../lib/schema';
 import { useTranslations, localizedPath } from '../../i18n/utils';
 
 const lang = 'ar' as const;
@@ -13,8 +14,10 @@ const tools = [
   { icon: '🖼️', name: 'صور إلى PDF', desc: 'حوّل صورة أو أكثر (JPG/PNG) لملف PDF واحد', href: '/pdf-tools/images-to-pdf' },
   { icon: '📄', name: 'PDF إلى صور', desc: 'حوّل كل صفحة بملف PDF لصورة PNG منفصلة', href: '/pdf-tools/pdf-to-images' },
 ];
+
+const schema = trail(lang, [{ name: t('nav.pdf') }]);
 ---
-<Layout title={t('nav.pdf')} description="أدوات PDF مجانية تشتغل بالكامل داخل متصفحك — دمج، تقسيم، تدوير، وأكثر">
+<Layout title={t('nav.pdf')} description="أدوات PDF مجانية تشتغل بالكامل داخل متصفحك — دمج، تقسيم، تدوير، وأكثر" schema={schema}>
   <section class="wrap section">
     <h1>{t('nav.pdf')}</h1>
     <p class="subtitle">

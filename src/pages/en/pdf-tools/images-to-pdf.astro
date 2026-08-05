@@ -9,6 +9,12 @@ const faq = [
   { q: 'What formats are supported?', a: 'JPG and PNG are supported. Each image becomes its own PDF page at the same dimensions.' },
   { q: 'Does image order matter?', a: 'Yes, images are placed as consecutive pages in the order you upload them.' },
 ];
+const steps = [
+  { name: 'Upload your images', text: 'Drag JPG or PNG files onto the drop zone or click "Choose files". One image or many.' },
+  { name: 'Check the order', text: 'Each image becomes its own PDF page at the same dimensions, in the order you uploaded them.' },
+  { name: 'Click "Convert to PDF"', text: 'Conversion runs in your browser — your images are never uploaded anywhere.' },
+  { name: 'Download the result', text: 'You get a single PDF with every image as a consecutive page.' },
+];
 const related = [
   { label: 'PDF to Images', href: localizedPath(lang, '/pdf-tools/pdf-to-images') },
   { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
@@ -18,6 +24,7 @@ const related = [
   lang={lang}
   title="Convert Images to PDF"
   description="Convert one or more images (JPG/PNG) into a single PDF file, free and entirely in your browser"
+  steps={steps}
   faq={faq}
   related={related}
 >

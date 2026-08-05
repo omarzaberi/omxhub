@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { trail } from '../../lib/schema';
 import PromptCard from '../../components/PromptCard.astro';
 import { useTranslations, localizedPath } from '../../i18n/utils';
 import { getCollection } from 'astro:content';
@@ -7,8 +8,10 @@ import { getCollection } from 'astro:content';
 const lang = 'ar' as const;
 const t = useTranslations(lang);
 const allPrompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
+
+const schema = trail(lang, [{ name: t('nav.prompts') }]);
 ---
-<Layout title={t('nav.prompts')} description="مكتبة برومبتات جاهزة للنسخ لـChatGPT وClaude وMidjourney — للكتابة، التسويق، البرمجة، التصميم، والإنتاجية.">
+<Layout title={t('nav.prompts')} description="مكتبة برومبتات جاهزة للنسخ لـChatGPT وClaude وMidjourney — للكتابة، التسويق، البرمجة، التصميم، والإنتاجية." schema={schema}>
   <section class="wrap section">
     <h1>{t('nav.prompts')}</h1>
     <p class="count">{allPrompts.length} برومبت جاهز للاستخدام</p>

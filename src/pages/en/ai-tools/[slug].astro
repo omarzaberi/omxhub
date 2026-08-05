@@ -43,7 +43,7 @@ const alternativeEntries = tool.data.alternatives
   description={`${tool.data.tagline} — A full review of ${tool.data.name}: features, pricing, pros and cons, and the best alternatives.`}
 >
   <article class="wrap tool-page">
-    <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+    <a href={localizedPath(lang, `/ai-tools/category/${tool.data.category}`)} class="cat-badge">{cat.icon} {cat[lang]}</a>
     <h1>{tool.data.name}</h1>
     <p class="tagline">{tool.data.tagline}</p>
 
@@ -128,7 +128,11 @@ const alternativeEntries = tool.data.alternatives
     border-radius: 100px;
     margin-bottom: 14px;
     font-family: 'JetBrains Mono', monospace;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: border-color 0.18s;
   }
+  .cat-badge:hover { border-color: var(--accent); }
   h1 { margin: 0 0 8px; font-size: 2rem; }
   .tagline { color: var(--text-dim); margin-bottom: 30px; font-size: 1.05rem; }
   .content :global(h2) { margin-top: 34px; }

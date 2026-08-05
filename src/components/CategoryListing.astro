@@ -1,0 +1,157 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolCard from './ToolCard.astro';
+import { categories, categoryMeta, type CategoryKey } from '../data/categories';
+import { localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  lang: Lang;
+  category: CategoryKey;
+  tools: CollectionEntry<'tools'>[];
+  /** Categories that have at least one tool — the only ones safe to link to. */
+  available: CategoryKey[];
+}
+const { lang, category, tools, available } = Astro.props;
+
+const cat = categories[category];
+const meta = categoryMeta[category][lang];
+const SITE = 'https://omxhub.com';
+
+const homeLabel = lang === 'ar' ? 'الرئيسية' : 'Home';
+const toolsLabel = lang === 'ar' ? 'أدوات الذكاء الاصطناعي' : 'AI Tools';
+const countLabel =
+  lang === 'ar' ? `${tools.length} أداة في هذا التصنيف` : `${tools.length} tools in this category`;
+const otherLabel = lang === 'ar' ? 'تصنيفات أخرى' : 'Other categories';
+
+// Only link to categories that actually have tools, so we never create dead ends.
+const others = available.filter((key) => key !== category);
+
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: homeLabel, item: `${SITE}${localizedPath(lang, '/')}` },
+      { '@type': 'ListItem', position: 2, name: toolsLabel, item: `${SITE}${localizedPath(lang, '/ai-tools')}` },
+      { '@type': 'ListItem', position: 3, name: cat[lang] },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: meta.h1,
+    description: meta.description,
+    inLanguage: lang,
+    hasPart: tools.map((tool) => ({
+      '@type': 'SoftwareApplication',
+      name: tool.data.name,
+      applicationCategory: 'BusinessApplication',
+      url: `${SITE}${localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}`,
+    })),
+  },
+];
+---
+<Layout title={meta.h1} description={meta.description} schema={schema}>
+  <section class="wrap cat-section">
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href={localizedPath(lang, '/')}>{homeLabel}</a>
+      <span>/</span>
+      <a href={localizedPath(lang, '/ai-tools')}>{toolsLabel}</a>
+      <span>/</span>
+      <span class="current">{cat[lang]}</span>
+    </nav>
+
+    <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+    <h1>{meta.h1}</h1>
+    <p class="intro">{meta.intro}</p>
+    <p class="count">{countLabel}</p>
+
+    <div class="grid">
+      {tools.map((tool) => (
+        <ToolCard
+          href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
+          name={tool.data.name}
+          tagline={tool.data.tagline}
+          category={tool.data.category}
+          pricingType={tool.data.pricingType}
+          rating={tool.data.rating}
+          lang={lang}
+        />
+      ))}
+    </div>
+
+    <div class="others">
+      <h2>{otherLabel}</h2>
+      <div class="pills">
+        {others.map((key) => (
+          <a href={localizedPath(lang, `/ai-tools/category/${key}`)} class="cat-pill">
+            {categories[key].icon} {categories[key][lang]}
+          </a>
+        ))}
+        <a href={localizedPath(lang, '/ai-tools')} class="cat-pill all">
+          {lang === 'ar' ? 'كل الأدوات ←' : 'All tools →'}
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .cat-section { padding: 28px 0 70px; }
+  .breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+  }
+  .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .current { color: var(--text); }
+
+  .cat-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+  }
+  h1 { margin: 0 0 14px; line-height: 1.35; }
+  .intro {
+    max-width: 68ch;
+    color: var(--text-dim);
+    line-height: 1.85;
+    margin: 0 0 22px;
+  }
+  .count {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin: 0 0 26px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .others { margin-top: 56px; }
+  .others h2 { font-size: 1.15rem; margin-bottom: 16px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; }
+  .cat-pill {
+    padding: 9px 15px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: border-color 0.18s, color 0.18s;
+  }
+  .cat-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .cat-pill.all { border-color: var(--accent); color: var(--accent); }
+</style>

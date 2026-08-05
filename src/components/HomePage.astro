@@ -1,7 +1,7 @@
 ---
 import ToolCard from './ToolCard.astro';
 import SiteSearch from './SiteSearch.astro';
-import { categories } from '../data/categories';
+import { categories, type CategoryKey } from '../data/categories';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
 import { getCollection } from 'astro:content';
@@ -34,6 +34,12 @@ const categorySections = Object.entries(categories)
     tools: allTools.filter((tool) => tool.data.category === slug).slice(0, 6),
   }))
   .filter((section) => section.tools.length > 0);
+
+// Only surface categories that have a real landing page behind them — a pill
+// pointing at an empty category would be a dead link.
+const availableCategories = (Object.keys(categories) as CategoryKey[]).filter((key) =>
+  allTools.some((tool) => tool.data.category === key)
+);
 
 // PDF quick actions — mirrors /pdf-tools, shortest path to the actual tool
 const pdfQuick =
@@ -264,9 +270,9 @@ const why = [
     <h2>{t('home.categories')}</h2>
   </div>
   <div class="cat-grid">
-    {Object.entries(categories).map(([slug, cat]) => (
-      <a href={localizedPath(lang, `/ai-tools/${slug}`)} class="cat-pill">
-        <span>{cat.icon}</span> {cat[lang]}
+    {availableCategories.map((slug) => (
+      <a href={localizedPath(lang, `/ai-tools/category/${slug}`)} class="cat-pill">
+        <span>{categories[slug].icon}</span> {categories[slug][lang]}
       </a>
     ))}
   </div>

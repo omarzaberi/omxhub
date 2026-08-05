@@ -1,0 +1,27 @@
+---
+import CategoryListing from '../../../../components/CategoryListing.astro';
+import { categories, type CategoryKey } from '../../../../data/categories';
+import { getCollection } from 'astro:content';
+
+const lang = 'en' as const;
+
+export async function getStaticPaths() {
+  const all = (await getCollection('tools')).filter((tool) => tool.data.lang === 'en');
+  // Only generate a page for categories that actually have tools — an empty
+  // category page is thin content and hurts more than it helps.
+  const available = (Object.keys(categories) as CategoryKey[]).filter((category) =>
+    all.some((tool) => tool.data.category === category)
+  );
+  return available.map((category) => ({
+    params: { category },
+    props: {
+      category,
+      available,
+      tools: all.filter((tool) => tool.data.category === category),
+    },
+  }));
+}
+
+const { category, tools, available } = Astro.props;
+---
+<CategoryListing lang={lang} category={category} tools={tools} available={available} />

@@ -8,7 +8,7 @@ const lang = 'ar' as const;
 const t = useTranslations(lang);
 const allTools = (await getCollection('tools')).filter((tool) => tool.data.lang === lang);
 ---
-<Layout title={t('tools.title')} description={t('tools.title')}>
+<Layout title={t('tools.title')} description="دليل عربي لأدوات الذكاء الاصطناعي: شرح مفصل، المميزات، الأسعار، الإيجابيات والسلبيات، وأفضل البدائل لكل أداة.">
   <section class="wrap section">
     <h1>{t('tools.title')}</h1>
     <p class="count">{allTools.length} {t('tools.count')}</p>

@@ -152,3 +152,6 @@ platform one polished feature at a time.
 - ⬜ Blog, AI News, Comparisons, Tutorials — not started (pages removed until real content ready)
 - ⬜ Image/Video/Audio/Text/Developer/SEO tools (Phase 2/3) — not started
 - ⬜ Google Search Console submission — not confirmed
+- ✅ SEO technical foundation: canonical URLs, hreflang (ar/en/x-default), Open Graph,
+  Twitter Cards, default og:image, robots meta, noindex on placeholder pages,
+  sitemap filtered + aligned with canonicals. Full plan tracked in `SEO.md`.

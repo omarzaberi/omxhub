@@ -8,7 +8,7 @@ const lang = 'en' as const;
 const t = useTranslations(lang);
 const allTools = (await getCollection('tools')).filter((tool) => tool.data.lang === lang);
 ---
-<Layout title={t('tools.title')} description={t('tools.title')}>
+<Layout title={t('tools.title')} description="A curated directory of AI tools: detailed reviews, features, pricing, pros and cons, and the best alternatives for each tool.">
   <section class="wrap section">
     <h1>{t('tools.title')}</h1>
     <p class="count">{allTools.length} {t('tools.count')}</p>

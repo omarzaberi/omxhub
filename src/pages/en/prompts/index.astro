@@ -8,7 +8,7 @@ const lang = 'en' as const;
 const t = useTranslations(lang);
 const allPrompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
 ---
-<Layout title={t('nav.prompts')} description={t('nav.prompts')}>
+<Layout title={t('nav.prompts')} description="A free library of copy-ready prompts for ChatGPT, Claude and Midjourney — writing, marketing, coding, design and productivity.">
   <section class="wrap section">
     <h1>{t('nav.prompts')}</h1>
     <p class="count">{allPrompts.length} ready-to-use prompts</p>

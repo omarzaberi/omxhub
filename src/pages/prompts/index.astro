@@ -8,7 +8,7 @@ const lang = 'ar' as const;
 const t = useTranslations(lang);
 const allPrompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
 ---
-<Layout title={t('nav.prompts')} description={t('nav.prompts')}>
+<Layout title={t('nav.prompts')} description="مكتبة برومبتات جاهزة للنسخ لـChatGPT وClaude وMidjourney — للكتابة، التسويق، البرمجة، التصميم، والإنتاجية.">
   <section class="wrap section">
     <h1>{t('nav.prompts')}</h1>
     <p class="count">{allPrompts.length} برومبت جاهز للاستخدام</p>

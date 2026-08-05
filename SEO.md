@@ -49,8 +49,8 @@
 | البند | الحالة | ملاحظات |
 |---|---|---|
 | صفحات فاضية: `ai-news`, `comparisons`, `tutorials` | ✅ | تم: `noindex, follow` + مستبعدة من الـsitemap — تُشال لما يجهز محتوى حقيقي |
-| ربط Google Search Console | ⬜ | تحقق ملكية + رفع sitemap + متابعة Coverage |
-| ربط Bing Webmaster Tools | ⬜ | مصدر ترافيك إضافي مجاني |
+| ربط Google Search Console | 🟡 | الدليل جاهز في `docs/SEARCH-CONSOLE.md` — ينتظر تنفيذ عمر (يحتاج تسجيل دخول) |
+| ربط Bing Webmaster Tools | 🟡 | مغطّى بنفس الدليل (استيراد من GSC) |
 | فحص الروابط المكسورة | ✅ | فحص آلي لكل الـ86 صفحة — 0 روابط مكسورة |
 | صفحة 404 مخصصة | ⬜ | باللغتين، مع بحث وروابط مفيدة |
 

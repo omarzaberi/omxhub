@@ -61,6 +61,60 @@ Newsletter · Footer
 screenshots, pros, cons, alternatives, FAQ, official website link, categories, tags,
 related tools.
 
+## AI Tool Badges
+Every AI tool card and tool detail page should display contextual badges to help users quickly understand the tool at a glance.
+
+### Available Badges
+- 🆓 Free — Completely free to use.
+- 💰 Freemium — Free plan available with paid upgrades.
+- 💳 Paid — Requires a paid subscription.
+- ⭐ Editor's Choice — Personally recommended by the OMXHub editorial team.
+- 🔥 Trending — Currently popular or rapidly growing.
+- 🆕 New — Recently launched or newly added to OMXHub.
+- 🇸🇦 Arabic Support — Offers good Arabic language support or interface.
+- 🚀 Best for Beginners — Recommended for users who are just getting started.
+- ⚡ No Sign-up Required — Can be used instantly without creating an account.
+
+### Badge Rules
+- Display a maximum of **3 badges per tool card** to keep the interface clean.
+- Badge data must come from the tool metadata (single source of truth), never hardcoded in UI components.
+- The same badge system must automatically power:
+  - AI Directory cards
+  - Category pages
+  - Search results
+  - Comparison pages
+  - Tool detail pages
+- Badges must be fully localized (Arabic and English).
+- Badge colors, icons, and styling must remain consistent across the entire website.
+
+### Editorial Guidelines
+- **Editor's Choice** should be assigned to only 5–10% of all tools.
+- **Trending** should be reviewed periodically as trends change.
+- **New** should automatically expire after 60–90 days unless manually renewed.
+- **Arabic Support** should only be shown when the tool genuinely provides a good Arabic experience.
+- **Best for Beginners** should only be assigned to tools with an intuitive interface and low learning curve.
+- **No Sign-up Required** should only appear when the core functionality is accessible without creating an account.
+
+### Future Filtering
+Design the badge system so it also powers future filtering across the AI Directory.
+Users should be able to filter tools by:
+- Free
+- Freemium
+- Paid
+- Trending
+- New
+- Editor's Choice
+- Arabic Support
+- Best for Beginners
+- No Sign-up Required
+
+Implementation Requirements:
+- Treat badges as structured metadata, not presentation-only elements.
+- Store badges as part of each tool's data model.
+- Avoid duplicated logic across components.
+- Ensure the system is scalable for 1,000+ AI tools.
+- Keep the implementation consistent with OMXHub's existing "Single Source of Truth" architecture used elsewhere in the project.
+
 ## Free Tools Roadmap
 
 ### Phase 1 — PDF Tools (Priority)

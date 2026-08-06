@@ -12,6 +12,7 @@
  */
 import Layout from '../layouts/Layout.astro';
 import ComparisonCard from './ComparisonCard.astro';
+import ToolLogo from './ToolLogo.astro';
 import { categories } from '../data/categories';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
@@ -132,6 +133,7 @@ const schema = graph(
           <>
             {i === 1 && <span class="vs-mark" aria-hidden="true">{t('cmp.vs')}</span>}
             <div class="vs-tool">
+              <ToolLogo name={tool.name} slug={tool.slug} size={44} radius={12} />
               <span class="vs-name">{tool.name}</span>
               <span class="vs-vendor">{tool.vendor}</span>
               <span class="vs-tagline">{tool.tagline}</span>
@@ -301,6 +303,8 @@ const schema = graph(
               category={rel.data.category}
               toolA={rel.data.toolA.name}
               toolB={rel.data.toolB.name}
+              toolASlug={rel.data.toolA.slug}
+              toolBSlug={rel.data.toolB.slug}
               verdictLabel={rel.data.quickPicks[0].label}
               verdictPick={rel.data.quickPicks[0].pick}
               lang={lang}

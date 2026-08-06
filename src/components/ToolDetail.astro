@@ -13,6 +13,7 @@ import { getCollection, getEntry, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { breadcrumbs, faqPage, graph, softwareApplication } from '../lib/schema';
 import { byPopularity, comparisonPath } from '../lib/comparisons';
+import ToolLogo from './ToolLogo.astro';
 
 interface Props {
   lang: Lang;
@@ -102,8 +103,13 @@ const schema = graph(
     </nav>
 
     <a href={localizedPath(lang, `/ai-tools/category/${tool.data.category}`)} class="cat-badge">{cat.icon} {cat[lang]}</a>
-    <h1>{tool.data.name}</h1>
-    <p class="tagline">{tool.data.tagline}</p>
+    <div class="title-row">
+      <ToolLogo name={tool.data.name} slug={slug} size={56} radius={14} />
+      <div>
+        <h1>{tool.data.name}</h1>
+        <p class="tagline">{tool.data.tagline}</p>
+      </div>
+    </div>
 
     <div class="content">
       <Content />
@@ -211,8 +217,15 @@ const schema = graph(
     transition: border-color 0.18s;
   }
   .cat-badge:hover { border-color: var(--accent); }
-  h1 { margin: 0 0 8px; font-size: 2rem; }
-  .tagline { color: var(--text-dim); margin-bottom: 30px; font-size: 1.05rem; }
+  /* Logo sits beside the name; the pair is what readers scan first. */
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  h1 { margin: 0 0 6px; font-size: 2rem; }
+  .tagline { color: var(--text-dim); margin: 0; font-size: 1.05rem; }
   .content :global(h2) { margin-top: 34px; }
   .cols {
     display: grid;

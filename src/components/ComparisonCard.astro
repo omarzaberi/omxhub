@@ -9,6 +9,7 @@
 import { categories } from '../data/categories';
 import { useTranslations } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
+import ToolLogo from './ToolLogo.astro';
 
 interface Props {
   href: string;
@@ -17,40 +18,37 @@ interface Props {
   category: keyof typeof categories;
   toolA: string;
   toolB: string;
+  /** Tool slugs, when the comparison has them — preferred for logo lookup. */
+  toolASlug?: string;
+  toolBSlug?: string;
   /** Headline verdict shown on the card, e.g. "Best overall: Claude". */
   verdictLabel: string;
   verdictPick: string;
   lang: Lang;
 }
-const { href, title, subtitle, category, toolA, toolB, verdictLabel, verdictPick, lang } =
-  Astro.props;
+const {
+  href,
+  title,
+  subtitle,
+  category,
+  toolA,
+  toolB,
+  toolASlug,
+  toolBSlug,
+  verdictLabel,
+  verdictPick,
+  lang,
+} = Astro.props;
 
 const t = useTranslations(lang);
 const cat = categories[category];
 const arrow = lang === 'ar' ? '←' : '→';
-
-// Same deterministic-avatar trick as ToolCard: initials + a stable palette slot,
-// so a comparison needs no logo assets to look finished.
-const palette = ['#4fd1c5', '#9b8cfb', '#f5a623', '#34d399', '#f472b6'];
-function badgeFor(name: string) {
-  const hash = [...name].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const initials = name
-    .replace(/[^\p{L}\p{N} ]/gu, '')
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-  return { color: palette[hash % palette.length], initials };
-}
-const a = badgeFor(toolA);
-const b = badgeFor(toolB);
 ---
 <a href={href} class="cmp-card">
   <div class="versus" dir="ltr">
-    <span class="chip" style={`background:${a.color}22; color:${a.color}`}>{a.initials}</span>
+    <ToolLogo name={toolA} slug={toolASlug} size={34} radius={9} />
     <span class="vs">{t('cmp.vs')}</span>
-    <span class="chip" style={`background:${b.color}22; color:${b.color}`}>{b.initials}</span>
+    <ToolLogo name={toolB} slug={toolBSlug} size={34} radius={9} />
   </div>
 
   <h3>{title}</h3>
@@ -90,18 +88,6 @@ const b = badgeFor(toolB);
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
-  }
-  .chip {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.78rem;
-    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
-    flex-shrink: 0;
   }
   .vs {
     font-size: 0.68rem;

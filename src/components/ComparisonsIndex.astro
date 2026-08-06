@@ -61,6 +61,8 @@ function cardProps(entry: Comparison) {
     category: entry.data.category,
     toolA: entry.data.toolA.name,
     toolB: entry.data.toolB.name,
+    toolASlug: entry.data.toolA.slug,
+    toolBSlug: entry.data.toolB.slug,
     verdictLabel: entry.data.quickPicks[0].label,
     verdictPick: entry.data.quickPicks[0].pick,
     lang,

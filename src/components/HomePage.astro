@@ -1,5 +1,6 @@
 ---
 import ToolCard from './ToolCard.astro';
+import ToolLogo from './ToolLogo.astro';
 import ComparisonCard from './ComparisonCard.astro';
 import SiteSearch from './SiteSearch.astro';
 import { byPopularity, comparisonPath, inLang } from '../lib/comparisons';
@@ -69,31 +70,26 @@ const pdfQuick =
         { icon: '📄', name: 'PDF to Images', href: '/pdf-tools/pdf-to-images' },
       ];
 
-// Floating hero cards — built from real data, never placeholders
-const palette = ['#4fd1c5', '#9b8cfb', '#f5a623', '#34d399', '#f472b6'];
-const initialsOf = (name: string) =>
-  name
-    .replace(/[^\p{L}\p{N} ]/gu, '')
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-
+// Floating hero cards — built from real data, never placeholders.
+// Tool cards show the brand logo (falling back to initials via ToolLogo);
+// the two PDF cards keep their emoji badge, since PDF tools are ours, not brands.
 const floatCards = [
-  ...topRated.map((tool, i) => ({
-    badge: initialsOf(tool.data.name),
-    color: palette[i % palette.length],
+  ...topRated.map((tool) => ({
+    logo: { name: tool.data.name, slug: tool.id.split('/')[1] },
+    badge: null,
+    color: '#9b8cfb',
     title: tool.data.name,
     meta: `${categories[tool.data.category].icon} ${categories[tool.data.category][lang]} · ★ ${tool.data.rating?.toFixed(1)}`,
   })),
   {
+    logo: null,
     badge: '🔗',
     color: '#9b8cfb',
     title: pdfQuick[0].name,
     meta: t('home.hero.floatPdfMeta'),
   },
   {
+    logo: null,
     badge: '✂️',
     color: '#4fd1c5',
     title: pdfQuick[1].name,
@@ -154,7 +150,9 @@ const why = [
     <div class="float-stage" aria-hidden="true">
       {floatCards.map((card, i) => (
         <div class={`fcard f${i + 1}`}>
-          <span class="fbadge" style={`background:${card.color}22; color:${card.color}`}>{card.badge}</span>
+          {card.logo
+            ? <ToolLogo name={card.logo.name} slug={card.logo.slug} size={36} radius={10} />
+            : <span class="fbadge" style={`background:${card.color}22; color:${card.color}`}>{card.badge}</span>}
           <span class="ftext">
             <b>{card.title}</b>
             <small>{card.meta}</small>
@@ -199,6 +197,8 @@ const why = [
           category={entry.data.category}
           toolA={entry.data.toolA.name}
           toolB={entry.data.toolB.name}
+          toolASlug={entry.data.toolA.slug}
+          toolBSlug={entry.data.toolB.slug}
           verdictLabel={entry.data.quickPicks[0].label}
           verdictPick={entry.data.quickPicks[0].pick}
           lang={lang}
@@ -223,6 +223,7 @@ const why = [
         <ToolCard
           href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
           name={tool.data.name}
+          slug={tool.id.split("/")[1]}
           tagline={tool.data.tagline}
           category={tool.data.category}
           pricingType={tool.data.pricingType}
@@ -245,6 +246,7 @@ const why = [
       <ToolCard
         href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
         name={tool.data.name}
+        slug={tool.id.split("/")[1]}
         tagline={tool.data.tagline}
         category={tool.data.category}
         pricingType={tool.data.pricingType}
@@ -267,6 +269,7 @@ const why = [
         <ToolCard
           href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
           name={tool.data.name}
+          slug={tool.id.split("/")[1]}
           tagline={tool.data.tagline}
           category={tool.data.category}
           pricingType={tool.data.pricingType}
@@ -289,6 +292,7 @@ const why = [
         <ToolCard
           href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
           name={tool.data.name}
+          slug={tool.id.split("/")[1]}
           tagline={tool.data.tagline}
           category={tool.data.category}
           pricingType={tool.data.pricingType}

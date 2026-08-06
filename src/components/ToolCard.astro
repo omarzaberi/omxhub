@@ -1,6 +1,7 @@
 ---
 import { categories, pricingLabels } from '../data/categories';
 import type { Lang } from '../i18n/ui';
+import ToolLogo from './ToolLogo.astro';
 
 interface Props {
   href: string;
@@ -10,29 +11,19 @@ interface Props {
   pricingType: keyof typeof pricingLabels;
   rating?: number;
   lang: Lang;
+  /** Content slug, so the logo resolves by slug rather than display name. */
+  slug?: string;
 }
-const { href, name, tagline, category, pricingType, rating, lang } = Astro.props;
+const { href, name, tagline, category, pricingType, rating, lang, slug } = Astro.props;
 const cat = categories[category];
 const priceLabel = pricingLabels[pricingType][lang];
-
-// Deterministic avatar color + initials from the tool name (no external logo files needed)
-const palette = ['#4fd1c5', '#9b8cfb', '#f5a623', '#34d399', '#f472b6'];
-const hash = [...name].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-const avatarColor = palette[hash % palette.length];
-const initials = name
-  .replace(/[^\p{L}\p{N} ]/gu, '')
-  .split(' ')
-  .slice(0, 2)
-  .map((w) => w[0])
-  .join('')
-  .toUpperCase();
 
 const ctaLabel = lang === 'ar' ? 'التفاصيل الكاملة' : 'View details';
 const arrow = lang === 'ar' ? '←' : '→';
 ---
 <a href={href} class="card">
   <div class="card-head">
-    <div class="avatar" style={`background:${avatarColor}22; color:${avatarColor}`}>{initials}</div>
+    <ToolLogo name={name} slug={slug} size={40} radius={10} />
     <div class="head-text">
       <h3>{name}</h3>
       <span class="cat-badge">{cat.icon} {cat[lang]}</span>
@@ -70,18 +61,6 @@ const arrow = lang === 'ar' ? '←' : '→';
     align-items: flex-start;
     gap: 10px;
     margin-bottom: 10px;
-  }
-  .avatar {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.9rem;
-    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
   }
   .head-text { flex: 1; min-width: 0; }
   h3 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 700; }

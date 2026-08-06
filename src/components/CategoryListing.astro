@@ -71,6 +71,7 @@ const schema = graph(
         <ToolCard
           href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
           name={tool.data.name}
+          slug={tool.id.split("/")[1]}
           tagline={tool.data.tagline}
           category={tool.data.category}
           pricingType={tool.data.pricingType}

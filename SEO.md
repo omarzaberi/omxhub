@@ -1,183 +1,222 @@
 # 🔍 OMXHub — SEO Plan
 
-> خطة السيو العملية للموقع. تُحدَّث حالة كل بند (⬜ / 🟡 / ✅) كل ما ننجز شي.
-> مرتبطة بـ `BLUEPRINT.md` — هذا الملف يغطي **كيف** نتصدر، والـBlueprint يغطي **وش** نبني.
+> The working SEO plan for the site. The status of each item (⬜ / 🟡 / ✅) is updated as we
+> complete it. Paired with `BLUEPRINT.md` — this file covers **how** we rank, the Blueprint
+> covers **what** we build. Dated history lives in `CHANGELOG.md`; unbuilt items are tracked
+> in `IDEAS.md`.
 
-## المبادئ
+## Principles
 
-1. **كل ميزة = صفحة قابلة للفهرسة** بعنوان ووصف وschema خاص فيها.
-2. **ثنائي اللغة صح**: كل صفحة عربية لها مقابل إنجليزي مربوط بـ`hreflang`، ولا تتنافس مع بعض.
-3. **لا محتوى رقيق (thin content)**: صفحة بدون محتوى حقيقي = تُحذف أو `noindex`، ما تُنشر فاضية.
-4. **السرعة جزء من السيو**: نحافظ على Lighthouse 95+ ولا نضيف سكربتات ثقيلة بدون داعي.
-5. **نتحقق فعليًا**: بعد كل تغيير سيو نبني الموقع ونفحص الـHTML الناتج، مو نفترض.
+1. **Every feature is an indexable page**, with its own title, description and schema.
+2. **Bilingual, done properly**: every Arabic page has an English counterpart bound to it by
+   `hreflang`, and the two never compete with each other.
+3. **No thin content**: a page with no real content behind it is deleted or set to `noindex` —
+   it is never published empty.
+4. **Speed is part of SEO**: we hold Lighthouse at 95+ and add no heavy scripts without cause.
+5. **We verify for real**: after every SEO change we build the site and inspect the generated
+   HTML rather than assuming.
 
 ---
 
-## المرحلة 1 — الأساسيات التقنية (Technical Foundation)
+## Phase 1 — Technical Foundation
 
-الأولوية القصوى. كلها تنفَّذ مركزيًا في `src/layouts/Layout.astro` عشان تنطبق على كل الصفحات.
+Top priority. All of it is implemented centrally in `src/layouts/Layout.astro` so that it
+applies to every page.
 
-| البند | الحالة | ملاحظات |
+| Item | Status | Notes |
 |---|---|---|
-| `site` في astro.config | ✅ | `https://omxhub.com` |
+| `site` in astro.config | ✅ | `https://omxhub.com` |
 | Sitemap integration | ✅ | `@astrojs/sitemap` → `/sitemap-index.xml` |
-| robots.txt | ✅ | يسمح للكل + يشير للـsitemap |
+| robots.txt | ✅ | Allows all crawlers and points to the sitemap |
 | Google Analytics (GA4) | ✅ | `G-W8MG2DBF3F` |
-| **canonical URL ذاتي لكل صفحة** | ✅ | يمنع تكرار المحتوى (trailing slash، باراميترات) |
-| **hreflang ar / en / x-default** | ✅ | حرج لموقع بلغتين — بدونه قوقل يعتبرهم مكررين |
+| **Self-referencing canonical URL on every page** | ✅ | Prevents duplicate content from trailing slashes and query parameters |
+| **hreflang ar / en / x-default** | ✅ | Critical for a two-language site — without it Google treats the pairs as duplicates |
 | **Open Graph tags** | ✅ | title, description, url, type, image, locale, site_name |
 | **Twitter Cards** | ✅ | `summary_large_image` |
-| **og:image افتراضية** | ✅ | 1200×630، هوية OMXHub |
-| مراجعة title/description | ✅ | ≤60 حرف للعنوان، 120–160 للوصف، بدون تكرار |
-| `lang` + `dir` صحيحة | ✅ | موجودة بالفعل بـLayout |
+| **Default og:image** | ✅ | 1200×630, OMXHub brand identity |
+| Title / description review | ✅ | ≤60 characters for titles, 120–160 for descriptions, no repetition |
+| Correct `lang` + `dir` | ✅ | Already present in `Layout` |
 
-## المرحلة 2 — البيانات المنظمة (Schema.org JSON-LD)
+## Phase 2 — Structured Data (Schema.org JSON-LD)
 
-كل الـJSON-LD يتولّد من ملف واحد: `src/lib/schema.ts`، ويُطبع كـ`@graph` واحد بالـ`<head>` عبر prop الـ`schema` بالـ`Layout`. قاعدتنا: **ما نوسّم إلا محتوى ظاهر فعليًا بالصفحة**.
+All JSON-LD is generated from a single file, `src/lib/schema.ts`, and printed as one `@graph`
+in the `<head>` via the `schema` prop on `Layout`. Our governing rule: **we only mark up
+content that is actually visible on the page.**
 
-| النوع | يُطبَّق على | الحالة | ملاحظات |
+| Type | Applied to | Status | Notes |
 |---|---|---|---|
-| `WebSite` + `SearchAction` | الصفحة الرئيسية | ✅ | البحث يقبل `?q=` فعليًا — الرابط اللي بالـschema شغال مو شكلي |
-| `Organization` | الرئيسية + About | ✅ | مع `logo.png` (512×512)، مؤسس، بريد تواصل. `sameAs` مؤجّل لين تنفتح حسابات رسمية |
-| `SoftwareApplication` | صفحات أدوات AI (`/ai-tools/[slug]`) | ✅ | + `Review` تحريري باسم OMXHub (مو `aggregateRating` — ما عندنا تقييمات مستخدمين) + `Offer` بسعر 0 للأدوات المجانية/الفريميوم فقط |
-| `HowTo` | صفحات أدوات PDF (خطوات الاستخدام) | ✅ | قسم "طريقة الاستخدام" مرئي بـ4 خطوات لكل أداة باللغتين — 18 صفحة (9 أدوات × لغتين)، والـschema يعكسه حرفيًا |
-| `FAQPage` | صفحات الأدوات اللي فيها أسئلة شائعة | ✅ | أدوات AI + أدوات PDF. أدوات PDF الجديدة (استخراج/حذف/ترتيب) فيها 4 أسئلة لكل صفحة |
-| `BreadcrumbList` | كل الصفحات الداخلية | ✅ | breadcrumbs مرئية بصفحات الأدوات والتصنيفات وأدوات PDF. **ملاحظة مفتوحة:** صفحات مثل "من نحن"، "تواصل"، البرومبتات، و`/pdf-tools` تطبع `BreadcrumbList` بدون مسار مرئي بالصفحة — مخالف لقاعدتنا "ما نوسّم إلا محتوى ظاهر". يُعالَج بإضافة breadcrumbs مرئية لها (مهمة مستقلة) |
-| `CollectionPage` | صفحات التصنيفات + صفحة المقارنات | ✅ | صفحة المقارنات تضمّن `ItemList` داخل الـ`CollectionPage` |
-| `Article` | صفحات المقارنات (`/comparisons/[slug]`) | ✅ | 10 صفحات. `Article` مو `BlogPosting` — هذي أدلة شراء دائمة تُراجَع، مو منشورات مؤرّخة. `dateModified` يُطبع فقط لما يكون بالصفحة سطر "آخر تحديث" مرئي |
-| `Article` + `HowTo` | صفحات الشروحات (`/tutorials/[slug]`) | ✅ | 10 صفحات. `HowTo` يُطبع **فقط** لما يكون بالصفحة خطوات مرقّمة مرئية. المتطلبات (`prerequisites`) ما تُعلّم كـ`HowToTool` — هذي شروط نصية مو أدوات، وتعليمها يكون تضليلًا |
-| `CollectionPage` | صفحة الشروحات (`/tutorials`) | ✅ | `ItemList` مضمّن داخل الـ`CollectionPage`، مرتّب من الأحدث |
-| `Article` | المدونة (لما تنطلق) | ⬜ | |
+| `WebSite` + `SearchAction` | Homepage | ✅ | The search genuinely accepts `?q=` — the URL declared in the schema works, it is not decorative |
+| `Organization` | Homepage + About | ✅ | With `logo.png` (512×512), founder, and contact email. `sameAs` is deferred until official accounts exist |
+| `SoftwareApplication` | AI tool pages (`/ai-tools/[slug]`) | ✅ | Plus an editorial `Review` bylined OMXHub (not `aggregateRating` — we have no user ratings) plus an `Offer` priced at 0, for free and freemium tools only |
+| `HowTo` | PDF tool pages (usage steps) | ✅ | A visible "how to use it" section with 4 steps per tool in both languages — 18 pages (9 tools × 2 languages) — and the schema mirrors it literally |
+| `FAQPage` | Tool pages that carry FAQs | ✅ | AI tools and PDF tools. The newer PDF tools (extract / delete / organize) carry 4 questions per page |
+| `BreadcrumbList` | All internal pages | ✅ | Visible breadcrumbs on tool, category and PDF tool pages. **Open issue:** pages such as About, Contact, the prompts, and `/pdf-tools` emit `BreadcrumbList` with no visible trail on the page — a breach of our "only mark up what is visible" rule. The fix is to give them visible breadcrumbs (tracked as a separate task) |
+| `CollectionPage` | Category pages + the comparisons landing page | ✅ | The comparisons page embeds an `ItemList` inside the `CollectionPage` |
+| `Article` | Comparison pages (`/comparisons/[slug]`) | ✅ | 10 pages. `Article`, not `BlogPosting` — these are evergreen buying guides that get revised, not dated posts. `dateModified` is printed only when the page carries a visible "last updated" line |
+| `Article` + `HowTo` | Tutorial pages (`/tutorials/[slug]`) | ✅ | 10 pages. `HowTo` is printed **only** when the page has visible numbered steps. Prerequisites are not marked up as `HowToTool` — they are prose conditions, not instruments, and marking them would be misleading |
+| `CollectionPage` | Tutorials landing page (`/tutorials`) | ✅ | `ItemList` embedded inside the `CollectionPage`, ordered newest first |
+| `Article` | Blog (once it launches) | ⬜ | |
 
-### ملاحظة مهمة: وش يعطي نتيجة غنية فعلًا وش لا
+### Important note: what actually earns a rich result, and what doesn't
 
-قوقل سحب دعم أنواع معينة، فلا نضيّع وقت نطاردها:
+Google has withdrawn support for certain types, so we don't waste time chasing them:
 
-- **`HowTo`** — انسحب من نتائج قوقل من 2023 ومن أداة الفحص بعدها. نبقيه لأن محركات ثانية (Bing) ومحركات الإجابة بالذكاء الاصطناعي تقراه، ولأن **قسم الخطوات المرئي** نفسه قيمة للمستخدم بغض النظر عن قوقل.
-- **`FAQPage`** — محصور بالمواقع الحكومية والصحية الموثوقة من 2023، وانسحب من الـRich Results Test بيونيو 2026. نبقيه لنفس السبب أعلاه.
-- **`WebSite` + `SearchAction`** (Sitelinks searchbox) — قوقل أوقفه من نوفمبر 2024. نبقيه لأنه وصف صحيح للموقع وما يكلف شي.
+- **`HowTo`** — withdrawn from Google results in 2023, and from the testing tool shortly after.
+  We keep it because other engines (Bing) and AI answer engines read it, and because the
+  **visible steps section** is valuable to users regardless of Google.
+- **`FAQPage`** — restricted to trusted government and health sites since 2023, and withdrawn
+  from the Rich Results Test in June 2026. We keep it for the same reason as above.
+- **`WebSite` + `SearchAction`** (sitelinks searchbox) — discontinued by Google in November 2024.
+  We keep it because it is an accurate description of the site and costs nothing.
 
-اللي يعطي نتيجة غنية فعليًا عندنا: **`Organization`** (الرئيسية)، **`SoftwareApplication` + `Review`** (نجوم التقييم بصفحات الأدوات)، و**`BreadcrumbList`**.
+What genuinely earns us a rich result: **`Organization`** (homepage),
+**`SoftwareApplication` + `Review`** (rating stars on tool pages), and **`BreadcrumbList`**.
 
-### نتيجة الفحص الحي (Rich Results Test — 2026-08-06)
+### Live test result (Rich Results Test — 2026-08-06)
 
-- `omxhub.com` → **Organization**: ✅ عنصر صالح، صفر أخطاء
-- `omxhub.com/ai-tools/chatgpt` → **3 عناصر صالحة**: Breadcrumbs ✅ · Review snippets ✅ · Software Apps ✅ — صفر أخطاء
-- ظهور **Review snippets** كمجموعة مستقلة يعني نجوم التقييم مؤهلة تظهر بنتائج البحث فعليًا
-- التنبيه الوحيد: `Missing field "aggregateRating" (optional)` — **مقصود**. تعبئته بدون تقييمات مستخدمين حقيقية مخالفة سياسة قوقل. يُضاف لما ينبني نظام تقييم فعلي للزوار.
+- `omxhub.com` → **Organization**: ✅ valid item, zero errors
+- `omxhub.com/ai-tools/chatgpt` → **3 valid items**: Breadcrumbs ✅ · Review snippets ✅ ·
+  Software Apps ✅ — zero errors
+- **Review snippets appearing as an independent group** means the rating stars are genuinely
+  eligible to appear in search results
+- The only warning: `Missing field "aggregateRating" (optional)` — **deliberate**. Filling it
+  without real user ratings would breach Google's policy. It gets added once an actual visitor
+  rating system is built.
 
-## المرحلة 3 — نظافة الفهرسة (Index Hygiene)
+## Phase 3 — Index Hygiene
 
-| البند | الحالة | ملاحظات |
+| Item | Status | Notes |
 |---|---|---|
-| صفحات فاضية: `ai-news` | ✅ | `noindex, follow` + مستبعدة من الـsitemap — تُشال لما يجهز محتوى حقيقي |
-| ~~`tutorials`~~ — أُطلق بمحتوى حقيقي | ✅ | 2026-08-06: أُزيل الـ`noindex` وأُزيل من فلتر الـsitemap. 12 صفحة قابلة للفهرسة (صفحتا هبوط + 10 شروحات). السطر كان متأخر عن الواقع وانصحّح بـ2026-08-07 |
-| ~~`comparisons`~~ — أُطلق بمحتوى حقيقي | ✅ | 2026-08-06: أُزيل الـ`noindex` وأُزيل من فلتر الـsitemap. 12 صفحة قابلة للفهرسة (صفحتا هبوط + 10 مقارنات) |
-| ربط Google Search Console | ✅ | تم التحقق (سجل TXT مؤكَّد حيًا بالـDNS) + رفع الـsitemap. الدليل: `docs/SEARCH-CONSOLE.md` |
-| ربط Bing Webmaster Tools | 🟡 | مغطّى بنفس الدليل (استيراد من GSC) |
-| فحص الروابط المكسورة | ✅ | صار جزء من `scripts/verify-seo.mjs` — يُشغَّل بعد كل بناء. آخر تشغيل: 156 صفحة، 0 روابط مكسورة |
-| صفحة 404 مخصصة | ✅ | باللغتين، مع بحث حي وروابط للأقسام. `noindex` ومستبعدة من الـsitemap. النسخة الإنجليزية تُخدَم لأي رابط `/en/*` مكسور عبر قاعدة بـ`netlify.toml` — متحقَّق منها حيًا بعد النشر |
+| Empty pages: `ai-news` | ✅ | `noindex, follow` + excluded from the sitemap — lifted once real content is ready |
+| ~~`tutorials`~~ — launched with real content | ✅ | 2026-08-06: `noindex` removed and dropped from the sitemap filter. 12 indexable pages (2 landing pages + 10 tutorials). This line had lagged reality and was corrected on 2026-08-07 |
+| ~~`comparisons`~~ — launched with real content | ✅ | 2026-08-06: `noindex` removed and dropped from the sitemap filter. 12 indexable pages (2 landing pages + 10 comparisons) |
+| Google Search Console connected | ✅ | Verified (TXT record confirmed live in DNS) + sitemap submitted. Guide: `docs/SEARCH-CONSOLE.md` |
+| Bing Webmaster Tools connected | 🟡 | Covered by the same guide (import from GSC) |
+| Broken-link check | ✅ | Now part of `scripts/verify-seo.mjs` — runs after every build. Last run: 156 pages, 0 broken links |
+| Custom 404 page | ✅ | Both languages, with live search and section links. `noindex` and excluded from the sitemap. The English version is served for any broken `/en/*` URL via a rule in `netlify.toml` — verified live after deployment |
 
-## المرحلة 4 — بنية الروابط الداخلية (Internal Linking)
+## Phase 4 — Internal Linking Structure
 
-- ✅ كل صفحة أداة AI تربط لتصنيفها (شارة التصنيف صارت رابط) وللبدائل، وفوقها breadcrumbs مرئية (الرئيسية ← أدوات AI ← التصنيف ← الأداة).
-- ✅ صفحات التصنيفات تربط لبعضها ولصفحة كل الأدوات.
-- ✅ **قسم المقارنات مربوط بالكامل**: كل صفحة مقارنة تربط لصفحتي الأداتين، ولمقارنات ذات صلة (4 بطاقات — تُملأ تلقائيًا من نفس التصنيف لو قائمة `related` قصيرة)، ولبرومبتات ذات صلة، ولصفحة التصنيف. وبالاتجاه المعاكس: كل صفحة أداة تعرض المقارنات اللي تضمّها، والصفحة الرئيسية تعرض أقوى 3 مقارنات. النتيجة: ما فيه صفحة مقارنة يتيمة.
-- ✅ **قسم الشروحات مربوط بالكامل**: كل شرح يربط لصفحات الأدوات المذكورة فيه، ولمقارنات ذات صلة، ولبرومبتات ذات صلة، ولشروحات أخرى (3 بطاقات — تُملأ تلقائيًا من نفس التصنيف ثم من أي تصنيف، فما فيه شرح بلا مخرج)، ولصفحة التصنيف. الشرح الخاص بأدوات PDF يربط للأدوات الست مباشرة داخل النص. والرابط في القائمة العلوية أُضيف بعد ما صار للقسم محتوى حقيقي.
-- ⬜ ربط الأدوات بالشروحات والبرومبتات ذات الصلة (الاتجاه المعاكس — من صفحة الأداة).
-- ✅ **سلسلة أدوات PDF صارت مغلقة ومتناظرة**: `relatedPdfTools()` بـ`src/data/pdf-tools.ts`
-  يمشي على الكتالوق ويلتف، فكل أداة عندها **3 روابط صادرة و3 واردة بالضبط**، بدون روابط
-  ذاتية وبدون صيانة يدوية. قبل هذا كانت كل صفحة تحمل مصفوفة `related` مكتوبة يدويًا،
-  وبعض الأدوات كان لها رابطان فقط. متحقَّق آليًا بعد البناء للتسع أدوات باللغتين.
-- ✅ كل أداة PDF مربوطة كمان من الصفحة الرئيسية (شبكة الإجراءات السريعة صارت تشتق من نفس
-  الكتالوق)، ومن صفحة `/pdf-tools`، ومن شرح "تعديل PDF بدون رفع" — يعني ثلاث مصادر ربط
-  مستقلة لكل أداة.
-- الرئيسية تربط لكل الأقسام الرئيسية.
-- breadcrumbs مرئية + schema.
-- **لا صفحات يتيمة (orphan pages)**: أي صفحة جديدة لازم يوصلها رابط داخلي واحد على الأقل.
+- ✅ Every AI tool page links to its category (the category badge is now a link) and to its
+  alternatives, with visible breadcrumbs above it (Home ← AI Tools ← Category ← Tool).
+- ✅ Category pages link to each other and to the all-tools page.
+- ✅ **The comparisons section is fully linked**: every comparison page links to both tool
+  pages, to related comparisons (4 cards — auto-filled from the same category when the `related`
+  list is short), to related prompts, and to the category page. In the reverse direction, every
+  tool page shows the comparisons that include it, and the homepage shows the 3 strongest
+  comparisons. The result: no orphan comparison page.
+- ✅ **The tutorials section is fully linked**: every tutorial links to the tool pages it
+  mentions, to related comparisons, to related prompts, to other tutorials (3 cards — auto-filled
+  from the same category first and then from any category, so no tutorial is left without an
+  exit), and to the category page. The PDF tools tutorial links to the six tools directly inside
+  the body text. The top-nav link was added only once the section had real content.
+- ⬜ Link tools to related tutorials and prompts (the reverse direction — from the tool page).
+- ✅ **The PDF tool chain is now closed and symmetric**: `relatedPdfTools()` in
+  `src/data/pdf-tools.ts` walks the catalogue and wraps around, so every tool has **exactly 3
+  outbound and 3 inbound links**, with no self-links and no manual maintenance. Before this,
+  every page carried a hand-written `related` array and some tools had only two links. Verified
+  automatically after build across all nine tools in both languages.
+- ✅ Every PDF tool is also linked from the homepage (the quick-actions grid now derives from the
+  same catalogue), from `/pdf-tools`, and from the "edit PDF without uploading" tutorial — three
+  independent link sources per tool.
+- The homepage links to every main section.
+- Visible breadcrumbs + schema.
+- **No orphan pages**: any new page must have at least one internal link pointing at it.
 
-## المرحلة 5 — استراتيجية الكلمات المفتاحية والمحتوى
+## Phase 5 — Keyword and Content Strategy
 
-### أين الفرصة الحقيقية
-1. **البحث العربي عن أدوات AI** — منافسة ضعيفة نسبيًا، وهذه ميزتنا الأساسية.
-   - أمثلة: "أفضل أدوات الذكاء الاصطناعي"، "بديل ChatGPT مجاني"، "شرح Claude AI".
-2. **أدوات PDF بنية "الفعل"** — نية عالية جدًا وترافيك متكرر.
-   - أمثلة: "دمج ملفات PDF"، "تحويل PDF إلى صور"، "merge pdf online free".
-3. **المقارنات** — ترافيك عالي النية وسهل الترتيب.
-   - أمثلة: "ChatGPT vs Claude"، "الفرق بين Gemini و ChatGPT".
-4. **البرومبتات** — طلب متزايد ومحتوى قابل للتوسع.
+### Where the real opportunity is
 
-### قاعدة الجودة
-كل صفحة أداة لازم تحتوي محتوى فريد فعلي: وصف، مميزات، أسعار، إيجابيات/سلبيات، بدائل، أسئلة شائعة.
-نسخ من الموقع الرسمي = عقوبة محتوى مكرر.
+1. **Arabic searches for AI tools** — comparatively weak competition, and our core advantage.
+   - Examples: "أفضل أدوات الذكاء الاصطناعي"، "بديل ChatGPT مجاني"، "شرح Claude AI".
+2. **PDF tools with action intent** — very high intent and recurring traffic.
+   - Examples: "دمج ملفات PDF"، "تحويل PDF إلى صور"، "merge pdf online free".
+3. **Comparisons** — high-intent traffic that is comparatively easy to rank for.
+   - Examples: "ChatGPT vs Claude"، "الفرق بين Gemini و ChatGPT".
+4. **Prompts** — growing demand and content that scales.
 
-## المرحلة 6 — الأداء (Core Web Vitals)
+### Quality rule
 
-| البند | الحالة | ملاحظات |
+Every tool page must contain genuinely unique content: description, features, pricing,
+pros and cons, alternatives, and FAQs. Copying from the official site earns a duplicate-content
+penalty.
+
+## Phase 6 — Performance (Core Web Vitals)
+
+| Item | Status | Notes |
 |---|---|---|
-| خطوط: تقليل عدد العائلات المحمّلة (كانت 5) | ✅ | 3 عائلات لكل صفحة بدل 5، واستضافة ذاتية بدل Google Fonts |
-| إزالة الاتصال بطرف ثالث من مسار العرض | ✅ | حُذف `fonts.googleapis.com` و`fonts.gstatic.com` نهائيًا |
-| `font-display: swap` | ✅ | ضمن الـ`@font-face` المولّدة |
-| `preload` لخطوط أعلى الصفحة | ✅ | خطّان لكل لغة، قبل سكربتات AdSense/GA بالـ`<head>` |
-| lazy loading للصور | ⬜ | |
-| تأجيل سكربتات pdf-lib / pdf.js لصفحاتها فقط | ✅ | `src/lib/pdf-libs.ts`: استيراد ديناميكي مع تسخين عند اختيار الملف. المحركات (pdf-lib ‏418KB، pdf.js ‏322KB، JSZip ‏94KB) تطلع بحُزم منفصلة ولا تدخل الرسم البياني المبكر لأي صفحة. السطر كان `⬜` بالخطأ وانصحّح بـ2026-08-07 |
-| فحص Lighthouse دوري | ⬜ | |
-| فحص سيو آلي بعد كل بناء | ✅ | `scripts/verify-seo.mjs` — 156 صفحة، 2,649 تأكيد، 0 فشل |
+| Fonts: reduce the number of loaded families (was 5) | ✅ | 3 families per page instead of 5, self-hosted rather than served from Google Fonts |
+| Remove third-party connections from the render path | ✅ | `fonts.googleapis.com` and `fonts.gstatic.com` removed entirely |
+| `font-display: swap` | ✅ | Included in the generated `@font-face` rules |
+| `preload` for above-the-fold fonts | ✅ | Two fonts per language, placed ahead of the AdSense/GA scripts in `<head>` |
+| Lazy loading for images | ⬜ | |
+| Defer pdf-lib / pdf.js to their own pages only | ✅ | `src/lib/pdf-libs.ts`: dynamic import with a warm-up the moment a file is selected. The engines (pdf-lib 418 KB, pdf.js 322 KB, JSZip 94 KB) emit as separate chunks and never enter the early module graph of any page. This line was marked `⬜` in error and was corrected on 2026-08-07 |
+| Periodic Lighthouse audit | ⬜ | |
+| Automated SEO check after every build | ✅ | `scripts/verify-seo.mjs` — 156 pages, 2,649 assertions, 0 failures |
 
-### تفصيل توزيع الخطوط بعد التحسين
+### Font distribution after optimisation
 
-المصدر الوحيد: `scripts/build-fonts.mjs` — يقرأ من حزم `@fontsource`، ينسخ ملفات `.woff2` المطلوبة فقط إلى `public/fonts/`، ويولّد شيتين `src/styles/fonts-ar.css` و`fonts-en.css`. يشتغل تلقائيًا قبل كل بناء عبر `prebuild`.
+Single source: `scripts/build-fonts.mjs` — it reads from the `@fontsource` packages, copies only
+the required `.woff2` files into `public/fonts/`, and generates two stylesheets,
+`src/styles/fonts-ar.css` and `fonts-en.css`. It runs automatically before every build via
+`prebuild`.
 
-| الصفحات | العائلات | الأوزان | عدد الملفات |
+| Pages | Families | Weights | File count |
 |---|---|---|---|
-| العربية (`/`) | IBM Plex Sans Arabic · Tajawal · JetBrains Mono | 400/500/600/700 · 700 (+900 لاتيني للشعار) · 400/600/700 | 14 |
-| الإنجليزية (`/en/`) | Inter · Space Grotesk · JetBrains Mono | 400/500/600/700 · 700 · 400/600/700 | 8 |
+| Arabic (`/`) | IBM Plex Sans Arabic · Tajawal · JetBrains Mono | 400/500/600/700 · 700 (+900 Latin for the logo) · 400/600/700 | 14 |
+| English (`/en/`) | Inter · Space Grotesk · JetBrains Mono | 400/500/600/700 · 700 · 400/600/700 | 8 |
 
-قواعد مهمة انبنى عليها التقسيم:
+Important rules the split is built on:
 
-- **الصفحة العربية ما تنزّل Inter ولا Space Grotesk أبدًا، والعكس صحيح.** الشيت المضمّن بالـ`<head>` يتغيّر حسب `lang`، فما فيه `@font-face` زايدة أصلًا.
-- **الـsubset اللاتيني مضمّن مع الخطوط العربية** عشان أسماء الأدوات (ChatGPT، Claude) داخل نص عربي تنعرض بنفس الخط مو بخط النظام.
-- **الأوزان انضبطت على المستخدم فعليًا**: انحذفت Tajawal 400/500 وSpace Grotesk 500 وJetBrains Mono 500 (ما فيه أي عنصر يستخدمها)، وانضافت Inter 700 وJetBrains Mono 700 اللي كانت **ناقصة** — المتصفح كان يزوّرها (faux bold) بصفحات الإنجليزي وبالشارات.
-- الـCSS مضمّن inline بدل ملف خارجي عشان أول رسم ما ينتظر رحلة شبكة، و`/fonts/*` مكاش سنة كاملة بـ`netlify.toml`.
+- **An Arabic page never downloads Inter or Space Grotesk, and vice versa.** The stylesheet
+  inlined in `<head>` changes with `lang`, so there is no surplus `@font-face` in the first place.
+- **The Latin subset ships with the Arabic fonts** so that tool names (ChatGPT, Claude) inside
+  Arabic text render in the same typeface rather than falling back to the system font.
+- **Weights were matched to what is actually used**: Tajawal 400/500, Space Grotesk 500 and
+  JetBrains Mono 500 were removed (nothing on the site uses them), and Inter 700 and JetBrains
+  Mono 700 — which were **missing** — were added; the browser had been synthesising them
+  (faux bold) on English pages and in the badges.
+- The CSS is inlined rather than served as an external file so first paint doesn't wait on a
+  network round trip, and `/fonts/*` is cached for a full year via `netlify.toml`.
 
-## المرحلة 7 — خارج الموقع (Off-page)
+## Phase 7 — Off-page
 
-- ملفات على: Product Hunt، Reddit (r/artificial، مجتمعات عربية)، Twitter/X، LinkedIn.
-- إدراج OMXHub في أدلة أدوات AI الأخرى.
-- منشورات ضيف / مشاركة أدوات PDF المجانية بمجتمعات عربية تقنية.
-- **بدون شراء باكلينكس** — خطر عقوبة.
+- Profiles on Product Hunt, Reddit (r/artificial and Arabic communities), Twitter/X, and LinkedIn.
+- Getting OMXHub listed in other AI tool directories.
+- Guest posts, and sharing the free PDF tools in Arabic technical communities.
+- **No buying backlinks** — the penalty risk outweighs any gain.
 
 ---
 
-## ✅ سجل التنفيذ
+## ✅ Execution Log
 
-| التاريخ | ما تم إنجازه |
+| Date | What was done |
 |---|---|
-| 2026-08-05 | إنشاء خطة السيو |
-| 2026-08-05 | **المرحلة 1 مكتملة**: canonical + hreflang (ar/en/x-default) + Open Graph + Twitter Cards + og:image + وسم robots، كلها مركزية في `Layout.astro` عبر props جديدة (`image`, `noindex`, `schema`) |
-| 2026-08-05 | تحسين عناوين وأوصاف كل الصفحات — إزالة الأوصاف المكررة للعنوان، وعناوين أغنى لصفحات الأدوات |
-| 2026-08-05 | `noindex` على الصفحات الفاضية (ai-news / comparisons / tutorials) + استبعادها من الـsitemap |
-| 2026-08-05 | توحيد الـsitemap مع canonical (بدون trailing slash) لمنع الإشارات المتضاربة |
-| 2026-08-05 | **صفحات التصنيفات**: `/ai-tools/category/<slug>` باللغتين مع عنوان H1 مستهدف، مقدمة تحريرية فريدة، breadcrumbs، وschema (BreadcrumbList + CollectionPage) — تُولَّد فقط للتصنيفات اللي فيها أدوات |
-| 2026-08-05 | إصلاح 14 رابط مكسور (404) بالصفحة الرئيسية كانت تشير لتصنيفات غير موجودة |
-| 2026-08-05 | تحديث عنوان الصفحة الرئيسية ليغطي ركني الموقع (AI + PDF)، وعبارة الفوتر للتايقلاين الرسمي |
-| 2026-08-06 | ربط Google Search Console: تحقق الملكية عبر DNS TXT ورفع `sitemap-index.xml` |
-| 2026-08-06 | **المرحلة 2 مكتملة**: ملف `src/lib/schema.ts` صار المصدر الوحيد لكل الـJSON-LD، ويُطبع كـ`@graph` واحد لكل صفحة عبر prop الـ`schema` بالـ`Layout` |
-| 2026-08-06 | `WebSite` + `SearchAction` + `Organization` بالرئيسية باللغتين، و`Organization` بصفحة "من نحن". أُضيف شعار `public/logo.png` (512×512) بنفس هوية الفافيكون |
-| 2026-08-06 | البحث بالرئيسية صار يقرأ `?q=` من الرابط — عشان الـ`SearchAction` يشير لنقطة نهاية حقيقية مو وهمية |
-| 2026-08-06 | صفحات أدوات AI: `SoftwareApplication` + `Review` تحريري + `FAQPage` + breadcrumbs مرئية. اتّحدت صفحتا `[slug]` العربية والإنجليزية بمكوّن واحد `ToolDetail.astro` (كانتا مكررتين 202 سطر لكل وحدة) |
-| 2026-08-06 | أدوات PDF: قسم **"طريقة الاستخدام"** مرئي بـ4 خطوات لكل أداة باللغتين (12 صفحة) + `HowTo` schema يعكس نفس الخطوات المرئية حرفيًا |
-| 2026-08-06 | `BreadcrumbList` على كل الصفحات الداخلية الباقية (الأدوات، البرومبتات، أدوات PDF، التواصل، الدعم، الخصوصية) — 78 صفحة |
-| 2026-08-06 | **صفحة 404 مخصصة** باللغتين: بحث حي + روابط للأقسام + `noindex` + مستبعدة من الـsitemap + قاعدة `netlify.toml` تخدم النسخة الإنجليزية لروابط `/en/*` المكسورة |
-| 2026-08-06 | **إطلاق قسم المقارنات** (`/comparisons`): مجموعة محتوى جديدة `comparisons`، وقالبان مشتركان بين اللغتين (`ComparisonsIndex.astro` + `ComparisonDetail.astro`) — 10 صفحات مقارنة (5 × لغتين) بمحتوى تحريري كامل، وصفحتا هبوط فيهما بحث وفلترة تشتغل على HTML مرندر مسبقًا بدون أي fetch |
-| 2026-08-06 | **3 أدوات جديدة بالدليل**: Cursor، Windsurf (Devin Desktop)، FLUX — باللغتين. الدليل 11 ← 14 أداة، وتصنيف `coding` صار له صفحة حقيقية لأول مرة |
-| 2026-08-06 | `Article` schema لصفحات المقارنات + `CollectionPage` مع `ItemList` مضمّن لصفحة الهبوط. أُضيف `article()` و`collectionPage()` لـ`src/lib/schema.ts` |
-| 2026-08-06 | **الدرجات التحريرية**: كل مقارنة تعرض درجات 0–10 مع صندوق "كيف نقيّم؟" مرئي يوضّح إنها تقييم تحريري مو تصويت مستخدمين — نفس مبدأ رفض `aggregateRating` المزيّف |
-| 2026-08-06 | فحص آلي على الـ106 صفحة: كل الـJSON-LD صالح، بلوك واحد لكل صفحة، كل سؤال FAQ وكل breadcrumb موسّم ظاهر فعليًا بالنص، 0 روابط داخلية مكسورة، `h1` واحد لكل صفحة، وcanonical + hreflang على الكل |
-| 2026-08-06 | فحص آلي على الـ88 صفحة الناتجة: كل الـJSON-LD صالح، بلوك واحد لكل صفحة، وكل خطوة/سؤال/breadcrumb موسّم موجود فعليًا بنص الصفحة (0 أخطاء)، و0 روابط داخلية مكسورة |
-| 2026-08-06 | **المرحلة 6 — بند الخطوط**: الانتقال من رابط Google Fonts بـ5 عائلات على كل صفحة، إلى استضافة ذاتية بـ3 عائلات لكل لغة. أُضيف `scripts/build-fonts.mjs` (مولّد من `@fontsource`، يشتغل عبر `prebuild`)، و`preload` لخطّين فوق الطية، وترويسة كاش سنة لـ`/fonts/*`. الأوزان انضبطت على المستخدم فعليًا: حُذفت 3 أوزان ميتة وأُضيفت وزنان كانا ناقصين ويسببان faux bold |
-| 2026-08-06 | تحقّق آلي بعد البناء: 88 صفحة، كل صفحة فيها 3 عائلات بالضبط والمجموعة الصحيحة للغتها، 0 إشارة لـ`fonts.googleapis.com`/`gstatic`، كل ملف خط مُشار له موجود، 0 ملف خط يتيم، والـ`preload` يسبق سكربتات AdSense/GA بكل صفحة |
-| 2026-08-07 | **3 أدوات PDF جديدة** باللغتين (6 صفحات جديدة قابلة للفهرسة): استخراج صفحات (`/pdf-tools/extract-pages`)، حذف صفحات (`/pdf-tools/delete-pages`)، ترتيب صفحات (`/pdf-tools/organize-pdf`). كل صفحة فيها عنوان ووصف فريدان، 4 خطوات مرئية + `HowTo`، 4 أسئلة شائعة + `FAQPage`، وbreadcrumbs مرئية + `BreadcrumbList`. أدوات PDF: 6 ← 9 |
-| 2026-08-07 | **كتالوق أدوات PDF موحّد** (`src/data/pdf-tools.ts`) — كان نفس السرد مكرر بأربعة أماكن. سلسلة الروابط الداخلية صارت تُشتق منه: 3 صادرة و3 واردة لكل أداة، مغلقة ومتناظرة، بدون صيانة يدوية |
-| 2026-08-07 | **`scripts/verify-seo.mjs`**: فحص آلي للـHTML الناتج يغطي `@graph` واحد صالح لكل صفحة، canonical ذاتي، hreflang ar/en/x-default، `h1` واحد، توافق الـsitemap مع `noindex`، 0 روابط مكسورة، وأن كل خطوة/سؤال/breadcrumb موسّم ظاهر فعليًا بالنص. النتيجة: 156 صفحة، 2,649 تأكيد، 0 فشل |
-| 2026-08-07 | تصحيح ثلاثة أسطر متأخرة عن الواقع بالتوثيق: صفحة الدعم كانت مبنية ومكتوب عنها "لم تبدأ"، `tutorials` كانت مفهرسة ومكتوب عنها `noindex`، وتأجيل محركات PDF كان منفَّذًا ومكتوب `⬜` |
+| 2026-08-05 | SEO plan created |
+| 2026-08-05 | **Phase 1 complete**: canonical + hreflang (ar/en/x-default) + Open Graph + Twitter Cards + og:image + robots meta, all centralised in `Layout.astro` through new props (`image`, `noindex`, `schema`) |
+| 2026-08-05 | Titles and descriptions improved across every page — descriptions that merely repeated the title were removed, and tool pages were given richer titles |
+| 2026-08-05 | `noindex` applied to the empty pages (ai-news / comparisons / tutorials) and all three excluded from the sitemap |
+| 2026-08-05 | Sitemap aligned with the canonicals (no trailing slash) to prevent conflicting signals |
+| 2026-08-05 | **Category pages**: `/ai-tools/category/<slug>` in both languages, with a targeted H1, a unique editorial introduction, breadcrumbs, and schema (BreadcrumbList + CollectionPage) — generated only for categories that actually contain tools |
+| 2026-08-05 | Fixed 14 broken links (404) on the homepage that pointed at categories which did not exist |
+| 2026-08-05 | Homepage title updated to cover both pillars of the site (AI + PDF), and the footer line changed to the official tagline |
+| 2026-08-06 | Google Search Console connected: ownership verified via DNS TXT record and `sitemap-index.xml` submitted |
+| 2026-08-06 | **Phase 2 complete**: `src/lib/schema.ts` became the single source for all JSON-LD, printed as one `@graph` per page via the `schema` prop on `Layout` |
+| 2026-08-06 | `WebSite` + `SearchAction` + `Organization` on the homepage in both languages, and `Organization` on the About page. Added `public/logo.png` (512×512) with the same identity as the favicon |
+| 2026-08-06 | The homepage search now reads `?q=` from the URL — so the `SearchAction` points at a real endpoint rather than an imaginary one |
+| 2026-08-06 | AI tool pages: `SoftwareApplication` + editorial `Review` + `FAQPage` + visible breadcrumbs. The Arabic and English `[slug]` pages were merged into a single `ToolDetail.astro` component (they had been duplicates of 202 lines each) |
+| 2026-08-06 | PDF tools: a visible **"how to use it"** section with 4 steps per tool in both languages (12 pages) + `HowTo` schema mirroring those visible steps literally |
+| 2026-08-06 | `BreadcrumbList` on every remaining internal page (tools, prompts, PDF tools, contact, support, privacy) — 78 pages |
+| 2026-08-06 | **Custom 404 page** in both languages: live search + section links + `noindex` + excluded from the sitemap + a `netlify.toml` rule that serves the English version for broken `/en/*` URLs |
+| 2026-08-06 | **Comparisons section launched** (`/comparisons`): a new `comparisons` content collection and two templates shared between the languages (`ComparisonsIndex.astro` + `ComparisonDetail.astro`) — 10 comparison pages (5 × 2 languages) with full editorial content, plus two landing pages whose search and filtering run over pre-rendered HTML with no fetch |
+| 2026-08-06 | **3 new tools in the directory**: Cursor, Windsurf (Devin Desktop), FLUX — in both languages. Directory 11 → 14 tools, and the `coding` category got a real page for the first time |
+| 2026-08-06 | `Article` schema for the comparison pages, plus `CollectionPage` with an embedded `ItemList` for the landing page. Added `article()` and `collectionPage()` to `src/lib/schema.ts` |
+| 2026-08-06 | **Editorial scores**: every comparison displays 0–10 scores alongside a visible "how do we score?" box making clear this is an editorial assessment rather than a user vote — the same principle behind refusing a fabricated `aggregateRating` |
+| 2026-08-06 | Automated check across the 106 pages: all JSON-LD valid, one block per page, every marked-up FAQ question and breadcrumb genuinely visible in the text, 0 broken internal links, one `h1` per page, and canonical + hreflang on all of them |
+| 2026-08-06 | Automated check across the 88 generated pages: all JSON-LD valid, one block per page, every marked-up step / question / breadcrumb genuinely present in the page text (0 errors), and 0 broken internal links |
+| 2026-08-06 | **Phase 6 — fonts item**: moved from a Google Fonts link loading 5 families on every page to self-hosting with 3 families per language. Added `scripts/build-fonts.mjs` (generated from `@fontsource`, run via `prebuild`), `preload` for two above-the-fold fonts, and a one-year cache header for `/fonts/*`. Weights were matched to actual usage: 3 dead weights removed and 2 missing weights added that had been causing faux bold |
+| 2026-08-06 | Automated post-build verification: 88 pages, each carrying exactly 3 families and the correct set for its language, 0 references to `fonts.googleapis.com`/`gstatic`, every referenced font file present, 0 orphan font files, and `preload` ahead of the AdSense/GA scripts on every page |
+| 2026-08-07 | **3 new PDF tools** in both languages (6 new indexable pages): extract pages (`/pdf-tools/extract-pages`), delete pages (`/pdf-tools/delete-pages`), organize pages (`/pdf-tools/organize-pdf`). Each page has a unique title and description, 4 visible steps + `HowTo`, 4 FAQs + `FAQPage`, and visible breadcrumbs + `BreadcrumbList`. PDF tools: 6 → 9 |
+| 2026-08-07 | **Unified PDF tool catalogue** (`src/data/pdf-tools.ts`) — the same list had been duplicated in four places. The internal link chain is now derived from it: 3 outbound and 3 inbound per tool, closed and symmetric, with no manual maintenance |
+| 2026-08-07 | **`scripts/verify-seo.mjs`**: an automated check of the generated HTML covering one valid `@graph` per page, a self-referencing canonical, ar/en/x-default hreflang, one `h1`, sitemap/`noindex` agreement, 0 broken links, and that every marked-up step / question / breadcrumb genuinely appears in the visible text. Result: 156 pages, 2,649 assertions, 0 failures |
+| 2026-08-07 | Corrected three documentation lines that had fallen behind reality: the Support page was built but described as "not started", `tutorials` was indexed but described as `noindex`, and the deferral of the PDF engines was implemented but marked `⬜` |

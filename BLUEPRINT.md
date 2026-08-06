@@ -4,6 +4,19 @@
 > at the bottom as features ship — don't edit the core vision/structure without
 > discussing it first, since everything else is built against this plan.
 
+## Documentation Map
+
+| File | Covers |
+|---|---|
+| `BLUEPRINT.md` *(this file)* | Long-term product vision and roadmap — **what** we build |
+| `CLAUDE.md` | Development workflow and project rules — how we work |
+| `SEO.md` | Search strategy and implementation — **how** we rank |
+| `CHANGELOG.md` | Complete history of completed work, by date |
+| `IDEAS.md` | Future backlog: ideas, experiments, and feature requests |
+
+Rule of thumb: an idea starts in `IDEAS.md`, ships into `CHANGELOG.md`, and only the
+Blueprint's vision and Progress Log summary change here.
+
 ## Project Vision
 Build OMXHub into the leading AI & Productivity platform, combining an AI tools
 directory, free online productivity tools, learning resources, prompt libraries,
@@ -190,6 +203,9 @@ platform one polished feature at a time.
 ---
 
 ## 📍 Progress Log (updated as we ship)
+
+> This is the state-of-the-site summary. The dated, entry-by-entry history lives in
+> `CHANGELOG.md`; anything still unbuilt is tracked in `IDEAS.md`.
 
 **As of August 2026:**
 - ✅ Site live on Astro + Netlify, bilingual (AR/EN), dark theme default + toggle

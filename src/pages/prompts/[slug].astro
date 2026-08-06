@@ -68,11 +68,11 @@ const schema = trail(lang, [{ name: t('nav.prompts'), path: '/prompts' }, { name
   .cat-badge, .tool-tag {
     font-size: 0.78rem;
     color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
   }
   .diff-badge {
     font-size: 0.75rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
     padding: 2px 10px;
     border-radius: 100px;
     background: var(--surface-2);
@@ -97,7 +97,7 @@ const schema = trail(lang, [{ name: t('nav.prompts'), path: '/prompts' }, { name
     background: var(--surface-2);
     border-bottom: 1px solid var(--line);
   }
-  .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim); }
+  .mono { font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace; font-size: 0.8rem; color: var(--text-dim); }
   .copy-btn {
     background: var(--accent);
     color: var(--accent-ink);
@@ -113,7 +113,7 @@ const schema = trail(lang, [{ name: t('nav.prompts'), path: '/prompts' }, { name
     margin: 0;
     padding: 20px;
     white-space: pre-wrap;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
     font-size: 0.85rem;
     line-height: 1.7;
     color: var(--text);

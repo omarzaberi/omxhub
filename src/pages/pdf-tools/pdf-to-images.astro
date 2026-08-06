@@ -43,13 +43,9 @@ const related = [
 </PdfToolLayout>
 
 <script>
-  import * as pdfjsLib from 'pdfjs-dist';
-  // @ts-ignore
-  import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
-  // @ts-ignore
-  import JSZip from 'jszip';
-
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+  // The worker wiring lives in the loader so the 330 kB worker asset is not
+  // even referenced by this page until a render actually starts.
+  import { loadPdfJs, loadJsZip } from '../../lib/pdf-libs';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -63,6 +59,9 @@ const related = [
 
   async function loadFile(f: File) {
     currentFile = f;
+    // Choosing a file is a commitment to the action, so start fetching the
+    // engine now. It is normally parsed and ready before the button is pressed.
+    void loadPdfJs();
     fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
     thumbsEl.innerHTML = '';
     actionBtn.disabled = false;
@@ -90,6 +89,7 @@ const related = [
     actionBtn.disabled = true;
     thumbsEl.innerHTML = '';
     try {
+      const pdfjsLib = await loadPdfJs();
       const bytes = await currentFile.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
       const images: { name: string; blob: Blob }[] = [];
@@ -114,6 +114,7 @@ const related = [
         const url = URL.createObjectURL(images[0].blob);
         statusEl.innerHTML = `<a class="action-btn" href="${url}" download="page-1.png">⬇ تحميل الصورة</a>`;
       } else {
+        const JSZip = await loadJsZip();
         const zip = new JSZip();
         images.forEach((img) => zip.file(img.name, img.blob));
         const zipBlob = await zip.generateAsync({ type: 'blob' });

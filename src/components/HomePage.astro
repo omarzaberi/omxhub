@@ -337,7 +337,7 @@ const why = [
   <div class="stats-band">
     {stats.map((stat) => (
       <div class="stat">
-        <div class="stat-num" data-count={stat.num}>0</div>
+        <div class="stat-num" data-count={stat.num} style={`min-width:${String(stat.num).length}ch`}>0</div>
         <div class="stat-label">{stat.label}</div>
       </div>
     ))}
@@ -697,6 +697,14 @@ const why = [
     direction: ltr;
     color: var(--accent);
     line-height: 1.2;
+    /* The counter animates 0 -> N, so the glyph box grows as digits are added.
+       Tabular figures make every digit the same advance width, and the inline
+       `min-width` (set per stat, in `ch`) reserves the final width up front, so
+       the number never reflows mid-count. Without both, each new digit is a
+       layout shift that CLS charges us for. */
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
   }
   .stat-label { font-size: 0.85rem; color: var(--text-dim); }
 

@@ -27,6 +27,7 @@ pricingPlans:
     features: "توليد أسرع + خصوصية أعلى للصور"
 alternatives:
   - "flux"
+  - "adobe-firefly"
   - "canva-ai"
 faq:
   - q: "هل فيه نسخة مجانية؟"

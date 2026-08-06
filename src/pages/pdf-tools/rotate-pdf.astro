@@ -52,7 +52,7 @@ const related = [
 </PdfToolLayout>
 
 <script>
-  import { PDFDocument, degrees } from 'pdf-lib';
+  import { loadPdfLib } from '../../lib/pdf-libs';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -67,6 +67,9 @@ const related = [
 
   async function loadFile(f: File) {
     currentFile = f;
+    // Choosing a file is a commitment to the action, so start fetching the
+    // engine now. It is normally parsed and ready before the button is pressed.
+    void loadPdfLib();
     fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
     optionsEl.hidden = false;
     actionBtn.disabled = false;
@@ -94,6 +97,7 @@ const related = [
     statusEl.innerHTML = '<span class="spinner"></span> جاري التدوير...';
     actionBtn.disabled = true;
     try {
+      const { PDFDocument, degrees } = await loadPdfLib();
       const bytes = await currentFile.arrayBuffer();
       const doc = await PDFDocument.load(bytes);
       doc.getPages().forEach((page) => {

@@ -37,6 +37,7 @@ pricingPlans:
     features: "Commercial use of FLUX.2 [dev] on your own hardware, 100k images/month"
 alternatives:
   - "midjourney"
+  - "adobe-firefly"
   - "canva-ai"
 faq:
   - q: "Is FLUX actually free?"

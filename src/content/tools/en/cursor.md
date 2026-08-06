@@ -37,8 +37,8 @@ pricingPlans:
     features: "Central admin, pooled billing, and org-wide privacy controls"
 alternatives:
   - "windsurf"
-  - "claude"
-  - "microsoft-copilot"
+  - "github-copilot"
+  - "lovable"
 faq:
   - q: "Is Cursor worth $20 a month?"
     a: "It is if you write code most days. The real differentiator isn't generating new code — every assistant does that. It's Tab predicting your next edit, and the agent editing several files from one instruction. If you code occasionally or as a hobby, the free tier or a free extension in your current editor is enough."

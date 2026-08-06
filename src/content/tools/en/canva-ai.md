@@ -23,6 +23,8 @@ pricingPlans:
     features: "Full Magic Studio toolset + unlimited design elements"
 alternatives:
   - "midjourney"
+  - "gamma"
+  - "adcreative-ai"
 faq:
   - q: "Is Canva AI free?"
     a: "There's a free plan with basic templates and limited AI operations per month. Broader use requires Canva Pro at around $13/month. For light use, free is enough."

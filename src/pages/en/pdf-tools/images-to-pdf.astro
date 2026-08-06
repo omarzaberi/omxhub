@@ -42,7 +42,7 @@ const related = [
 </PdfToolLayout>
 
 <script>
-  import { PDFDocument } from 'pdf-lib';
+  import { loadPdfLib } from '../../../lib/pdf-libs';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -78,6 +78,9 @@ const related = [
       if (f.type === 'image/jpeg' || f.type === 'image/png') files.push(f);
     }
     renderFileList();
+    // Choosing a file is a commitment to the action, so start fetching the
+    // engine now. It is normally parsed and ready before the button is pressed.
+    void loadPdfLib();
   }
 
   chooseBtn.addEventListener('click', () => fileInput.click());
@@ -99,6 +102,7 @@ const related = [
     statusEl.innerHTML = '<span class="spinner"></span> Converting...';
     actionBtn.disabled = true;
     try {
+      const { PDFDocument } = await loadPdfLib();
       const doc = await PDFDocument.create();
       for (const file of files) {
         const bytes = await file.arrayBuffer();

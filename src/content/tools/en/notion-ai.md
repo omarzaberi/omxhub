@@ -21,6 +21,8 @@ pricingPlans:
     features: "Added on top of any Notion plan (free or paid)"
 alternatives:
   - "microsoft-copilot"
+  - "gamma"
+  - "grammarly"
 faq:
   - q: "Can I use it without a Notion account?"
     a: "No. Notion AI is an add-on to the Notion platform, not a standalone tool. You need a Notion workspace first. If you don't already use Notion, this isn't where you should start."

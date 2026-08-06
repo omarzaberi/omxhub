@@ -34,8 +34,8 @@ pricingPlans:
     features: "Central admin, privacy controls, and pooled billing"
 alternatives:
   - "cursor"
-  - "claude"
-  - "microsoft-copilot"
+  - "github-copilot"
+  - "lovable"
 faq:
   - q: "Why did Windsurf become Devin Desktop?"
     a: "Cognition — the company behind the Devin coding agent — acquired Windsurf at the end of 2025, and on 2 June 2026 officially rebranded the app to Devin Desktop via an automatic update. Subscriptions, settings, and extensions carried over unchanged, but the entry point moved: instead of opening straight into the editor, it opens on an agent management board."

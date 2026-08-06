@@ -24,7 +24,10 @@ pricingPlans:
   - name: "Creator"
     price: "$22 / month"
     features: "100,000 characters + higher studio quality"
-alternatives: []
+alternatives:
+  - "suno"
+  - "heygen"
+  - "runway"
 faq:
   - q: "Does it support Arabic?"
     a: "Yes, with several dialects, and quality has improved considerably in recent versions. Be realistic though: Arabic pronunciation is still less natural than English, and it occasionally misreads vowelization or sentence intonation. Test with the free allowance before committing to a full project."

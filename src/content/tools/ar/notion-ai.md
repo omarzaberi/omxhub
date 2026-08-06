@@ -21,6 +21,8 @@ pricingPlans:
     features: "يضاف فوق أي خطة Notion (مجانية أو مدفوعة)"
 alternatives:
   - "microsoft-copilot"
+  - "gamma"
+  - "grammarly"
 faq:
   - q: "هل أقدر أستخدمه بدون حساب Notion؟"
     a: "لا. Notion AI إضافة فوق منصة Notion، مو أداة مستقلة. لازم يكون عندك مساحة عمل بـNotion أول. لو ما تستخدم Notion أصلاً، هذا مو المكان اللي تبدأ منه."

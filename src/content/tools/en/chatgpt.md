@@ -31,6 +31,8 @@ pricingPlans:
 alternatives:
   - "claude"
   - "gemini"
+  - "grok"
+  - "deepseek"
 faq:
   - q: "Is ChatGPT actually free?"
     a: "Yes. The free plan gives you almost all the core features, capped by how many messages you can send in a time window. When you hit the cap you either wait or get moved to a lighter model. Most casual users never need to pay — a subscription makes sense only if you use it heavily every day."

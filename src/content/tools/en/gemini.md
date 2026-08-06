@@ -24,6 +24,7 @@ pricingPlans:
 alternatives:
   - "chatgpt"
   - "claude"
+  - "notebooklm"
 faq:
   - q: "Is Gemini free?"
     a: "Yes, and more generously than its competitors. The free plan gives broad usage without the tight caps you see elsewhere. The paid tier (Google AI Pro) unlocks stronger models and extra Google storage, but most users never need it."

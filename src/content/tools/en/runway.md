@@ -25,7 +25,10 @@ pricingPlans:
   - name: "Pro"
     price: "$28 / month"
     features: "2,250 credits/month + team features"
-alternatives: []
+alternatives:
+  - "google-veo"
+  - "kling-ai"
+  - "opus-clip"
 faq:
   - q: "Is the free tier enough to evaluate it?"
     a: "Barely. It gives a small trial credit good for a few short clips, then stops. Treat it as a sample rather than a usable plan. Paid plans start at $12/month."

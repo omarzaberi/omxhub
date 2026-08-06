@@ -23,6 +23,8 @@ pricingPlans:
     features: "Near-unlimited advanced search + stronger models"
 alternatives:
   - "chatgpt"
+  - "notebooklm"
+  - "grok"
 faq:
   - q: "How is it different from Google?"
     a: "Google gives you links to read yourself. Perplexity reads the sources and gives you a direct answer with a citation for each claim. For simple lookups Google is faster, but for questions that require pulling together several sources, Perplexity saves real time."

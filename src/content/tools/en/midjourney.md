@@ -27,6 +27,7 @@ pricingPlans:
     features: "Faster generation + higher image privacy"
 alternatives:
   - "flux"
+  - "adobe-firefly"
   - "canva-ai"
 faq:
   - q: "Is there a free version?"

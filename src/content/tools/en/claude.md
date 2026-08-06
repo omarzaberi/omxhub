@@ -23,6 +23,7 @@ pricingPlans:
 alternatives:
   - "chatgpt"
   - "gemini"
+  - "grok"
 faq:
   - q: "Is Claude better than ChatGPT?"
     a: "It depends on your work. Claude is stronger on long documents, deep analysis, and code review, and its writing needs less editing before it sounds human. ChatGPT has more features (images, voice) and is more widely used. If your work is writing and documents, try Claude. If you want one tool for everything, ChatGPT fits better."

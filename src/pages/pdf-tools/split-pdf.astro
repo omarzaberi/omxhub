@@ -52,9 +52,7 @@ const related = [
 </PdfToolLayout>
 
 <script>
-  import { PDFDocument } from 'pdf-lib';
-  // @ts-ignore
-  import JSZip from 'jszip';
+  import { loadPdfLib, loadJsZip } from '../../lib/pdf-libs';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -70,7 +68,11 @@ const related = [
 
   async function loadFile(f: File) {
     currentFile = f;
-    const bytes = await f.arrayBuffer();
+    // Splitting needs the page count up front, so this one awaits the engine
+    // rather than merely warming it. JSZip is warmed in parallel because the
+    // "all pages" mode will need it a moment later.
+    const [{ PDFDocument }, bytes] = await Promise.all([loadPdfLib(), f.arrayBuffer()]);
+    void loadJsZip();
     const doc = await PDFDocument.load(bytes);
     pageCount = doc.getPageCount();
     fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name} — ${pageCount} صفحة</span></div>`;
@@ -116,6 +118,7 @@ const related = [
     statusEl.innerHTML = '<span class="spinner"></span> جاري التقسيم...';
     actionBtn.disabled = true;
     try {
+      const { PDFDocument } = await loadPdfLib();
       const bytes = await currentFile.arrayBuffer();
       const srcDoc = await PDFDocument.load(bytes);
 
@@ -130,6 +133,7 @@ const related = [
         const url = URL.createObjectURL(blob);
         statusEl.innerHTML = `<a class="action-btn" href="${url}" download="split.pdf">⬇ تحميل الملف</a>`;
       } else {
+        const JSZip = await loadJsZip();
         const zip = new JSZip();
         for (let i = 0; i < pageCount; i++) {
           const newDoc = await PDFDocument.create();

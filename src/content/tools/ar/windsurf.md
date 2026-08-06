@@ -34,8 +34,8 @@ pricingPlans:
     features: "إدارة مركزية وضوابط خصوصية وفوترة موحّدة"
 alternatives:
   - "cursor"
-  - "claude"
-  - "microsoft-copilot"
+  - "github-copilot"
+  - "lovable"
 faq:
   - q: "ليش تغيّر اسمه من Windsurf لـDevin Desktop؟"
     a: "شركة Cognition — صاحبة وكيل البرمجة Devin — استحوذت على Windsurf بنهاية 2025، وبتاريخ 2 يونيو 2026 أعادت تسمية التطبيق رسميًا لـDevin Desktop عبر تحديث تلقائي. الاشتراكات والإعدادات والإضافات انتقلت كما هي، لكن واجهة البداية تغيّرت: بدل ما يفتح على المحرر مباشرة، صار يفتح على لوحة لإدارة الوكلاء."

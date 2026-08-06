@@ -5,6 +5,16 @@ import sitemap from '@astrojs/sitemap';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://omxhub.com',
+  build: {
+    // Every page was shipping one or two render-blocking <link rel=stylesheet>
+    // requests. Our per-page CSS is small (the heaviest page is ~17 kB raw,
+    // ~4 kB over the wire once gzipped), so inlining it costs a few kB of HTML
+    // and removes an entire round-trip from the critical path — a trade that
+    // pays off on mobile, where latency dominates transfer time.
+    // `auto` only inlines sheets under 4 kB, which left the two biggest ones
+    // blocking, so this is set explicitly.
+    inlineStylesheets: 'always',
+  },
   integrations: [
     sitemap({
       // Keep placeholder / noindex pages out of the sitemap so Google doesn't

@@ -115,15 +115,70 @@ const preloadedFonts =
         set:html={JSON.stringify(schema)}
       />
     )}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1192147959258733"
-     crossorigin="anonymous"></script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W8MG2DBF3F"></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('config', 'G-W8MG2DBF3F');
+    <!-- Third parties (AdSense + GA4) are the only scripts on most pages, and
+         together they dominate main-thread time. They are not needed to render
+         anything, so we keep the critical path completely free of them and load
+         both on whichever comes first: the first real user interaction, or an
+         idle slot after `load`. The command queues (`dataLayer`, `adsbygoogle`)
+         are created synchronously, so hits recorded before the vendor code
+         arrives are replayed in order once it does — a delayed load loses
+         timing precision, not the pageview itself.
+         Preconnect stays eager: it is a zero-JS hint that warms the TLS
+         handshake so the deferred fetch is cheap when it finally fires. -->
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <script is:inline define:vars={{ ADS_CLIENT: 'ca-pub-1192147959258733', GA_ID: 'G-W8MG2DBF3F' }}>
+      (function () {
+        window.dataLayer = window.dataLayer || [];
+        window.adsbygoogle = window.adsbygoogle || [];
+        function gtag() { window.dataLayer.push(arguments); }
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', GA_ID);
+
+        var started = false;
+        function start() {
+          if (started) return;
+          started = true;
+          cleanup();
+          [
+            'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADS_CLIENT,
+            'https://www.googletagmanager.com/gtag/js?id=' + GA_ID,
+          ].forEach(function (src) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            s.crossOrigin = 'anonymous';
+            document.head.appendChild(s);
+          });
+        }
+
+        // `pointerdown` covers mouse, touch and pen with one listener; `scroll`
+        // and `keydown` catch the cases that never produce a pointer event.
+        var EVENTS = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+        function cleanup() {
+          EVENTS.forEach(function (e) { window.removeEventListener(e, start, true); });
+        }
+        EVENTS.forEach(function (e) {
+          window.addEventListener(e, start, { capture: true, once: true, passive: true });
+        });
+
+        // Idle fallback for visitors who read without interacting at all. Waiting
+        // for `load` first guarantees our own render work is finished, so the ad
+        // script can never contend with first paint.
+        function scheduleIdle() {
+          // `typeof`, not `in`: the property can exist while holding undefined
+          // (older Safari shims and some extensions do exactly that), and `in`
+          // would happily hand us a non-callable.
+          if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(start, { timeout: 3500 });
+          } else {
+            setTimeout(start, 3500);
+          }
+        }
+        if (document.readyState === 'complete') scheduleIdle();
+        else window.addEventListener('load', scheduleIdle, { once: true });
+      })();
     </script>
     <script is:inline>
       // Set theme before paint to avoid flash. Default: dark.
@@ -223,8 +278,14 @@ const preloadedFonts =
 
   * { box-sizing: border-box; }
 
+  /* The `* Fallback` families are synthetic faces backed by local Arial and
+     scaled to match the web font's advance widths (see scripts/build-fonts.mjs).
+     They sit between the web font and the generic keyword, so during the
+     `font-display: swap` window text occupies the width it will end up at and
+     paragraphs don't rewrap when the real font arrives. Arabic has no such
+     entry on purpose — system Arabic faces are too inconsistent to match. */
   html[dir='rtl'] body { font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif; }
-  html[dir='ltr'] body { font-family: 'Inter', sans-serif; }
+  html[dir='ltr'] body { font-family: 'Inter', 'Inter Fallback', sans-serif; }
 
   body {
     margin: 0;
@@ -238,12 +299,12 @@ const preloadedFonts =
     font-family: 'Tajawal', sans-serif;
   }
   html[dir='ltr'] h1, html[dir='ltr'] h2, html[dir='ltr'] h3, html[dir='ltr'] .logo {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Space Grotesk', 'Space Grotesk Fallback', sans-serif;
   }
   /* Latin glyphs use JetBrains Mono; Arabic falls back to the Arabic UI face
      so mixed-language badges never render with broken letterforms. */
   .mono, code, .price-badge, .cat-badge, table {
-    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', 'IBM Plex Sans Arabic', monospace;
   }
 
   .wrap {
@@ -342,7 +403,7 @@ const preloadedFonts =
     width: auto;
     min-width: 38px;
     padding: 0 10px;
-    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', 'IBM Plex Sans Arabic', monospace;
     letter-spacing: 0.04em;
   }
 

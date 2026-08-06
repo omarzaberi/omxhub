@@ -2,18 +2,10 @@
 import Layout from '../../layouts/Layout.astro';
 import { trail } from '../../lib/schema';
 import { useTranslations, localizedPath } from '../../i18n/utils';
+import { pdfTools, pdfToolPath } from '../../data/pdf-tools';
 
 const lang = 'ar' as const;
 const t = useTranslations(lang);
-
-const tools = [
-  { icon: '🔗', name: 'دمج PDF', desc: 'ادمج عدة ملفات PDF بملف واحد بالترتيب اللي تبيه', href: '/pdf-tools/merge-pdf' },
-  { icon: '✂️', name: 'تقسيم PDF', desc: 'قسّم ملف PDF لصفحات أو نطاقات منفصلة', href: '/pdf-tools/split-pdf' },
-  { icon: '🔄', name: 'تدوير PDF', desc: 'دوّر صفحات ملف PDF 90 أو 180 أو 270 درجة', href: '/pdf-tools/rotate-pdf' },
-  { icon: '💧', name: 'علامة مائية', desc: 'أضف نص كعلامة مائية على كل صفحات ملف PDF', href: '/pdf-tools/watermark-pdf' },
-  { icon: '🖼️', name: 'صور إلى PDF', desc: 'حوّل صورة أو أكثر (JPG/PNG) لملف PDF واحد', href: '/pdf-tools/images-to-pdf' },
-  { icon: '📄', name: 'PDF إلى صور', desc: 'حوّل كل صفحة بملف PDF لصورة PNG منفصلة', href: '/pdf-tools/pdf-to-images' },
-];
 
 const schema = trail(lang, [{ name: t('nav.pdf') }]);
 ---
@@ -25,11 +17,11 @@ const schema = trail(lang, [{ name: t('nav.pdf') }]);
       وما فيه حد يومي للاستخدام.
     </p>
     <div class="grid">
-      {tools.map((tool) => (
-        <a href={localizedPath(lang, tool.href)} class="tool-card">
+      {pdfTools.map((tool) => (
+        <a href={localizedPath(lang, pdfToolPath(tool.slug))} class="tool-card">
           <span class="icon">{tool.icon}</span>
-          <h3>{tool.name}</h3>
-          <p>{tool.desc}</p>
+          <h3>{tool.name[lang]}</h3>
+          <p>{tool.desc[lang]}</p>
         </a>
       ))}
     </div>

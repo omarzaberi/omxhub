@@ -98,6 +98,9 @@ popularity: 60
 
 - [دمج PDF](/pdf-tools/merge-pdf) — عدة ملفات في مستند واحد
 - [تقسيم PDF](/pdf-tools/split-pdf) — استخراج صفحات أو تقسيم لملفات منفصلة
+- [استخراج صفحات](/pdf-tools/extract-pages) — اختيار الصفحات بالمعاينة بدل كتابة نطاق
+- [حذف صفحات](/pdf-tools/delete-pages) — إزالة الصفحات الفاضية أو الزايدة
+- [ترتيب صفحات PDF](/pdf-tools/organize-pdf) — إعادة ترتيب الصفحات أو عكسها
 - [تدوير PDF](/pdf-tools/rotate-pdf) — تصحيح الصفحات المقلوبة
 - [علامة مائية](/pdf-tools/watermark-pdf) — نص شفاف فوق كل صفحة
 - [صور إلى PDF](/pdf-tools/images-to-pdf) — تجميع صور في مستند

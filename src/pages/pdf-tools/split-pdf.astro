@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../i18n/utils';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
 
 const lang = 'ar' as const;
 const t = useTranslations(lang);
@@ -15,10 +16,7 @@ const steps = [
   { name: 'اضغط "تقسيم الملف"', text: 'المعالجة كلها داخل متصفحك — ملفك ما يطلع من جهازك.' },
   { name: 'حمّل الناتج', text: 'النطاق المحدد ينزل كملف PDF واحد، والتقسيم الكامل ينزل كملف ZIP فيه كل صفحة لحالها.' },
 ];
-const related = [
-  { label: 'دمج PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
-  { label: 'تدوير PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
-];
+const related = relatedPdfTools(lang, 'split-pdf');
 ---
 <PdfToolLayout
   lang={lang}

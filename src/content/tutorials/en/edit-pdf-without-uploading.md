@@ -98,6 +98,9 @@ The practical result: faster (no upload, no download), more private (no copy any
 
 - [Merge PDF](/en/pdf-tools/merge-pdf) — several files into one document
 - [Split PDF](/en/pdf-tools/split-pdf) — extract pages or split into separate files
+- [Extract Pages](/en/pdf-tools/extract-pages) — pick pages from a preview instead of typing a range
+- [Delete Pages](/en/pdf-tools/delete-pages) — drop blank or unwanted pages
+- [Organize PDF](/en/pdf-tools/organize-pdf) — reorder pages or reverse them all
 - [Rotate PDF](/en/pdf-tools/rotate-pdf) — fix upside-down pages
 - [Watermark PDF](/en/pdf-tools/watermark-pdf) — transparent text over every page
 - [Images to PDF](/en/pdf-tools/images-to-pdf) — combine images into a document

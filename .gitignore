@@ -20,5 +20,10 @@ pnpm-debug.log*
 # macOS-specific files
 .DS_Store
 
+# FUSE leftovers — stale inode copies created when an open file is replaced.
+# They are byte-for-byte old versions of real source files, so without this they
+# show up as untracked and can be committed by accident.
+.fuse_hidden*
+
 # jetbrains setting folder
 .idea/

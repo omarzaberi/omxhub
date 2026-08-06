@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
@@ -16,10 +17,7 @@ const steps = [
   { name: 'Click "Merge Files"', text: 'Merging happens inside your browser — nothing is uploaded to a server and there is no queue to wait in.' },
   { name: 'Download the result', text: 'You get a single PDF containing every page in the order you set.' },
 ];
-const related = [
-  { label: 'Split PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
-  { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
-];
+const related = relatedPdfTools(lang, 'merge-pdf');
 ---
 <PdfToolLayout
   lang={lang}

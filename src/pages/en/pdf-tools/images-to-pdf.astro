@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
@@ -15,10 +16,7 @@ const steps = [
   { name: 'Click "Convert to PDF"', text: 'Conversion runs in your browser — your images are never uploaded anywhere.' },
   { name: 'Download the result', text: 'You get a single PDF with every image as a consecutive page.' },
 ];
-const related = [
-  { label: 'PDF to Images', href: localizedPath(lang, '/pdf-tools/pdf-to-images') },
-  { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
-];
+const related = relatedPdfTools(lang, 'images-to-pdf');
 ---
 <PdfToolLayout
   lang={lang}

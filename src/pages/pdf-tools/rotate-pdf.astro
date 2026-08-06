@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../i18n/utils';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
 
 const lang = 'ar' as const;
 const t = useTranslations(lang);
@@ -14,10 +15,7 @@ const steps = [
   { name: 'اضغط "تدوير الملف"', text: 'التدوير يتم داخل متصفحك مباشرة بدون رفع الملف.' },
   { name: 'حمّل الناتج', text: 'ينزل نفس الملف بنفس المحتوى، بس بالاتجاه الصحيح.' },
 ];
-const related = [
-  { label: 'دمج PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
-  { label: 'تقسيم PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
-];
+const related = relatedPdfTools(lang, 'rotate-pdf');
 ---
 <PdfToolLayout
   lang={lang}

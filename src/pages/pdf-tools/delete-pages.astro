@@ -1,0 +1,170 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'الملف الأصلي يتغيّر؟',
+    a: 'أبدًا. الأداة تبني ملف PDF جديد وتنزّله لك، والملف الأصلي على جهازك يبقى كما هو بدون أي تعديل.',
+  },
+  {
+    q: 'أقدر أحذف كل الصفحات؟',
+    a: 'لا — ملف PDF بدون صفحات ملف غير صالح، فالأداة تمنع الحذف لو حددت كل الصفحات وتنبهك إنك لازم تترك صفحة وحدة على الأقل.',
+  },
+  {
+    q: 'الحذف يقلل حجم الملف؟',
+    a: 'غالبًا نعم، لأن محتوى الصفحات المحذوفة ما ينتقل للملف الجديد. لكن الانخفاض يعتمد على وش كان داخل هذي الصفحات — حذف صفحة نص ما يوفر مثل حذف صفحة فيها صور عالية الدقة.',
+  },
+  {
+    q: 'الروابط والفهرس داخل الملف يتأثرون؟',
+    a: 'الروابط اللي تشير لصفحة محذوفة ما يبقى لها هدف بشكل طبيعي. راجع الفهرس والروابط الداخلية بعد الحذف لو الملف يعتمد عليها بشكل كبير.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف". الملف ما يُرفع لأي سيرفر.' },
+  { name: 'حدد الصفحات اللي تبي تشيلها', text: 'تظهر لك معاينة لكل صفحة — اضغط على الصفحات الفاضية أو المكررة أو الزايدة فتتعلّم بعلامة صح.' },
+  { name: 'اضغط "حذف الصفحات المحددة"', text: 'الأداة تبني ملف PDF جديد فيه الصفحات الباقية فقط، بترتيبها وجودتها الأصلية.' },
+  { name: 'حمّل الملف الجديد', text: 'ينزل الملف بدون الصفحات اللي حددتها، والملف الأصلي على جهازك يبقى كما هو.' },
+];
+
+const related = relatedPdfTools(lang, 'delete-pages');
+---
+<PdfToolLayout
+  lang={lang}
+  title="حذف صفحات من PDF"
+  description="شِل الصفحات الفاضية أو الزايدة من ملف PDF بضغطة، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="toolbar" class="grid-toolbar" hidden>
+    <button type="button" id="clear-all">إلغاء التحديد</button>
+    <span class="grid-count" id="count" aria-live="polite"></span>
+  </div>
+
+  <div
+    id="page-grid"
+    class="page-grid"
+    data-mode="select"
+    data-page-label="صفحة"
+    role="group"
+    aria-label="صفحات الملف — اضغط على الصفحة لتحديدها للحذف"
+    hidden
+  ></div>
+
+  <p id="limit-note" class="grid-hint" hidden>
+    الملف أطول من 150 صفحة، فعرضنا أرقام الصفحات بدون معاينات عشان المتصفح ما يبطئ. التحديد والحذف يشتغلان بشكل طبيعي.
+  </p>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>حذف الصفحات المحددة</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../lib/pdf-libs';
+  import { createPageGrid, THUMB_LIMIT } from '../../lib/pdf-page-grid';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const toolbarEl = document.getElementById('toolbar')!;
+  const countEl = document.getElementById('count')!;
+  const limitNote = document.getElementById('limit-note')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  /** A PDF with zero pages is invalid, so the last page can never be removed. */
+  const removable = () => {
+    const n = grid.getSelected().length;
+    return n > 0 && n < grid.pageCount();
+  };
+
+  const grid = createPageGrid(document.getElementById('page-grid')!, () => {
+    const n = grid.getSelected().length;
+    const remaining = grid.pageCount() - n;
+    countEl.textContent =
+      n > 0 && remaining === 0
+        ? 'لازم تترك صفحة وحدة على الأقل'
+        : `${n} صفحة للحذف — يتبقى ${remaining}`;
+    actionBtn.disabled = !removable();
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    statusEl.hidden = true;
+    actionBtn.disabled = true;
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    try {
+      const pages = await grid.load(f);
+      toolbarEl.hidden = false;
+      limitNote.hidden = pages <= THUMB_LIMIT;
+    } catch (err) {
+      console.error(err);
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  document.getElementById('clear-all')!.addEventListener('click', () => grid.clearSelection());
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile || !removable()) return;
+    const drop = new Set(grid.getSelected());
+    const keep = Array.from({ length: grid.pageCount() }, (_, i) => i).filter((i) => !drop.has(i));
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري الحذف...';
+    actionBtn.disabled = true;
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const srcDoc = await PDFDocument.load(await currentFile.arrayBuffer());
+      // Copying the survivors into a fresh document is cheaper and safer than
+      // calling removePage() in a loop, which shifts every later index.
+      const newDoc = await PDFDocument.create();
+      const pages = await newDoc.copyPages(srcDoc, keep);
+      pages.forEach((p) => newDoc.addPage(p));
+      const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="cleaned.pdf">⬇ تحميل الملف (${keep.length} صفحة)</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = !removable();
+    }
+  });
+</script>

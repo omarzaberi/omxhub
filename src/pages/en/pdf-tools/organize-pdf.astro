@@ -1,0 +1,170 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Can I reorder pages without dragging?',
+    a: 'Yes. Every page has two buttons underneath that move it one step earlier or later, and they work with the keyboard and on touch screens. Dragging is an extra convenience, not the only way.',
+  },
+  {
+    q: 'What does the "Reverse order" button do?',
+    a: 'It flips the whole document in one click. Handy for files that came out of a scanner that fed the pages from the last sheet to the first.',
+  },
+  {
+    q: 'Does reordering affect page quality?',
+    a: 'No. Pages are copied verbatim with their text, images and fonts intact — the only thing that changes is the order they appear in.',
+  },
+  {
+    q: 'Can I delete a page from here?',
+    a: 'This tool does reordering only, to keep it simple. Use the Delete Pages tool to remove pages, then come back here to arrange the result.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". It is read directly in your browser.' },
+  { name: 'Rearrange the pages', text: 'Drag any page to its new position, or use the two buttons under each page to move it one step earlier or later.' },
+  { name: 'Click "Save new order"', text: 'The tool builds a new PDF that follows exactly the order you see in the preview.' },
+  { name: 'Download the new file', text: 'You get the reordered document, and your original file stays as it was.' },
+];
+
+const related = relatedPdfTools(lang, 'organize-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Organize PDF Pages"
+  description="Reorder PDF pages by dragging or with buttons, or reverse them all — free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="toolbar" class="grid-toolbar" hidden>
+    <button type="button" id="reverse">Reverse order</button>
+    <button type="button" id="restore">Restore original order</button>
+    <span class="grid-count" id="count" aria-live="polite"></span>
+  </div>
+
+  <div
+    id="page-grid"
+    class="page-grid"
+    data-mode="reorder"
+    data-page-label="Page"
+    data-move-earlier="Move earlier"
+    data-move-later="Move later"
+    role="group"
+    aria-label="Document pages — use the move buttons to reorder them"
+    hidden
+  ></div>
+
+  <p id="hint" class="grid-hint" hidden>
+    The number on each page is its position in the original file; its position in the grid is where it will land in the new one.
+  </p>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Save new order</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { createPageGrid } from '../../../lib/pdf-page-grid';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const toolbarEl = document.getElementById('toolbar')!;
+  const countEl = document.getElementById('count')!;
+  const hintEl = document.getElementById('hint')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  /** True once the display order differs from the document order. */
+  const isReordered = () => grid.getOrder().some((src, position) => src !== position);
+
+  const grid = createPageGrid(document.getElementById('page-grid')!, () => {
+    const n = grid.pageCount();
+    countEl.textContent = isReordered()
+      ? `${n} pages — order changed`
+      : `${n} pages — original order`;
+    actionBtn.disabled = n === 0;
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    statusEl.hidden = true;
+    actionBtn.disabled = true;
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    try {
+      await grid.load(f);
+      toolbarEl.hidden = false;
+      hintEl.hidden = false;
+    } catch (err) {
+      console.error(err);
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong, make sure the file is a valid PDF and try again';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  document.getElementById('reverse')!.addEventListener('click', () => grid.reverse());
+  document.getElementById('restore')!.addEventListener('click', () => {
+    if (currentFile) loadFile(currentFile);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    const order = grid.getOrder();
+    if (!currentFile || order.length === 0) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Saving...';
+    actionBtn.disabled = true;
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const srcDoc = await PDFDocument.load(await currentFile.arrayBuffer());
+      const newDoc = await PDFDocument.create();
+      // copyPages preserves the order of the indices it is given, so the grid's
+      // display order becomes the document order with no further work.
+      const pages = await newDoc.copyPages(srcDoc, order);
+      pages.forEach((p) => newDoc.addPage(p));
+      const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="organized.pdf">⬇ Download reordered PDF</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong, make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = grid.pageCount() === 0;
+    }
+  });
+</script>

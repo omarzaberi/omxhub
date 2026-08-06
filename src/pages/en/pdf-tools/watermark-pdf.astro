@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
@@ -15,10 +16,7 @@ const steps = [
   { name: 'Click "Add Watermark"', text: 'The text is placed diagonally across the middle of every page in translucent grey, so it never hides your content.' },
   { name: 'Download the result', text: 'You get a new watermarked PDF; your original file is left untouched.' },
 ];
-const related = [
-  { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
-  { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
-];
+const related = relatedPdfTools(lang, 'watermark-pdf');
 ---
 <PdfToolLayout
   lang={lang}

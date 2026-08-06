@@ -1,0 +1,163 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'How is this different from the Split PDF tool?',
+    a: 'Split asks you to type a range like 1-3,5 — faster when you already know the exact page numbers. Here you see a preview of every page and click the ones you want, which is better when you are hunting for a specific page inside a long document.',
+  },
+  {
+    q: 'Do the extracted pages keep their quality?',
+    a: 'Yes. Each page is copied verbatim from the original with its text, images and fonts intact — nothing is re-rendered or re-compressed, so the result is pixel-identical to the source.',
+  },
+  {
+    q: 'Does the new file follow the order I clicked in?',
+    a: 'No — pages are saved in their original document order regardless of the order you selected them. If you need a different sequence, extract first and then rearrange the result with the Organize PDF tool.',
+  },
+  {
+    q: 'Why do very large files show no previews?',
+    a: 'Previews are rendered for documents up to 150 pages. Beyond that we show page numbers only so the browser stays responsive — selection and extraction still work exactly the same.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". It is read directly in your browser.' },
+  { name: 'Pick your pages', text: 'A preview of every page appears — click the ones you want to extract and they get a checkmark.' },
+  { name: 'Click "Extract pages"', text: 'The selected pages are copied into a brand new PDF at their original quality.' },
+  { name: 'Download the new file', text: 'You get a PDF containing only the pages you chose, in their original order.' },
+];
+
+const related = relatedPdfTools(lang, 'extract-pages');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Extract Pages from PDF"
+  description="Pick the pages you want from a preview and save them as a new PDF — free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="toolbar" class="grid-toolbar" hidden>
+    <button type="button" id="select-all">Select all</button>
+    <button type="button" id="clear-all">Clear selection</button>
+    <span class="grid-count" id="count" aria-live="polite"></span>
+  </div>
+
+  <div
+    id="page-grid"
+    class="page-grid"
+    data-mode="select"
+    data-page-label="Page"
+    role="group"
+    aria-label="Document pages — click a page to select it"
+    hidden
+  ></div>
+
+  <p id="limit-note" class="grid-hint" hidden>
+    This document is longer than 150 pages, so we show page numbers without previews to keep the browser responsive. Selecting and extracting work as normal.
+  </p>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Extract pages</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { createPageGrid, THUMB_LIMIT } from '../../../lib/pdf-page-grid';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const toolbarEl = document.getElementById('toolbar')!;
+  const countEl = document.getElementById('count')!;
+  const limitNote = document.getElementById('limit-note')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  const grid = createPageGrid(document.getElementById('page-grid')!, () => {
+    const n = grid.getSelected().length;
+    countEl.textContent = `${n} of ${grid.pageCount()} pages selected`;
+    actionBtn.disabled = n === 0;
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    statusEl.hidden = true;
+    actionBtn.disabled = true;
+    // Writing the output needs pdf-lib; start fetching it while pdf.js renders
+    // the previews, so the button is never waiting on a cold import.
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    try {
+      const pages = await grid.load(f);
+      toolbarEl.hidden = false;
+      limitNote.hidden = pages <= THUMB_LIMIT;
+    } catch (err) {
+      console.error(err);
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong, make sure the file is a valid PDF and try again';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  document.getElementById('select-all')!.addEventListener('click', () => grid.selectAll());
+  document.getElementById('clear-all')!.addEventListener('click', () => grid.clearSelection());
+
+  actionBtn.addEventListener('click', async () => {
+    const indices = grid.getSelected();
+    if (!currentFile || indices.length === 0) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Extracting...';
+    actionBtn.disabled = true;
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const srcDoc = await PDFDocument.load(await currentFile.arrayBuffer());
+      const newDoc = await PDFDocument.create();
+      // Ascending source order — the visual selection order is not the
+      // document order, and a shuffled result would surprise the user.
+      const pages = await newDoc.copyPages(srcDoc, indices);
+      pages.forEach((p) => newDoc.addPage(p));
+      const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="extracted.pdf">⬇ Download PDF (${indices.length} pages)</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong, make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = grid.getSelected().length === 0;
+    }
+  });
+</script>

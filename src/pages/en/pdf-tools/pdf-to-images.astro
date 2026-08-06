@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
@@ -15,10 +16,7 @@ const steps = [
   { name: 'Review the previews', text: 'Thumbnails of all pages appear so you can check the output before downloading.' },
   { name: 'Download the result', text: 'Multiple pages download as a ZIP; a single page downloads straight as a PNG.' },
 ];
-const related = [
-  { label: 'Images to PDF', href: localizedPath(lang, '/pdf-tools/images-to-pdf') },
-  { label: 'Split PDF', href: localizedPath(lang, '/pdf-tools/split-pdf') },
-];
+const related = relatedPdfTools(lang, 'pdf-to-images');
 ---
 <PdfToolLayout
   lang={lang}
@@ -101,7 +99,7 @@ const related = [
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d')!;
-        await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        await page.render({ canvasContext: ctx, viewport }).promise;
         const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
         images.push({ name: `page-${i}.png`, blob });
 

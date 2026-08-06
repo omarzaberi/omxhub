@@ -146,13 +146,34 @@ platform one polished feature at a time.
   Semrush, Surfer SEO, NotebookLM. All 7 categories are populated, so every category
   landing page is live.
 - ✅ Prompt Library: 10 prompts live
-- ✅ PDF Tools (Phase 1, partial): Merge, Split, Rotate, Watermark, Images→PDF, PDF→Images
-  — all tested working entirely client-side. **Not yet built:** Compress, Delete Pages,
-  Extract Pages, Organize Pages, Add Text, Lock/Unlock PDF, Crop, Page Numbers
+- ✅ PDF Tools (Phase 1, partial): **9 of 15 live** — Merge, Split, Extract Pages,
+  Delete Pages, Organize Pages, Rotate, Watermark, Images→PDF, PDF→Images — all working
+  entirely client-side. **Not yet built:** Compress, Add Text, Lock PDF, Unlock PDF,
+  Crop, Page Numbers.
+  - **Known constraints on what's left**, so they get planned rather than discovered:
+    *Compress* can only be done in-browser by rasterising pages through pdf.js, which
+    destroys selectable text and can grow text-only PDFs — it needs a decision on that
+    trade-off before it ships. *Lock* and *Unlock* are impossible with pdf-lib, which has
+    no encryption support; they need a new (still free, still client-side) dependency such
+    as `@cantoo/pdf-lib`. The other three are plain pdf-lib draw/box operations.
+- ✅ **PDF tool catalogue is a single source of truth** (`src/data/pdf-tools.ts`). The tool
+  list used to be maintained by hand in four places — both `/pdf-tools` hub pages, the
+  homepage quick-actions grid, and a bespoke `related` array on every tool page. All four
+  now derive from the catalogue, so adding a tool is a one-file change. `relatedPdfTools()`
+  walks the catalogue and wraps around, giving every tool exactly 3 outbound and 3 inbound
+  related links — a closed chain in which no PDF tool can become orphaned as the set grows.
+- ✅ **Page-management tools share one interaction module** (`src/lib/pdf-page-grid.ts`):
+  pdf.js thumbnails, selection, and drag-or-button reordering. Extract / Delete / Organize
+  keep only the few lines of pdf-lib that genuinely differ. Reordering never depends on
+  drag-and-drop alone — every page also has explicit move buttons, so the tool works by
+  keyboard and on touch.
 - ✅ Live site search (real-time filtering across tools + prompts)
 - ✅ About, Contact, Privacy Policy (AdSense-ready) pages
 - ✅ Google AdSense script installed
-- ⬜ Support/Ko-fi page — not started
+- ✅ Support/Ko-fi page (`/support`, both languages) — hero, suggested amounts linking to
+  ko-fi.com/omxhub, "why support" cards, public roadmap, and a community CTA. Follows the
+  blueprint's UX rule: no popups, and the Ko-fi link appears only under each PDF tool,
+  in the footer, and on this page
 - ✅ **Comparisons section live** (`/comparisons`) — the highest-intent SEO surface on the site:
   - Landing page: hero, in-page search, featured / latest / popular rails, category filters,
     scoring methodology, and a CTA into the AI directory. Search and filtering run over
@@ -196,3 +217,8 @@ platform one polished feature at a time.
 - ✅ Custom 404 page in both languages, with live search and section links
 - ✅ Every PDF tool now has a visible "how to use it" section (4 real steps, both
   languages) — better for users, and the basis for the `HowTo` markup
+- ✅ **Post-build verification is scripted**, not ad hoc (`scripts/verify-seo.mjs`): checks
+  every built page for one valid `@graph`, a self-referencing canonical, ar/en/x-default
+  hreflang, exactly one `h1`, sitemap/`noindex` agreement, zero broken internal links, and
+  that every marked-up step, FAQ question and breadcrumb really appears in the visible text.
+  Currently 156 pages, 2,649 assertions, 0 failures.

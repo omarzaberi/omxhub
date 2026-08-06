@@ -12,7 +12,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "npm run build && node tests/deferred-scripts.test.mjs"
+    "test": "npm run build && node tests/deferred-scripts.test.mjs && node scripts/verify-seo.mjs"
   },
   "devDependencies": {
     "jsdom": "^26.0.0"

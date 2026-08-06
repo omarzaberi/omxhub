@@ -1,0 +1,170 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Does this modify my original file?',
+    a: 'Never. The tool builds a new PDF and downloads it to you — the original file on your device is left completely untouched.',
+  },
+  {
+    q: 'Can I delete every page?',
+    a: 'No. A PDF with no pages is an invalid file, so the tool blocks the action if you select all pages and reminds you to keep at least one.',
+  },
+  {
+    q: 'Will deleting pages make the file smaller?',
+    a: 'Usually yes, because the content of the removed pages never reaches the new file. How much you save depends on what was on those pages — dropping a page of text saves far less than dropping one full of high-resolution images.',
+  },
+  {
+    q: 'What happens to links and bookmarks?',
+    a: 'Any link that pointed at a deleted page naturally no longer has a destination. If your document relies heavily on internal links or a table of contents, check them after deleting.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". Nothing is uploaded to a server.' },
+  { name: 'Select the pages to remove', text: 'A preview of every page appears — click the blank, duplicate or unwanted ones and they get a checkmark.' },
+  { name: 'Click "Delete selected pages"', text: 'The tool builds a new PDF containing only the pages you kept, at their original order and quality.' },
+  { name: 'Download the new file', text: 'You get the document without the pages you selected, and your original file stays as it was.' },
+];
+
+const related = relatedPdfTools(lang, 'delete-pages');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Delete Pages from PDF"
+  description="Remove blank or unwanted pages from a PDF in one click — free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="toolbar" class="grid-toolbar" hidden>
+    <button type="button" id="clear-all">Clear selection</button>
+    <span class="grid-count" id="count" aria-live="polite"></span>
+  </div>
+
+  <div
+    id="page-grid"
+    class="page-grid"
+    data-mode="select"
+    data-page-label="Page"
+    role="group"
+    aria-label="Document pages — click a page to mark it for deletion"
+    hidden
+  ></div>
+
+  <p id="limit-note" class="grid-hint" hidden>
+    This document is longer than 150 pages, so we show page numbers without previews to keep the browser responsive. Selecting and deleting work as normal.
+  </p>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Delete selected pages</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { createPageGrid, THUMB_LIMIT } from '../../../lib/pdf-page-grid';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const toolbarEl = document.getElementById('toolbar')!;
+  const countEl = document.getElementById('count')!;
+  const limitNote = document.getElementById('limit-note')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  /** A PDF with zero pages is invalid, so the last page can never be removed. */
+  const removable = () => {
+    const n = grid.getSelected().length;
+    return n > 0 && n < grid.pageCount();
+  };
+
+  const grid = createPageGrid(document.getElementById('page-grid')!, () => {
+    const n = grid.getSelected().length;
+    const remaining = grid.pageCount() - n;
+    countEl.textContent =
+      n > 0 && remaining === 0
+        ? 'Keep at least one page'
+        : `${n} to delete — ${remaining} will remain`;
+    actionBtn.disabled = !removable();
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    statusEl.hidden = true;
+    actionBtn.disabled = true;
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    try {
+      const pages = await grid.load(f);
+      toolbarEl.hidden = false;
+      limitNote.hidden = pages <= THUMB_LIMIT;
+    } catch (err) {
+      console.error(err);
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong, make sure the file is a valid PDF and try again';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  document.getElementById('clear-all')!.addEventListener('click', () => grid.clearSelection());
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile || !removable()) return;
+    const drop = new Set(grid.getSelected());
+    const keep = Array.from({ length: grid.pageCount() }, (_, i) => i).filter((i) => !drop.has(i));
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Deleting...';
+    actionBtn.disabled = true;
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const srcDoc = await PDFDocument.load(await currentFile.arrayBuffer());
+      // Copying the survivors into a fresh document is cheaper and safer than
+      // calling removePage() in a loop, which shifts every later index.
+      const newDoc = await PDFDocument.create();
+      const pages = await newDoc.copyPages(srcDoc, keep);
+      pages.forEach((p) => newDoc.addPage(p));
+      const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="cleaned.pdf">⬇ Download PDF (${keep.length} pages)</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong, make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = !removable();
+    }
+  });
+</script>

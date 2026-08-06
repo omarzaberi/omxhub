@@ -1,6 +1,7 @@
 ---
 import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
-import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
@@ -15,10 +16,7 @@ const steps = [
   { name: 'Click "Split File"', text: 'All processing runs in your browser — the file never leaves your device.' },
   { name: 'Download the result', text: 'A page range downloads as one PDF; a full split downloads as a ZIP with each page as its own file.' },
 ];
-const related = [
-  { label: 'Merge PDF', href: localizedPath(lang, '/pdf-tools/merge-pdf') },
-  { label: 'Rotate PDF', href: localizedPath(lang, '/pdf-tools/rotate-pdf') },
-];
+const related = relatedPdfTools(lang, 'split-pdf');
 ---
 <PdfToolLayout
   lang={lang}

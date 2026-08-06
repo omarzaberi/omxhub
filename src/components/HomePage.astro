@@ -5,6 +5,7 @@ import ComparisonCard from './ComparisonCard.astro';
 import SiteSearch from './SiteSearch.astro';
 import { byPopularity, comparisonPath, inLang } from '../lib/comparisons';
 import { categories, type CategoryKey } from '../data/categories';
+import { pdfTools, pdfToolPath } from '../data/pdf-tools';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
 import { getCollection } from 'astro:content';
@@ -50,25 +51,14 @@ const availableCategories = (Object.keys(categories) as CategoryKey[]).filter((k
   allTools.some((tool) => tool.data.category === key)
 );
 
-// PDF quick actions — mirrors /pdf-tools, shortest path to the actual tool
-const pdfQuick =
-  lang === 'ar'
-    ? [
-        { icon: '🔗', name: 'دمج PDF', href: '/pdf-tools/merge-pdf' },
-        { icon: '✂️', name: 'تقسيم PDF', href: '/pdf-tools/split-pdf' },
-        { icon: '🔄', name: 'تدوير PDF', href: '/pdf-tools/rotate-pdf' },
-        { icon: '💧', name: 'علامة مائية', href: '/pdf-tools/watermark-pdf' },
-        { icon: '🖼️', name: 'صور إلى PDF', href: '/pdf-tools/images-to-pdf' },
-        { icon: '📄', name: 'PDF إلى صور', href: '/pdf-tools/pdf-to-images' },
-      ]
-    : [
-        { icon: '🔗', name: 'Merge PDF', href: '/pdf-tools/merge-pdf' },
-        { icon: '✂️', name: 'Split PDF', href: '/pdf-tools/split-pdf' },
-        { icon: '🔄', name: 'Rotate PDF', href: '/pdf-tools/rotate-pdf' },
-        { icon: '💧', name: 'Watermark PDF', href: '/pdf-tools/watermark-pdf' },
-        { icon: '🖼️', name: 'Images to PDF', href: '/pdf-tools/images-to-pdf' },
-        { icon: '📄', name: 'PDF to Images', href: '/pdf-tools/pdf-to-images' },
-      ];
+// PDF quick actions — derived from the catalogue so the homepage can never
+// drift out of sync with /pdf-tools. Every tool is linked, which also means the
+// homepage alone guarantees no PDF tool page is ever orphaned.
+const pdfQuick = pdfTools.map((tool) => ({
+  icon: tool.icon,
+  name: tool.name[lang],
+  href: pdfToolPath(tool.slug),
+}));
 
 // Floating hero cards — built from real data, never placeholders.
 // Tool cards show the brand logo (falling back to initials via ToolLogo);

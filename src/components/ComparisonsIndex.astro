@@ -1,0 +1,552 @@
+---
+/**
+ * `/comparisons` landing page, shared by both locales.
+ *
+ * Layout order matches the section brief: hero → search → featured → latest →
+ * categories → popular → CTA.
+ *
+ * Two deliberate decisions:
+ *
+ * 1. Search and category filtering run entirely over markup that is already in
+ *    the HTML — no fetch, no index file, no framework. Every comparison is a
+ *    real crawlable link on first paint, and filtering costs one class toggle.
+ * 2. There are no `/comparisons/category/<x>` routes. With a handful of
+ *    comparisons those pages would be thin content, which SEO.md forbids. The
+ *    category pills filter in place instead, and get promoted to real routes
+ *    once a category has enough entries to justify one.
+ */
+import Layout from '../layouts/Layout.astro';
+import ComparisonCard from './ComparisonCard.astro';
+import { categories, type CategoryKey } from '../data/categories';
+import { useTranslations, localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+import { getCollection } from 'astro:content';
+import { breadcrumbs, collectionPage, graph, HOME_LABEL } from '../lib/schema';
+import {
+  byNewest,
+  byPopularity,
+  comparisonPath,
+  fill,
+  inLang,
+  type Comparison,
+} from '../lib/comparisons';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const arrow = lang === 'ar' ? '←' : '→';
+
+const all = inLang(await getCollection('comparisons'), lang);
+
+const latest = [...all].sort(byNewest);
+const popular = [...all].sort(byPopularity);
+const featured = latest.filter((c) => c.data.featured);
+
+// Categories that actually have comparisons — never render an empty filter.
+const usedCategories = (Object.keys(categories) as CategoryKey[])
+  .map((key) => ({
+    key,
+    count: all.filter((c) => c.data.category === key).length,
+  }))
+  .filter((c) => c.count > 0);
+
+/** Props for a card, so the three rails stay in sync without repeating themselves. */
+function cardProps(entry: Comparison) {
+  return {
+    href: localizedPath(lang, comparisonPath(entry)),
+    title: entry.data.title,
+    subtitle: entry.data.subtitle,
+    category: entry.data.category,
+    toolA: entry.data.toolA.name,
+    toolB: entry.data.toolB.name,
+    verdictLabel: entry.data.quickPicks[0].label,
+    verdictPick: entry.data.quickPicks[0].pick,
+    lang,
+  };
+}
+
+/** Lowercased haystack the client-side filter matches against. */
+function haystack(entry: Comparison) {
+  return [
+    entry.data.title,
+    entry.data.subtitle,
+    entry.data.toolA.name,
+    entry.data.toolB.name,
+    entry.data.toolA.vendor,
+    entry.data.toolB.vendor,
+    categories[entry.data.category][lang],
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+const schema = graph(
+  breadcrumbs(lang, [{ name: HOME_LABEL[lang], path: '/' }, { name: t('cmp.breadcrumb') }]),
+  collectionPage({
+    lang,
+    name: t('cmp.index.title'),
+    description: t('cmp.index.metaDescription'),
+    path: '/comparisons',
+    items: latest.map((entry) => ({
+      name: entry.data.title,
+      path: comparisonPath(entry),
+    })),
+  })
+);
+---
+<Layout
+  title={t('cmp.index.metaTitle')}
+  description={t('cmp.index.metaDescription')}
+  schema={schema}
+>
+  <div class="cmp-index" data-comparisons-index>
+    <!-- ===================== HERO + SEARCH ===================== -->
+    <section class="wrap hero">
+      <nav class="breadcrumb" aria-label="breadcrumb">
+        <a href={localizedPath(lang, '/')}>{HOME_LABEL[lang]}</a>
+        <span aria-hidden="true">/</span>
+        <span class="current">{t('cmp.breadcrumb')}</span>
+      </nav>
+
+      <p class="eyebrow">{fill(t('cmp.index.eyebrow'), { count: all.length })}</p>
+      <h1>
+        <span class="h1a">{t('cmp.index.h1a')}</span>{' '}
+        <span class="h1b">{t('cmp.index.h1b')}</span>
+      </h1>
+      <p class="lede">{t('cmp.index.lede')}</p>
+
+      <form class="cmp-search" role="search" autocomplete="off" data-search-form>
+        <label class="sr-only" for="cmp-q">{t('cmp.index.searchPlaceholder')}</label>
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          id="cmp-q"
+          type="search"
+          name="q"
+          placeholder={t('cmp.index.searchPlaceholder')}
+          data-search-input
+        />
+      </form>
+
+      <div class="filters" role="group" aria-label={t('cmp.index.categories')}>
+        <button type="button" class="filter is-active" data-cat="all">
+          {lang === 'ar' ? 'الكل' : 'All'} ({all.length})
+        </button>
+        {usedCategories.map((c) => (
+          <button type="button" class="filter" data-cat={c.key}>
+            {categories[c.key].icon} {categories[c.key][lang]} ({c.count})
+          </button>
+        ))}
+      </div>
+    </section>
+
+    <!-- ===================== FILTERED RESULTS (hidden until used) ===================== -->
+    <section class="wrap results" data-results hidden aria-live="polite">
+      <h2 class="section-title" data-results-title>{t('cmp.index.latest')}</h2>
+      <div class="grid">
+        {latest.map((entry) => (
+          <div
+            class="result"
+            data-haystack={haystack(entry)}
+            data-cat={entry.data.category}
+          >
+            <ComparisonCard {...cardProps(entry)} />
+          </div>
+        ))}
+      </div>
+      <p class="no-results" data-no-results hidden>{t('search.noResults')}</p>
+    </section>
+
+    <!-- ===================== RAILS (hidden while filtering) ===================== -->
+    <div data-rails>
+      {featured.length > 0 && (
+        <section class="wrap band">
+          <p class="label">{t('cmp.index.featuredLabel')}</p>
+          <h2 class="section-title">{t('cmp.index.featured')}</h2>
+          <div class="grid">
+            {featured.map((entry) => <ComparisonCard {...cardProps(entry)} />)}
+          </div>
+        </section>
+      )}
+
+      <section class="wrap band">
+        <p class="label">{t('cmp.index.latestLabel')}</p>
+        <h2 class="section-title">{t('cmp.index.latest')}</h2>
+        <div class="grid">
+          {latest.map((entry) => <ComparisonCard {...cardProps(entry)} />)}
+        </div>
+      </section>
+
+      <section class="wrap band">
+        <p class="label">{t('cmp.index.categoriesLabel')}</p>
+        <h2 class="section-title">{t('cmp.index.categories')}</h2>
+        <div class="cat-cards">
+          {usedCategories.map((c) => (
+            <button type="button" class="cat-card" data-cat-jump={c.key}>
+              <span class="cat-icon" aria-hidden="true">{categories[c.key].icon}</span>
+              <span class="cat-name">{categories[c.key][lang]}</span>
+              <span class="cat-count">{fill(t('cmp.index.categoryCount'), { count: c.count })}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section class="wrap band">
+        <p class="label">{t('cmp.index.popularLabel')}</p>
+        <h2 class="section-title">{t('cmp.index.popular')}</h2>
+        <ol class="popular-list">
+          {popular.map((entry, i) => (
+            <li>
+              <a href={localizedPath(lang, comparisonPath(entry))}>
+                <span class="rank" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                <span class="pop-text">
+                  <span class="pop-title">{entry.data.title}</span>
+                  <span class="pop-sub">{entry.data.subtitle}</span>
+                </span>
+                <span class="pop-arrow" aria-hidden="true">{arrow}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section class="wrap band">
+        <aside class="method">
+          <h2>{t('cmp.method.title')}</h2>
+          <p>{t('cmp.method.body')}</p>
+        </aside>
+      </section>
+
+      <!-- ===================== CTA → AI DIRECTORY ===================== -->
+      <section class="wrap band">
+        <div class="cta">
+          <h2>{t('cmp.index.ctaTitle')}</h2>
+          <p>{t('cmp.index.ctaBody')}</p>
+          <div class="cta-actions">
+            <a href={localizedPath(lang, '/ai-tools')} class="btn-primary">
+              {t('cmp.index.ctaBtn')} {arrow}
+            </a>
+            <a href={localizedPath(lang, '/contact')} class="btn-ghost">
+              {t('cmp.index.ctaBtn2')}
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  /**
+   * Filters the pre-rendered comparison cards. No network, no dependencies —
+   * the whole list is already in the document, so this is pure class toggling.
+   */
+  class ComparisonFilter {
+    root: HTMLElement;
+    input: HTMLInputElement;
+    results: HTMLElement;
+    rails: HTMLElement;
+    cards: HTMLElement[];
+    empty: HTMLElement;
+    buttons: HTMLButtonElement[];
+    category = 'all';
+
+    constructor(root: HTMLElement) {
+      this.root = root;
+      this.input = root.querySelector('[data-search-input]')!;
+      this.results = root.querySelector('[data-results]')!;
+      this.rails = root.querySelector('[data-rails]')!;
+      this.empty = root.querySelector('[data-no-results]')!;
+      this.cards = Array.from(root.querySelectorAll<HTMLElement>('.result'));
+      this.buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('.filter'));
+
+      root.querySelector('[data-search-form]')?.addEventListener('submit', (e) =>
+        e.preventDefault()
+      );
+      this.input.addEventListener('input', () => this.apply());
+
+      this.buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this.category = btn.dataset.cat!;
+          this.buttons.forEach((b) => b.classList.toggle('is-active', b === btn));
+          this.apply();
+        });
+      });
+
+      // The category cards lower down reuse the same filter rather than
+      // navigating to a thin category page.
+      root.querySelectorAll<HTMLElement>('[data-cat-jump]').forEach((card) => {
+        card.addEventListener('click', () => {
+          const key = card.dataset.catJump!;
+          const btn = this.buttons.find((b) => b.dataset.cat === key);
+          btn?.click();
+          this.root.querySelector('[data-results]')?.scrollIntoView({
+            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+              ? 'auto'
+              : 'smooth',
+            block: 'start',
+          });
+        });
+      });
+    }
+
+    apply() {
+      const query = this.input.value.trim().toLowerCase();
+      const filtering = query.length > 0 || this.category !== 'all';
+
+      this.results.hidden = !filtering;
+      this.rails.hidden = filtering;
+      if (!filtering) return;
+
+      let visible = 0;
+      for (const card of this.cards) {
+        const matchesText = !query || card.dataset.haystack!.includes(query);
+        const matchesCat = this.category === 'all' || card.dataset.cat === this.category;
+        const show = matchesText && matchesCat;
+        card.hidden = !show;
+        if (show) visible++;
+      }
+      this.empty.hidden = visible > 0;
+    }
+  }
+
+  document
+    .querySelectorAll<HTMLElement>('[data-comparisons-index]')
+    .forEach((el) => new ComparisonFilter(el));
+</script>
+
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 28px 0 8px; }
+  .breadcrumb {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+  .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .current { color: var(--text); }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    border-radius: 100px;
+    padding: 5px 13px;
+    margin: 0 0 16px;
+  }
+  h1 { margin: 0 0 14px; font-size: 2.4rem; line-height: 1.25; max-width: 18ch; }
+  .h1b { color: var(--accent); }
+  .lede {
+    max-width: 62ch;
+    color: var(--text-dim);
+    line-height: 1.9;
+    margin: 0 0 26px;
+  }
+
+  .cmp-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding-inline-start: 18px;
+    max-width: 520px;
+    color: var(--text-dim);
+  }
+  .cmp-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    padding: 14px 18px 14px 4px;
+    font-family: inherit;
+    font-size: 0.92rem;
+  }
+  .cmp-search input:focus { outline: none; }
+  .cmp-search:focus-within { border-color: var(--accent); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+  .filter {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    border-radius: 100px;
+    padding: 7px 14px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s;
+  }
+  .filter:hover { color: var(--text); border-color: var(--accent); }
+  .filter.is-active {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ---------- shared band rhythm ---------- */
+  .band { padding: 44px 0 0; }
+  .results { padding: 34px 0 0; }
+  .label {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    margin: 0 0 6px;
+  }
+  .section-title { font-size: 1.35rem; margin: 0 0 20px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 18px;
+  }
+  .result[hidden] { display: none; }
+  .no-results {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 40px 0;
+    font-size: 0.9rem;
+  }
+
+  /* ---------- category cards ---------- */
+  .cat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+  }
+  .cat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.18s, transform 0.15s;
+  }
+  .cat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .cat-icon { font-size: 1.3rem; }
+  .cat-name { font-weight: 700; font-size: 0.95rem; }
+  .cat-count { font-size: 0.75rem; color: var(--text-dim); }
+
+  /* ---------- popular list ---------- */
+  .popular-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .popular-list li { border-bottom: 1px solid var(--line); }
+  .popular-list li:last-child { border-bottom: none; }
+  .popular-list a {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.18s;
+  }
+  .popular-list a:hover { background: var(--surface-2); }
+  .rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent-2);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pop-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .pop-title { font-weight: 700; font-size: 0.95rem; }
+  .pop-sub {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pop-arrow { color: var(--accent); flex-shrink: 0; }
+
+  /* ---------- methodology ---------- */
+  .method {
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    background: var(--surface-2);
+  }
+  .method h2 { margin: 0 0 10px; font-size: 1.05rem; }
+  .method p { margin: 0; font-size: 0.86rem; color: var(--text-dim); line-height: 1.85; }
+
+  /* ---------- CTA ---------- */
+  .cta {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 34px;
+    text-align: center;
+  }
+  .cta h2 { margin: 0 0 10px; font-size: 1.4rem; }
+  .cta p {
+    margin: 0 auto 22px;
+    max-width: 58ch;
+    color: var(--text-dim);
+    line-height: 1.85;
+  }
+  .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+    padding: 13px 26px;
+    border-radius: 10px;
+    text-decoration: none;
+  }
+  .btn-ghost {
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-weight: 600;
+    padding: 13px 26px;
+    border-radius: 10px;
+    text-decoration: none;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  @media (max-width: 820px) {
+    h1 { font-size: 1.8rem; max-width: none; }
+    .lede { font-size: 0.95rem; }
+    .band { padding: 36px 0 0; }
+    .section-title { font-size: 1.2rem; }
+    .cta { padding: 26px 20px; }
+    .cta h2 { font-size: 1.2rem; }
+  }
+</style>

@@ -11,7 +11,7 @@ export default defineConfig({
       // waste crawl budget on them. Remove an entry here once it has real content.
       // `404` is excluded permanently — an error page must never be indexable.
       filter: (page) =>
-        !/\/(ai-news|comparisons|tutorials|404)\/?$/.test(new URL(page).pathname),
+        !/\/(ai-news|tutorials|404)\/?$/.test(new URL(page).pathname),
       // Match the canonical URLs emitted in <head> (no trailing slash) so Google
       // doesn't get conflicting signals between the sitemap and the pages.
       serialize: (item) => {

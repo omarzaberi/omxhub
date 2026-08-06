@@ -1,3 +1,14 @@
+## Deployment — IMPORTANT
+
+Netlify auto-deploys on every push to `main`, and build minutes are limited.
+
+**Never run `git push` without explicit permission from Omar, every single time.**
+
+- Commit locally as often as needed (`git add` / `git commit` are fine).
+- Batch work and push to `main` at most once per week.
+- Do not run `netlify deploy`, `netlify build`, or trigger deploys via the Netlify MCP.
+- Before pushing, always ask first and show a summary of the commits that will go out.
+
 ## Development
 
 When starting the dev server, use background mode:
@@ -7,6 +18,8 @@ astro dev --background
 ```
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
+
+Test everything locally at **http://localhost:4321/** — never against the live site.
 
 ## Documentation
 

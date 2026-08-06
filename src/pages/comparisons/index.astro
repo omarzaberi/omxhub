@@ -1,20 +1,4 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { useTranslations } from '../../i18n/utils';
-
-const lang = 'ar' as const;
-const t = useTranslations(lang);
-const title = t('nav.comparisons');
+import ComparisonsIndex from '../../components/ComparisonsIndex.astro';
 ---
-<Layout title={title} description="مقارنات بين أدوات الذكاء الاصطناعي — قسم قيد الإعداد على OMXHub." noindex>
-  <section class="wrap section">
-    <h1>{title}</h1>
-    <p>{t('soon.body')}</p>
-  </section>
-</Layout>
-
-<style>
-  .section { padding: 60px 0; min-height: 40vh; }
-  h1 { margin-bottom: 12px; }
-  p { color: var(--text-dim); }
-</style>
+<ComparisonsIndex lang="ar" />

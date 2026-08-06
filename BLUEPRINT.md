@@ -139,8 +139,10 @@ platform one polished feature at a time.
 
 **As of August 2026:**
 - ✅ Site live on Astro + Netlify, bilingual (AR/EN), dark theme default + toggle
-- ✅ AI Directory: 10 tools live (of 1000+ goal) — ChatGPT, Claude, Gemini, Midjourney,
-  Canva AI, DeepSeek, Perplexity, ElevenLabs, Runway, Microsoft Copilot, Notion AI (11 now)
+- ✅ AI Directory: **14 tools live** (of 1000+ goal) — ChatGPT, Claude, Gemini, Midjourney,
+  Canva AI, DeepSeek, Perplexity, ElevenLabs, Runway, Microsoft Copilot, Notion AI,
+  **Cursor, Windsurf (Devin Desktop), FLUX**. All 7 categories now have at least one tool,
+  so every category landing page is live.
 - ✅ Prompt Library: 10 prompts live
 - ✅ PDF Tools (Phase 1, partial): Merge, Split, Rotate, Watermark, Images→PDF, PDF→Images
   — all tested working entirely client-side. **Not yet built:** Compress, Delete Pages,
@@ -149,7 +151,20 @@ platform one polished feature at a time.
 - ✅ About, Contact, Privacy Policy (AdSense-ready) pages
 - ✅ Google AdSense script installed
 - ⬜ Support/Ko-fi page — not started
-- ⬜ Blog, AI News, Comparisons, Tutorials — not started (pages removed until real content ready)
+- ✅ **Comparisons section live** (`/comparisons`) — the highest-intent SEO surface on the site:
+  - Landing page: hero, in-page search, featured / latest / popular rails, category filters,
+    scoring methodology, and a CTA into the AI directory. Search and filtering run over
+    pre-rendered HTML (no fetch, no index file), so every comparison is crawlable on first paint.
+  - 5 comparisons × 2 languages = 10 pages, each with 10 sections: hero + quick picks,
+    summary card, 18-row side-by-side table, pros & cons, best use cases, performance scores,
+    audience recommendations, related comparisons, FAQ, and related pages.
+  - Two shared templates (`ComparisonsIndex.astro`, `ComparisonDetail.astro`) drive both
+    locales — the same single-source pattern as `ToolDetail` and `CategoryListing`.
+  - **Scores are labelled editorial**, with a visible "how we score" box. Consistent with our
+    refusal to fake `aggregateRating`.
+  - **No `/comparisons/category/<x>` routes** — with this few entries they'd be thin content.
+    Category pills filter in place; promote to real routes once a category earns one.
+- ⬜ Blog, AI News, Tutorials — not started (pages `noindex` until real content ready)
 - ⬜ Image/Video/Audio/Text/Developer/SEO tools (Phase 2/3) — not started
 - ✅ Google Search Console: ownership verified via DNS TXT, sitemap submitted
 - ✅ SEO technical foundation: canonical URLs, hreflang (ar/en/x-default), Open Graph,

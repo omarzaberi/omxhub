@@ -7,6 +7,7 @@ export const GET: APIRoute = async () => {
 
   const tools = (await getCollection('tools')).filter((t) => t.data.lang === lang);
   const prompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
+  const comparisons = (await getCollection('comparisons')).filter((c) => c.data.lang === lang);
 
   const toolItems = tools.map((t) => ({
     type: 'tool',
@@ -26,7 +27,16 @@ export const GET: APIRoute = async () => {
     url: `/en/prompts/${p.id.split('/')[1]}`,
   }));
 
-  return new Response(JSON.stringify([...toolItems, ...promptItems]), {
+  const comparisonItems = comparisons.map((c) => ({
+    type: 'comparison',
+    typeLabel: 'Comparison',
+    title: c.data.title,
+    description: c.data.subtitle,
+    category: categories[c.data.category][lang],
+    url: `/en/comparisons/${c.id.split('/')[1]}`,
+  }));
+
+  return new Response(JSON.stringify([...toolItems, ...comparisonItems, ...promptItems]), {
     headers: { 'Content-Type': 'application/json' },
   });
 };

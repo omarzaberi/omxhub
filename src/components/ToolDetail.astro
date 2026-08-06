@@ -9,9 +9,10 @@ import Layout from '../layouts/Layout.astro';
 import { categories } from '../data/categories';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
-import { getEntry, render } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { breadcrumbs, faqPage, graph, softwareApplication } from '../lib/schema';
+import { byPopularity, comparisonPath } from '../lib/comparisons';
 
 interface Props {
   lang: Lang;
@@ -31,6 +32,7 @@ const copy =
         home: 'الرئيسية',
         tools: 'أدوات الذكاء الاصطناعي',
         faqHeading: '❓ أسئلة شائعة',
+        comparisons: '⚖️ مقارنات تضم هذي الأداة',
         title: `${tool.data.name} — المميزات والأسعار والبدائل`,
         description: `${tool.data.tagline} — مراجعة كاملة لـ${tool.data.name}: المميزات، الأسعار، الإيجابيات والسلبيات، وأفضل البدائل.`,
       }
@@ -38,6 +40,7 @@ const copy =
         home: 'Home',
         tools: 'AI Tools',
         faqHeading: '❓ Frequently Asked Questions',
+        comparisons: '⚖️ Comparisons featuring this tool',
         title: `${tool.data.name} — Features, Pricing & Alternatives`,
         description: `${tool.data.tagline} — A full review of ${tool.data.name}: features, pricing, pros and cons, and the best alternatives.`,
       };
@@ -51,6 +54,17 @@ const alternativeEntries = tool.data.alternatives
       )
     ).filter(Boolean)
   : [];
+
+// Head-to-head comparisons that feature this tool. Surfacing them here keeps the
+// comparisons section reachable from the directory instead of only from the nav,
+// and gives every comparison a second inbound internal link.
+const relatedComparisons = (await getCollection('comparisons'))
+  .filter(
+    (c) =>
+      c.data.lang === lang &&
+      (c.data.toolA.slug === slug || c.data.toolB.slug === slug)
+  )
+  .sort(byPopularity);
 
 // One JSON-LD graph per page: the trail, the tool itself (with our editorial
 // review), and the FAQ that is actually rendered below.
@@ -134,6 +148,17 @@ const schema = graph(
         <div class="alt-links">
           {alternativeEntries.map((alt) => (
             <a href={localizedPath(lang, `/ai-tools/${alt!.id.split('/')[1]}`)}>{alt!.data.name}</a>
+          ))}
+        </div>
+      </>
+    )}
+
+    {relatedComparisons.length > 0 && (
+      <>
+        <h2>{copy.comparisons}</h2>
+        <div class="alt-links">
+          {relatedComparisons.map((c) => (
+            <a href={localizedPath(lang, comparisonPath(c))}>{c.data.title}</a>
           ))}
         </div>
       </>

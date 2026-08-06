@@ -1,0 +1,18 @@
+---
+import ComparisonDetail from '../../../components/ComparisonDetail.astro';
+import { getCollection } from 'astro:content';
+import { slugOf } from '../../../lib/comparisons';
+
+const lang = 'en' as const;
+
+export async function getStaticPaths() {
+  const entries = (await getCollection('comparisons')).filter((c) => c.data.lang === 'en');
+  return entries.map((entry) => ({
+    params: { slug: slugOf(entry) },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+---
+<ComparisonDetail lang={lang} entry={entry} />

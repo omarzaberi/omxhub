@@ -1,0 +1,152 @@
+---
+/**
+ * Listing card for one head-to-head comparison.
+ *
+ * Deliberately mirrors ToolCard's shape (surface, 12px radius, hover lift,
+ * footer with a badge and a CTA hint) so the comparisons grid reads as part of
+ * the same system rather than a bolted-on section.
+ */
+import { categories } from '../data/categories';
+import { useTranslations } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+
+interface Props {
+  href: string;
+  title: string;
+  subtitle: string;
+  category: keyof typeof categories;
+  toolA: string;
+  toolB: string;
+  /** Headline verdict shown on the card, e.g. "Best overall: Claude". */
+  verdictLabel: string;
+  verdictPick: string;
+  lang: Lang;
+}
+const { href, title, subtitle, category, toolA, toolB, verdictLabel, verdictPick, lang } =
+  Astro.props;
+
+const t = useTranslations(lang);
+const cat = categories[category];
+const arrow = lang === 'ar' ? '←' : '→';
+
+// Same deterministic-avatar trick as ToolCard: initials + a stable palette slot,
+// so a comparison needs no logo assets to look finished.
+const palette = ['#4fd1c5', '#9b8cfb', '#f5a623', '#34d399', '#f472b6'];
+function badgeFor(name: string) {
+  const hash = [...name].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const initials = name
+    .replace(/[^\p{L}\p{N} ]/gu, '')
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+  return { color: palette[hash % palette.length], initials };
+}
+const a = badgeFor(toolA);
+const b = badgeFor(toolB);
+---
+<a href={href} class="cmp-card">
+  <div class="versus" dir="ltr">
+    <span class="chip" style={`background:${a.color}22; color:${a.color}`}>{a.initials}</span>
+    <span class="vs">{t('cmp.vs')}</span>
+    <span class="chip" style={`background:${b.color}22; color:${b.color}`}>{b.initials}</span>
+  </div>
+
+  <h3>{title}</h3>
+  <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+  <p>{subtitle}</p>
+
+  <div class="verdict">
+    <span class="verdict-label">{verdictLabel}</span>
+    <span class="verdict-pick">{verdictPick}</span>
+  </div>
+
+  <div class="card-footer">
+    <span class="cta-hint">{t('cmp.view')} {arrow}</span>
+  </div>
+</a>
+
+<style>
+  .cmp-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
+    height: 100%;
+  }
+  .cmp-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+
+  .versus {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .chip {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .vs {
+    font-size: 0.68rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  h3 { margin: 0 0 6px; font-size: 1.05rem; font-weight: 700; }
+  .cat-badge { font-size: 0.72rem; color: var(--text-dim); }
+  p {
+    margin: 10px 0 14px;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    flex: 1;
+  }
+
+  .verdict {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: var(--surface-2);
+    margin-bottom: 12px;
+  }
+  .verdict-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+  .verdict-pick {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .card-footer {
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .cta-hint {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>

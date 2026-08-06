@@ -1,6 +1,8 @@
 ---
 import ToolCard from './ToolCard.astro';
+import ComparisonCard from './ComparisonCard.astro';
 import SiteSearch from './SiteSearch.astro';
+import { byPopularity, comparisonPath, inLang } from '../lib/comparisons';
 import { categories, type CategoryKey } from '../data/categories';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
@@ -14,6 +16,12 @@ const t = useTranslations(lang);
 
 const allTools = (await getCollection('tools')).filter((tool) => tool.data.lang === lang);
 const allPrompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
+
+// Highest-intent pages on the site — surfaced from the homepage so they get the
+// strongest internal link available.
+const topComparisons = inLang(await getCollection('comparisons'), lang)
+  .sort(byPopularity)
+  .slice(0, 3);
 
 const latest = [...allTools]
   .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
@@ -173,6 +181,35 @@ const why = [
     ))}
   </div>
 </section>
+
+<!-- ============ COMPARISONS ============ -->
+{topComparisons.length > 0 && (
+  <section class="wrap section reveal">
+    <div class="sec-head">
+      <span class="sec-label">{t('cmp.index.featuredLabel')}</span>
+      <h2>{t('cmp.index.title')}</h2>
+      <p>{t('cmp.index.lede')}</p>
+    </div>
+    <div class="grid">
+      {topComparisons.map((entry) => (
+        <ComparisonCard
+          href={localizedPath(lang, comparisonPath(entry))}
+          title={entry.data.title}
+          subtitle={entry.data.subtitle}
+          category={entry.data.category}
+          toolA={entry.data.toolA.name}
+          toolB={entry.data.toolB.name}
+          verdictLabel={entry.data.quickPicks[0].label}
+          verdictPick={entry.data.quickPicks[0].pick}
+          lang={lang}
+        />
+      ))}
+    </div>
+    <a href={localizedPath(lang, '/comparisons')} class="sec-more">
+      {t('cmp.breadcrumb')} {lang === 'ar' ? '←' : '→'}
+    </a>
+  </section>
+)}
 
 <!-- ============ POPULAR ============ -->
 {featured.length > 0 && (
@@ -562,6 +599,16 @@ const why = [
     margin: 8px 0 0;
     font-size: 0.95rem;
   }
+  /* "See all" link under a section grid. */
+  .sec-more {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .sec-more:hover { text-decoration: underline; }
 
   .grid {
     display: grid;

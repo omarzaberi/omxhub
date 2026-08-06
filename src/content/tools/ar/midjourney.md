@@ -26,6 +26,7 @@ pricingPlans:
     price: "60$ / شهر"
     features: "توليد أسرع + خصوصية أعلى للصور"
 alternatives:
+  - "flux"
   - "canva-ai"
 faq:
   - q: "هل فيه نسخة مجانية؟"

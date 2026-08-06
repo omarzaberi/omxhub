@@ -1,0 +1,700 @@
+---
+/**
+ * Full head-to-head comparison page.
+ *
+ * Shared by `/comparisons/[slug]` and `/en/comparisons/[slug]` — same pattern as
+ * ToolDetail and CategoryListing, so markup, styles, and structured data live in
+ * exactly one place.
+ *
+ * Structured data follows the house rule: we only mark up what is rendered.
+ * The FAQ block below is visible, the breadcrumb trail is visible, and the
+ * Article node describes this page and nothing else.
+ */
+import Layout from '../layouts/Layout.astro';
+import ComparisonCard from './ComparisonCard.astro';
+import { categories } from '../data/categories';
+import { useTranslations, localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+import { getCollection, getEntry, render } from 'astro:content';
+import { article, breadcrumbs, faqPage, graph, HOME_LABEL } from '../lib/schema';
+import {
+  comparisonPath,
+  inLang,
+  resolveRelated,
+  slugOf,
+  type Comparison,
+} from '../lib/comparisons';
+
+interface Props {
+  lang: Lang;
+  entry: Comparison;
+}
+const { lang, entry } = Astro.props;
+const t = useTranslations(lang);
+const d = entry.data;
+
+const { Content } = await render(entry);
+const cat = categories[d.category];
+const path = comparisonPath(entry);
+const isRtl = lang === 'ar';
+const arrow = isRtl ? '←' : '→';
+
+// --- Related content ------------------------------------------------------
+// Every link below is resolved against a real collection entry first. A slug
+// that does not exist is silently dropped instead of rendering a 404.
+const allComparisons = await getCollection('comparisons');
+const related = resolveRelated(allComparisons, entry, 4);
+
+const toolEntries = (
+  await Promise.all(
+    [d.toolA, d.toolB].map((tool) =>
+      tool.slug ? getEntry('tools', `${lang}/${tool.slug}`) : undefined
+    )
+  )
+).filter(Boolean);
+
+const promptEntries = (
+  await Promise.all(
+    d.relatedPrompts.map((slug) => getEntry('prompts', `${lang}/${slug}`))
+  )
+).filter(Boolean);
+
+// --- Sections index (visible, no JS) --------------------------------------
+const sections = [
+  { id: 'summary', label: t('cmp.summary') },
+  { id: 'table', label: t('cmp.table') },
+  { id: 'pros-cons', label: t('cmp.proscons') },
+  { id: 'use-cases', label: t('cmp.useCases') },
+  { id: 'performance', label: t('cmp.performance') },
+  { id: 'choose', label: t('cmp.choose') },
+  { id: 'faq', label: t('cmp.faq') },
+];
+
+// --- Formatting helpers ---------------------------------------------------
+const locale = isRtl ? 'ar' : 'en-GB';
+const fmtDate = (date: Date) =>
+  new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }).format(date);
+
+const sideLabel = (side: 'a' | 'b' | 'tie') =>
+  side === 'a' ? d.toolA.name : side === 'b' ? d.toolB.name : t('cmp.tie');
+
+// --- Structured data ------------------------------------------------------
+const schema = graph(
+  breadcrumbs(lang, [
+    { name: HOME_LABEL[lang], path: '/' },
+    { name: t('cmp.breadcrumb'), path: '/comparisons' },
+    { name: d.title },
+  ]),
+  article({
+    lang,
+    headline: d.metaTitle,
+    description: d.metaDescription,
+    path,
+    datePublished: d.publishDate,
+    dateModified: d.updatedDate,
+    about: [d.toolA.name, d.toolB.name],
+    keywords: [
+      `${d.toolA.name} vs ${d.toolB.name}`,
+      d.toolA.name,
+      d.toolB.name,
+      cat[lang],
+    ],
+  }),
+  faqPage(d.faq)
+);
+---
+<Layout title={d.metaTitle} description={d.metaDescription} schema={schema}>
+  <article class="wrap cmp">
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href={localizedPath(lang, '/')}>{HOME_LABEL[lang]}</a>
+      <span aria-hidden="true">/</span>
+      <a href={localizedPath(lang, '/comparisons')}>{t('cmp.breadcrumb')}</a>
+      <span aria-hidden="true">/</span>
+      <span class="current">{d.title}</span>
+    </nav>
+
+    <!-- ===================== 1. HERO ===================== -->
+    <header class="hero">
+      <a href={localizedPath(lang, `/ai-tools/category/${d.category}`)} class="cat-badge">
+        {cat.icon} {cat[lang]}
+      </a>
+      <h1>{d.title}</h1>
+      <p class="subtitle">{d.subtitle}</p>
+
+      <p class="dateline">
+        <time datetime={(d.updatedDate ?? d.publishDate).toISOString().slice(0, 10)}>
+          {d.updatedDate ? `${t('cmp.updated')}: ${fmtDate(d.updatedDate)}` : `${t('cmp.published')}: ${fmtDate(d.publishDate)}`}
+        </time>
+      </p>
+
+      <div class="versus">
+        {[d.toolA, d.toolB].map((tool, i) => (
+          <>
+            {i === 1 && <span class="vs-mark" aria-hidden="true">{t('cmp.vs')}</span>}
+            <div class="vs-tool">
+              <span class="vs-name">{tool.name}</span>
+              <span class="vs-vendor">{tool.vendor}</span>
+              <span class="vs-tagline">{tool.tagline}</span>
+            </div>
+          </>
+        ))}
+      </div>
+
+      <section class="quick-picks" aria-labelledby="quick-picks-h">
+        <h2 id="quick-picks-h">{t('cmp.quickPicks')}</h2>
+        <ul>
+          {d.quickPicks.map((pick) => (
+            <li data-side={pick.side}>
+              <span class="qp-label">{pick.label}</span>
+              <span class="qp-pick">{pick.pick}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <nav class="jump" aria-label={t('cmp.jump')}>
+        {sections.map((s) => <a href={`#${s.id}`}>{s.label}</a>)}
+      </nav>
+    </header>
+
+    <!-- ===================== Editorial intro ===================== -->
+    <div class="content">
+      <Content />
+    </div>
+
+    <!-- ===================== 2. QUICK SUMMARY CARD ===================== -->
+    <section id="summary" class="block">
+      <h2>{t('cmp.summary')}</h2>
+      <dl class="summary">
+        {d.summary.map((row) => (
+          <div class="summary-row" data-side={row.side ?? 'tie'}>
+            <dt>{row.label}</dt>
+            <dd>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <!-- ===================== 3. SIDE-BY-SIDE TABLE ===================== -->
+    <section id="table" class="block">
+      <h2>{t('cmp.table')}</h2>
+      <div class="table-scroll">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th scope="col">{t('cmp.feature')}</th>
+              <th scope="col">{d.toolA.name}</th>
+              <th scope="col">{d.toolB.name}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {d.table.map((row) => (
+              <tr>
+                <th scope="row">{row.feature}</th>
+                <td data-edge={row.edge === 'a' ? 'win' : undefined}>{row.a}</td>
+                <td data-edge={row.edge === 'b' ? 'win' : undefined}>{row.b}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== 4. PROS & CONS ===================== -->
+    <section id="pros-cons" class="block">
+      <h2>{t('cmp.proscons')}</h2>
+      <div class="pc-grid">
+        {[
+          { name: d.toolA.name, pros: d.prosA, cons: d.consA },
+          { name: d.toolB.name, pros: d.prosB, cons: d.consB },
+        ].map((tool) => (
+          <div class="pc-card">
+            <h3>{tool.name}</h3>
+            <h4 class="pc-pros">✅ {t('tool.pros')}</h4>
+            <ul>{tool.pros.map((p) => <li>{p}</li>)}</ul>
+            <h4 class="pc-cons">❌ {t('tool.cons')}</h4>
+            <ul>{tool.cons.map((c) => <li>{c}</li>)}</ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ===================== 5. BEST USE CASES ===================== -->
+    <section id="use-cases" class="block">
+      <h2>{t('cmp.useCases')}</h2>
+      <div class="uc-grid">
+        {d.useCases.map((uc) => (
+          <div class="uc-card" data-side={uc.side}>
+            <div class="uc-head">
+              <span class="uc-icon" aria-hidden="true">{uc.icon}</span>
+              <h3>{uc.title}</h3>
+            </div>
+            <p class="uc-winner">
+              <span class="uc-winner-label">{t('cmp.winner')}:</span> {sideLabel(uc.side)}
+            </p>
+            <p class="uc-body">{uc.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ===================== 6. PERFORMANCE ===================== -->
+    <section id="performance" class="block">
+      <h2>{t('cmp.performance')}</h2>
+      <div class="scores">
+        {d.performance.map((row) => (
+          <div class="score-row">
+            <h3 class="score-metric">{row.metric}</h3>
+            <div class="bars">
+              {[
+                { name: d.toolA.name, value: row.a, key: 'a' },
+                { name: d.toolB.name, value: row.b, key: 'b' },
+              ].map((bar) => (
+                <div class="bar-line">
+                  <span class="bar-name">{bar.name}</span>
+                  <span class="bar-track" data-side={bar.key}>
+                    <span class="bar-fill" style={`width:${bar.value * 10}%`}></span>
+                  </span>
+                  <span class="bar-value">
+                    {bar.value.toFixed(1)}
+                    <span class="sr-only"> {t('cmp.scoreOf')}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            {row.note && <p class="score-note">{row.note}</p>}
+          </div>
+        ))}
+      </div>
+
+      <aside class="method">
+        <h3>{t('cmp.method.title')}</h3>
+        <p>{t('cmp.method.body')}</p>
+      </aside>
+    </section>
+
+    <!-- ===================== 7. WHICH ONE SHOULD YOU CHOOSE ===================== -->
+    <section id="choose" class="block">
+      <h2>{t('cmp.choose')}</h2>
+      <div class="aud-grid">
+        {d.audiences.map((aud) => (
+          <div class="aud-card" data-side={aud.side}>
+            <span class="aud-icon" aria-hidden="true">{aud.icon}</span>
+            <h3>{aud.audience}</h3>
+            <p class="aud-pick">{sideLabel(aud.side)}</p>
+            <p class="aud-body">{aud.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ===================== 8. ALTERNATIVES ===================== -->
+    {related.length > 0 && (
+      <section id="alternatives" class="block">
+        <h2>{t('cmp.alternatives')}</h2>
+        <div class="rel-grid">
+          {related.map((rel) => (
+            <ComparisonCard
+              href={localizedPath(lang, comparisonPath(rel))}
+              title={rel.data.title}
+              subtitle={rel.data.subtitle}
+              category={rel.data.category}
+              toolA={rel.data.toolA.name}
+              toolB={rel.data.toolB.name}
+              verdictLabel={rel.data.quickPicks[0].label}
+              verdictPick={rel.data.quickPicks[0].pick}
+              lang={lang}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- ===================== 9. FAQ ===================== -->
+    <section id="faq" class="block">
+      <h2>❓ {t('cmp.faq')}</h2>
+      {d.faq.map((item) => (
+        <details>
+          <summary>{item.q}</summary>
+          <p>{item.a}</p>
+        </details>
+      ))}
+    </section>
+
+    <!-- ===================== 10. RELATED PAGES ===================== -->
+    <section id="related" class="block related">
+      <h2>{t('cmp.related')}</h2>
+
+      {toolEntries.length > 0 && (
+        <>
+          <h3>{t('cmp.relatedTools')}</h3>
+          <div class="pills">
+            {toolEntries.map((tool) => (
+              <a href={localizedPath(lang, `/ai-tools/${slugOf(tool!)}`)}>
+                {tool!.data.name} — {t('cmp.readReview')} {arrow}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+
+      {promptEntries.length > 0 && (
+        <>
+          <h3>{t('cmp.relatedPrompts')}</h3>
+          <div class="pills">
+            {promptEntries.map((prompt) => (
+              <a href={localizedPath(lang, `/prompts/${slugOf(prompt!)}`)}>
+                {prompt!.data.title}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+
+      <h3>{t('cmp.relatedMore')}</h3>
+      <div class="pills">
+        <a href={localizedPath(lang, `/ai-tools/category/${d.category}`)}>
+          {cat.icon} {cat[lang]}
+        </a>
+        <a href={localizedPath(lang, '/ai-tools')}>{t('nav.tools')}</a>
+        <a href={localizedPath(lang, '/prompts')}>{t('nav.prompts')}</a>
+        <a href={localizedPath(lang, '/pdf-tools')}>{t('nav.pdf')}</a>
+        <a href={localizedPath(lang, '/comparisons')} class="all">
+          {t('cmp.breadcrumb')} {arrow}
+        </a>
+      </div>
+    </section>
+  </article>
+</Layout>
+
+<style>
+  .cmp { padding: 28px 0 80px; max-width: 860px; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ---------- breadcrumb (same as ToolDetail) ---------- */
+  .breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .current { color: var(--text); }
+
+  /* ---------- 1. hero ---------- */
+  .cat-badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    color: var(--accent);
+    background: var(--surface-2);
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: border-color 0.18s;
+  }
+  .cat-badge:hover { border-color: var(--accent); }
+
+  h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.3; }
+  .subtitle { color: var(--text-dim); font-size: 1.05rem; margin: 0 0 10px; }
+  .dateline {
+    margin: 0 0 26px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+  }
+
+  .versus {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 22px;
+  }
+  .vs-tool { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .vs-name { font-size: 1.15rem; font-weight: 800; }
+  .vs-vendor {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+  }
+  .vs-tagline { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+  .vs-mark {
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 5px 11px;
+    white-space: nowrap;
+  }
+
+  .quick-picks {
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .quick-picks h2 { margin: 0 0 12px; font-size: 1rem; }
+  .quick-picks ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .quick-picks li { display: flex; flex-direction: column; gap: 2px; }
+  .qp-label { font-size: 0.75rem; color: var(--text-dim); }
+  .qp-pick { font-size: 1rem; font-weight: 800; color: var(--accent); }
+  .quick-picks li[data-side='b'] .qp-pick { color: var(--accent-2); }
+  .quick-picks li[data-side='tie'] .qp-pick { color: var(--text); }
+
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 4px;
+  }
+  .jump a {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 5px 12px;
+    transition: color 0.18s, border-color 0.18s;
+  }
+  .jump a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ---------- shared block rhythm ---------- */
+  .block { margin-top: 52px; scroll-margin-top: 90px; }
+  .block > h2 { font-size: 1.35rem; margin: 0 0 18px; }
+  .block h3 { font-size: 1rem; }
+
+  .content :global(h2) { margin-top: 40px; font-size: 1.35rem; }
+  .content :global(h3) { margin-top: 28px; font-size: 1.05rem; }
+  .content :global(p) { line-height: 1.9; }
+
+  /* ---------- 2. summary card ---------- */
+  .summary {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .summary-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 38%) 1fr;
+    gap: 14px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row dt { color: var(--text-dim); font-size: 0.85rem; margin: 0; }
+  .summary-row dd { margin: 0; font-size: 0.92rem; font-weight: 600; }
+  .summary-row[data-side='a'] dd { color: var(--accent); }
+  .summary-row[data-side='b'] dd { color: var(--accent-2); }
+
+  /* ---------- 3. table ---------- */
+  .cmp-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+  .cmp-table th,
+  .cmp-table td {
+    text-align: start;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.86rem;
+    vertical-align: top;
+  }
+  .cmp-table thead th { color: var(--accent); font-weight: 700; }
+  .cmp-table thead th:first-child { color: var(--text-dim); }
+  .cmp-table tbody th { color: var(--text-dim); font-weight: 500; }
+  .cmp-table td[data-edge='win'] {
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    font-weight: 600;
+  }
+
+  /* ---------- 4. pros & cons ---------- */
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .pc-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .pc-card h3 { margin: 0 0 14px; font-size: 1.1rem; }
+  .pc-card h4 { margin: 16px 0 8px; font-size: 0.85rem; font-weight: 700; }
+  .pc-card h4:first-of-type { margin-top: 0; }
+  .pc-pros { color: var(--free); }
+  .pc-cons { color: var(--paid); }
+  .pc-card ul { margin: 0; padding-inline-start: 18px; }
+  .pc-card li { font-size: 0.87rem; margin-bottom: 7px; color: var(--text-dim); }
+
+  /* ---------- 5. use cases ---------- */
+  .uc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .uc-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .uc-card[data-side='b'] { border-inline-start-color: var(--accent-2); }
+  .uc-card[data-side='tie'] { border-inline-start-color: var(--line); }
+  .uc-head { display: flex; align-items: center; gap: 8px; }
+  .uc-icon { font-size: 1.05rem; }
+  .uc-card h3 { margin: 0; font-size: 0.98rem; }
+  .uc-winner { margin: 8px 0 6px; font-size: 0.85rem; font-weight: 700; color: var(--accent); }
+  .uc-card[data-side='b'] .uc-winner { color: var(--accent-2); }
+  .uc-card[data-side='tie'] .uc-winner { color: var(--text); }
+  .uc-winner-label { color: var(--text-dim); font-weight: 500; }
+  .uc-body { margin: 0; font-size: 0.85rem; color: var(--text-dim); line-height: 1.75; }
+
+  /* ---------- 6. performance ---------- */
+  .scores {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 6px 20px;
+  }
+  .score-row { padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .score-row:last-child { border-bottom: none; }
+  .score-metric { margin: 0 0 10px; font-size: 0.92rem; font-weight: 700; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar-line {
+    display: grid;
+    grid-template-columns: minmax(80px, 22%) 1fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+  .bar-name { font-size: 0.8rem; color: var(--text-dim); }
+  .bar-track {
+    height: 8px;
+    border-radius: 100px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 100px;
+    background: var(--accent);
+  }
+  .bar-track[data-side='b'] .bar-fill { background: var(--accent-2); }
+  .bar-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    min-width: 2.4em;
+    text-align: end;
+  }
+  .score-note { margin: 10px 0 0; font-size: 0.82rem; color: var(--text-dim); line-height: 1.7; }
+
+  .method {
+    margin-top: 16px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: var(--surface-2);
+  }
+  .method h3 { margin: 0 0 8px; font-size: 0.9rem; }
+  .method p { margin: 0; font-size: 0.82rem; color: var(--text-dim); line-height: 1.8; }
+
+  /* ---------- 7. audiences ---------- */
+  .aud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+  }
+  .aud-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .aud-icon { font-size: 1.2rem; }
+  .aud-card h3 { margin: 6px 0 4px; font-size: 0.95rem; }
+  .aud-pick { margin: 0 0 8px; font-size: 0.95rem; font-weight: 800; color: var(--accent); }
+  .aud-card[data-side='b'] .aud-pick { color: var(--accent-2); }
+  .aud-card[data-side='tie'] .aud-pick { color: var(--text); }
+  .aud-body { margin: 0; font-size: 0.84rem; color: var(--text-dim); line-height: 1.75; }
+
+  /* ---------- 8. related comparisons ---------- */
+  .rel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+  }
+
+  /* ---------- 9. faq (same as ToolDetail) ---------- */
+  #faq details {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+  }
+  #faq summary { cursor: pointer; font-weight: 600; }
+  #faq p { color: var(--text-dim); margin: 10px 0 0; font-size: 0.92rem; line-height: 1.8; }
+
+  /* ---------- 10. related pages ---------- */
+  .related h3 { margin: 22px 0 12px; color: var(--text-dim); font-weight: 600; font-size: 0.9rem; }
+  .related h3:first-of-type { margin-top: 4px; }
+  .pills { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pills a {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 8px 16px;
+    border-radius: 100px;
+    text-decoration: none;
+    font-size: 0.87rem;
+    color: var(--text);
+    transition: border-color 0.18s, color 0.18s;
+  }
+  .pills a:hover { border-color: var(--accent); color: var(--accent); }
+  .pills a.all { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 820px) {
+    .cmp { padding: 22px 0 60px; }
+    h1 { font-size: 1.5rem; }
+    .subtitle { font-size: 0.96rem; }
+    .versus { grid-template-columns: 1fr; gap: 16px; text-align: start; }
+    .vs-mark { justify-self: start; }
+    .block { margin-top: 40px; }
+    .block > h2 { font-size: 1.2rem; }
+  }
+  @media (max-width: 640px) {
+    .pc-grid { grid-template-columns: 1fr; }
+    .summary-row { grid-template-columns: 1fr; gap: 4px; }
+    .bar-line { grid-template-columns: minmax(70px, 30%) 1fr auto; gap: 8px; }
+  }
+</style>

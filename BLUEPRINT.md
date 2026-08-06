@@ -139,10 +139,12 @@ platform one polished feature at a time.
 
 **As of August 2026:**
 - ✅ Site live on Astro + Netlify, bilingual (AR/EN), dark theme default + toggle
-- ✅ AI Directory: **14 tools live** (of 1000+ goal) — ChatGPT, Claude, Gemini, Midjourney,
-  Canva AI, DeepSeek, Perplexity, ElevenLabs, Runway, Microsoft Copilot, Notion AI,
-  **Cursor, Windsurf (Devin Desktop), FLUX**. All 7 categories now have at least one tool,
-  so every category landing page is live.
+- ✅ AI Directory: **30 tools live** (of 1000+ goal) — ChatGPT, Claude, Gemini, Grok,
+  DeepSeek, Perplexity, Midjourney, FLUX, Adobe Firefly, Canva AI, Runway, Kling AI,
+  Google Veo, HeyGen, Opus Clip, ElevenLabs, Suno, Cursor, Windsurf, GitHub Copilot,
+  Lovable, Microsoft Copilot, Notion AI, Gamma, Grammarly, Jasper, AdCreative AI,
+  Semrush, Surfer SEO, NotebookLM. All 7 categories are populated, so every category
+  landing page is live.
 - ✅ Prompt Library: 10 prompts live
 - ✅ PDF Tools (Phase 1, partial): Merge, Split, Rotate, Watermark, Images→PDF, PDF→Images
   — all tested working entirely client-side. **Not yet built:** Compress, Delete Pages,
@@ -164,7 +166,23 @@ platform one polished feature at a time.
     refusal to fake `aggregateRating`.
   - **No `/comparisons/category/<x>` routes** — with this few entries they'd be thin content.
     Category pills filter in place; promote to real routes once a category earns one.
-- ⬜ Blog, AI News, Tutorials — not started (pages `noindex` until real content ready)
+- ✅ **Tutorials section live** (`/tutorials`) — the top-of-funnel counterpart to comparisons:
+  - Landing page: hero, in-page search, level *and* category filters, featured / latest rails,
+    category cards, and a CTA into the AI directory. Filtering moves the pre-rendered card
+    nodes into a results grid rather than cloning them, so no card exists twice in the DOM
+    and every tutorial is crawlable on first paint — no fetch, no index file.
+  - 5 tutorials × 2 languages = 10 pages: how to use Claude, prompt-engineering basics,
+    Cursor for beginners, writing Arabic with AI, and editing PDFs without uploading.
+  - Each page carries: takeaways, prerequisites, editorial body, numbered steps, a
+    "common mistakes" block, FAQ, and resolved links into tools / comparisons / prompts.
+  - Two shared templates (`TutorialsIndex.astro`, `TutorialDetail.astro`) drive both locales.
+  - **`HowTo` is emitted only when the page really has visible numbered steps.** Prerequisites
+    are deliberately *not* marked up as `HowToTool` — they are prose conditions, not instruments.
+  - **No `/tutorials/category/<x>` or `/tutorials/level/<x>` routes** — thin content at this
+    size. The pills filter in place; promote to real routes once a facet earns one.
+  - The `edit-pdf-without-uploading` tutorial exists partly to feed the PDF tools: it turns
+    readers into users, which is the blueprint's guiding principle.
+- ⬜ Blog, AI News — not started (pages `noindex` until real content ready)
 - ⬜ Image/Video/Audio/Text/Developer/SEO tools (Phase 2/3) — not started
 - ✅ Google Search Console: ownership verified via DNS TXT, sitemap submitted
 - ✅ SEO technical foundation: canonical URLs, hreflang (ar/en/x-default), Open Graph,

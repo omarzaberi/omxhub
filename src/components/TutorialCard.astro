@@ -1,0 +1,134 @@
+---
+/**
+ * Listing card for one tutorial.
+ *
+ * Same shell as ToolCard / ComparisonCard (surface, 12px radius, hover lift,
+ * footer with a CTA hint) so the tutorials grid reads as part of the same system.
+ *
+ * The `data-*` attributes are what the landing page filters on: the search box
+ * and the level/category pills hide cards in place, over pre-rendered HTML, so
+ * every tutorial stays crawlable on first paint and nothing depends on JS.
+ */
+import { categories } from '../data/categories';
+import { useTranslations } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+import { fill, type Level } from '../lib/tutorials';
+
+interface Props {
+  href: string;
+  title: string;
+  subtitle: string;
+  category: keyof typeof categories;
+  level: Level;
+  readingTime: number;
+  /** Lowercased haystack the landing-page search matches against. */
+  search: string;
+  lang: Lang;
+}
+const { href, title, subtitle, category, level, readingTime, search, lang } =
+  Astro.props;
+
+const t = useTranslations(lang);
+const cat = categories[category];
+const arrow = lang === 'ar' ? '←' : '→';
+
+const levelLabel = t(`tut.level.${level}` as 'tut.level.beginner');
+// Filled bars are a faster read than a word alone, and they stay meaningful
+// without colour — the label carries the same information for screen readers.
+const levelDots = { beginner: 1, intermediate: 2, advanced: 3 }[level];
+---
+<a
+  href={href}
+  class="tut-card"
+  data-tutorial
+  data-level={level}
+  data-category={category}
+  data-search={search}
+>
+  <div class="meta">
+    <span class="level" data-level={level}>
+      <span class="dots" aria-hidden="true">
+        {[1, 2, 3].map((i) => <i data-on={i <= levelDots ? '' : undefined}></i>)}
+      </span>
+      {levelLabel}
+    </span>
+    <span class="time">{fill(t('tut.readingTime'), { count: readingTime })}</span>
+  </div>
+
+  <h3>{title}</h3>
+  <span class="cat-badge">{cat.icon} {cat[lang]}</span>
+  <p>{subtitle}</p>
+
+  <div class="card-footer">
+    <span class="cta-hint">{t('tut.view')} {arrow}</span>
+  </div>
+</a>
+
+<style>
+  .tut-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
+    height: 100%;
+  }
+  .tut-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback',
+      'IBM Plex Sans Arabic', monospace;
+  }
+  .level {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dots {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .dots i {
+    width: 4px;
+    height: 11px;
+    border-radius: 2px;
+    background: var(--line);
+    display: block;
+  }
+  .dots i[data-on] { background: var(--accent); }
+  .level[data-level='advanced'] .dots i[data-on] { background: var(--paid); }
+
+  h3 { margin: 0 0 6px; font-size: 1.05rem; font-weight: 700; line-height: 1.45; }
+  .cat-badge { font-size: 0.72rem; color: var(--text-dim); }
+  p {
+    margin: 10px 0 14px;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    flex: 1;
+  }
+
+  .card-footer {
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .cta-hint {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>

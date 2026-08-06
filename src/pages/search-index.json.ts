@@ -8,6 +8,7 @@ export const GET: APIRoute = async () => {
   const tools = (await getCollection('tools')).filter((t) => t.data.lang === lang);
   const prompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
   const comparisons = (await getCollection('comparisons')).filter((c) => c.data.lang === lang);
+  const tutorials = (await getCollection('tutorials')).filter((t) => t.data.lang === lang);
 
   const toolItems = tools.map((t) => ({
     type: 'tool',
@@ -36,7 +37,19 @@ export const GET: APIRoute = async () => {
     url: `/comparisons/${c.id.split('/')[1]}`,
   }));
 
-  return new Response(JSON.stringify([...toolItems, ...comparisonItems, ...promptItems]), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const tutorialItems = tutorials.map((t) => ({
+    type: 'tutorial',
+    typeLabel: 'شرح',
+    title: t.data.title,
+    description: t.data.subtitle,
+    category: categories[t.data.category][lang],
+    url: `/tutorials/${t.id.split('/')[1]}`,
+  }));
+
+  return new Response(
+    JSON.stringify([...toolItems, ...comparisonItems, ...tutorialItems, ...promptItems]),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
 };

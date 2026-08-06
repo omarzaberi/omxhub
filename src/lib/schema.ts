@@ -272,16 +272,33 @@ export interface HowToInput {
   steps: { name: string; text: string }[];
   /** ISO 8601 duration, e.g. "PT1M". */
   totalTime?: string;
+  /**
+   * What the reader needs to hand. Defaults to a web browser, which is exactly
+   * true for the PDF tools; tutorials override it with the real requirement
+   * (an account, an installed editor, and so on).
+   */
+  tools?: string[];
+  /**
+   * Anchor used to build per-step URLs. PDF tools number their visible steps
+   * `#step-1`; tutorials do the same, so the default fits both.
+   */
+  stepAnchor?: string;
 }
 
 /**
- * Step-by-step instructions for a PDF tool.
+ * Step-by-step instructions — used by the PDF tools and by tutorials that are
+ * genuinely a procedure.
  *
  * Every step listed here is also rendered visibly on the page — marking up
- * invisible content is a policy violation, not a shortcut.
+ * invisible content is a policy violation, not a shortcut. Pages whose content
+ * is conceptual rather than procedural emit `Article` alone and never call this.
  */
 export function howTo(input: HowToInput): Json {
   const url = langUrl(input.lang, input.path);
+  const anchor = input.stepAnchor ?? 'step';
+  const toolNames = input.tools?.length
+    ? input.tools
+    : [input.lang === 'ar' ? 'متصفح ويب حديث' : 'A modern web browser'];
   return {
     '@type': 'HowTo',
     '@id': `${url}#howto`,
@@ -289,18 +306,16 @@ export function howTo(input: HowToInput): Json {
     description: input.description,
     inLanguage: input.lang,
     totalTime: input.totalTime ?? 'PT1M',
-    // These tools are free and run client-side — no cost to the user at all.
+    // Free either way: the PDF tools run client-side, and every tutorial is
+    // written against a tier the reader can reach at no cost.
     estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
-    tool: {
-      '@type': 'HowToTool',
-      name: input.lang === 'ar' ? 'متصفح ويب حديث' : 'A modern web browser',
-    },
+    tool: toolNames.map((name) => ({ '@type': 'HowToTool', name })),
     step: input.steps.map((step, index) => ({
       '@type': 'HowToStep',
       position: index + 1,
       name: step.name,
       text: step.text,
-      url: `${url}#step-${index + 1}`,
+      url: `${url}#${anchor}-${index + 1}`,
     })),
   };
 }

@@ -1,0 +1,18 @@
+---
+import TutorialDetail from '../../components/TutorialDetail.astro';
+import { getCollection } from 'astro:content';
+import { slugOf } from '../../lib/tutorials';
+
+const lang = 'ar' as const;
+
+export async function getStaticPaths() {
+  const entries = (await getCollection('tutorials')).filter((e) => e.data.lang === 'ar');
+  return entries.map((entry) => ({
+    params: { slug: slugOf(entry) },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+---
+<TutorialDetail lang={lang} entry={entry} />

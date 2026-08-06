@@ -201,4 +201,84 @@ const comparisons = defineCollection({
   }),
 });
 
-export const collections = { tools, prompts, comparisons };
+/**
+ * Tutorials (`/tutorials/<slug>`).
+ *
+ * Same single-source pattern as `comparisons`: everything the card, the landing
+ * page, and the search index need lives in frontmatter, and the markdown body
+ * holds the editorial prose only.
+ *
+ * `steps` is optional on purpose. A tutorial that is genuinely a procedure gets
+ * numbered steps rendered on the page *and* `HowTo` markup; a conceptual guide
+ * gets neither. We never emit `HowTo` for an article that has no visible steps —
+ * that is the same rule we hold everywhere else in `src/lib/schema.ts`.
+ */
+const tutorials = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/tutorials' }),
+  schema: z.object({
+    lang: z.enum(['ar', 'en']),
+    /** Short H1. */
+    title: z.string(),
+    /** Sentence under the H1. */
+    subtitle: z.string(),
+    /** <title> tag — written separately so it can target the search phrase. */
+    metaTitle: z.string(),
+    metaDescription: z.string(),
+    category: z.enum([
+      'writing',
+      'design',
+      'video-audio',
+      'coding',
+      'productivity',
+      'marketing',
+      'research',
+    ]),
+    level: z.enum(['beginner', 'intermediate', 'advanced']),
+    /** Honest estimate in minutes, shown in the card and the dateline. */
+    readingTime: z.number().int().positive(),
+
+    /** "What you'll be able to do by the end" — rendered as a box near the top. */
+    takeaways: z.array(z.string()).min(3),
+    /** Optional "before you start" list. Omit when nothing is required. */
+    prerequisites: z.array(z.string()).default([]),
+
+    /**
+     * Numbered procedure. When present, the steps are rendered visibly and the
+     * page also emits `HowTo`. `tip` is an optional callout under a step.
+     */
+    steps: z
+      .array(
+        z.object({
+          title: z.string(),
+          body: z.string(),
+          tip: z.string().optional(),
+        })
+      )
+      .default([]),
+
+    /** Common mistakes section — the part most tutorials skip and readers need. */
+    mistakes: z
+      .array(z.object({ wrong: z.string(), right: z.string() }))
+      .default([]),
+
+    /** Slugs from the `tools` collection. */
+    relatedTools: z.array(z.string()).default([]),
+    /** Slugs from the `prompts` collection. */
+    relatedPrompts: z.array(z.string()).default([]),
+    /** Slugs from the `comparisons` collection. */
+    relatedComparisons: z.array(z.string()).default([]),
+    /** Slugs of other tutorials. */
+    related: z.array(z.string()).default([]),
+
+    faq: z.array(z.object({ q: z.string(), a: z.string() })).min(3),
+
+    publishDate: z.date(),
+    /** Shown as "last updated" — AI tooling moves fast, readers deserve the date. */
+    updatedDate: z.date().optional(),
+    featured: z.boolean().default(false),
+    /** Manual ordering weight for the "most read" rail. Higher = higher. */
+    popularity: z.number().default(0),
+  }),
+});
+
+export const collections = { tools, prompts, comparisons, tutorials };

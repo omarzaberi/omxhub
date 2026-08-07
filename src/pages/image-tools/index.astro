@@ -1,0 +1,68 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { trail } from '../../lib/schema';
+import { useTranslations, localizedPath } from '../../i18n/utils';
+import { imageTools, imageToolPath } from '../../data/image-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const schema = trail(lang, [{ name: t('nav.image') }]);
+---
+<Layout title={t('nav.image')} description="أدوات صور مجانية تشتغل بالكامل داخل متصفحك — ضغط الصور بدون فقدان الجودة" schema={schema}>
+  <section class="wrap section">
+    <h1>{t('nav.image')}</h1>
+    <p class="subtitle">
+      أدوات مجانية بالكامل تعالج صورك مباشرة داخل متصفحك — ما فيه رفع لأي سيرفر،
+      وما فيه حد يومي للاستخدام.
+    </p>
+    <div class="grid">
+      {imageTools.map((tool) => (
+        <a href={localizedPath(lang, imageToolPath(tool.slug))} class="tool-card">
+          <span class="icon">{tool.icon}</span>
+          <h3>{tool.name[lang]}</h3>
+          <p>{tool.desc[lang]}</p>
+        </a>
+      ))}
+    </div>
+    <p class="more-note">
+      القسم جديد وقاعد يكبر. لين ما تنزل بقية أدوات الصور، تلقى مجموعة كاملة من
+      <a href={localizedPath(lang, '/pdf-tools')}>أدوات PDF</a> تشتغل بنفس الطريقة — كل شي داخل متصفحك.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .section { padding: 40px 0 70px; }
+  h1 { margin-bottom: 10px; }
+  .subtitle { color: var(--text-dim); max-width: 600px; margin-bottom: 34px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .tool-card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .tool-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .icon { font-size: 1.8rem; display: block; margin-bottom: 12px; }
+  h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .tool-card p { margin: 0; font-size: 0.85rem; color: var(--text-dim); }
+
+  /* Keeps a one-card grid from reading as a broken page, and hands the visitor
+     somewhere real to go instead of a dead end. */
+  .more-note {
+    margin-top: 28px;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    max-width: 600px;
+  }
+  .more-note a { color: var(--accent-2); }
+</style>

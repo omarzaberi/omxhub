@@ -84,8 +84,24 @@ No backend, no paid API.**
 
 ### Image — Phase 2
 
-- ⬜ Remove Background · Upscaler · Compress · Crop · Resize · Convert · Watermark
+- ✅ **Compress — live** at `/image-tools/compress-image`. Canvas only, no new dependency.
+- 🟡 **Next batch: Convert · Resize · Crop.** All three reuse the decode/encode path Compress
+  already established, so they are page work rather than engine work.
+- ⬜ Remove Background · Upscaler · Watermark
 - ⬜ OCR — only if it can run without a paid API, which the Blueprint currently rules out.
+
+**What Compress settled for the whole section.** Three decisions were made once and should
+hold for every image tool that follows, because each of them is a way this category silently
+ruins files:
+
+- **Transparency is detected from pixels, not from the file extension.** Most PNGs are
+  opaque, and assuming otherwise forfeits real compression; assuming the reverse turns a
+  logo's background black. A 128 px probe answers it in a millisecond.
+- **EXIF orientation is applied at decode** (`imageOrientation: 'from-image'`). Skip it and
+  every phone photo comes back on its side — the single most common complaint about tools
+  in this category.
+- **Never return a larger file.** Every candidate is measured against the original and the
+  original wins ties. The user is told plainly when nothing beat it.
 
 ### Video — Phase 2
 

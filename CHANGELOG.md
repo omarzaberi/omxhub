@@ -12,6 +12,36 @@ All notable changes to OMXHub are documented in this file.
 ## 2026-08-07
 
 ### Added
+- **The Image Tools section, opened with Compress** — `/image-tools/compress-image` and its
+  English twin, plus the `/image-tools` hub in both languages. Four new indexable pages with
+  the usual anatomy: unique title and description, four visible steps plus `HowTo`, seven
+  FAQs plus `FAQPage`, and visible breadcrumbs plus `BreadcrumbList`. Everything runs on
+  Canvas, which every browser already has, so the section added **no new dependency and no
+  new bytes** to any existing page.
+- **Compress tries several formats and keeps the smallest** — WebP, JPEG and PNG are encoded
+  in parallel and measured, rather than picking one up front. The guarantee is the same one
+  Compress PDF makes: **it never returns a file larger than the one it was given**, and says
+  so plainly when nothing beat the original instead of handing back a worse file.
+- **Transparency is detected from pixels and JPEG is withheld when it would destroy them.**
+  A 128 px probe decides whether an image really has alpha — the extension does not, since
+  most PNGs are opaque. Under Auto, a transparent image is never offered JPEG; choosing it
+  manually warns first and fills white rather than the black a bare canvas would produce.
+- **EXIF orientation is honoured**, so portrait phone photos do not come back on their side —
+  the most common failure in this category, and a one-option fix (`imageOrientation:
+  'from-image'`) that most tools skip.
+- `tests/image-compress.test.mjs` — 38 assertions over the decision logic with a stubbed
+  encoder, pinning the size promise, the transparency rule, no-upscale on resize, and
+  resilience when one format's encoder fails.
+
+### Changed
+- **`ToolLayout.astro` extracted from `PdfToolLayout.astro`.** The second tool section would
+  otherwise have duplicated ~500 lines of drop-zone, button and status CSS, and every future
+  spacing fix with it. Both section layouts are now thin wrappers over the shared base and
+  keep their original props, so **none of the 28 PDF tool pages changed** — verified by a
+  full build: 170 pages, 2967 SEO assertions, 0 failures.
+- Image Tools added to the site header nav and the 404 page's quick links.
+
+### Added
 - **Three more Phase 1 PDF tools**, in both languages — Compress (`/pdf-tools/compress-pdf`),
   Lock (`/pdf-tools/lock-pdf`) and Unlock (`/pdf-tools/unlock-pdf`). PDF tools: **11 → 14**,
   leaving only Add Text unbuilt. Six new indexable pages with the usual anatomy: unique title

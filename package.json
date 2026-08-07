@@ -13,7 +13,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "t": "node --import ./tests/ts-extension-hook.mjs",
-    "test:unit": "npm run t tests/pdf-geometry.test.mjs && npm run t tests/pdf-text.test.mjs && npm run t tests/pdf-placement.test.mjs && npm run t tests/pdf-crop-box.test.mjs && npm run t tests/pdf-compress.test.mjs && npm run t tests/pdf-encrypted.test.mjs",
+    "test:unit": "npm run t tests/pdf-geometry.test.mjs && npm run t tests/pdf-text.test.mjs && npm run t tests/pdf-placement.test.mjs && npm run t tests/pdf-crop-box.test.mjs && npm run t tests/pdf-compress.test.mjs && npm run t tests/pdf-encrypted.test.mjs && npm run t tests/image-compress.test.mjs",
     "test": "npm run test:unit && npm run build && node tests/deferred-scripts.test.mjs && node scripts/verify-seo.mjs"
   },
   "devDependencies": {

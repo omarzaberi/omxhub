@@ -1,0 +1,135 @@
+---
+/**
+ * Image-tool chrome: `ToolLayout` with the image section's labels and hub, plus
+ * the preview CSS the image tools share.
+ *
+ * While the section is young `relatedImageTools` legitimately returns an empty
+ * list, so this layout adds a link across to the PDF hub. A tool page with no
+ * outbound link is a dead end for a reader and a leaf for a crawler; borrowing
+ * the neighbouring section costs nothing and disappears on its own once there
+ * are enough image tools to link to each other.
+ */
+import ToolLayout from './ToolLayout.astro';
+import { useTranslations, localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+
+interface FaqItem { q: string; a: string; }
+interface RelatedTool { label: string; href: string; }
+interface Step { name: string; text: string; }
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** Usage steps. Rendered visibly on the page and mirrored as HowTo JSON-LD. */
+  steps?: Step[];
+  faq?: FaqItem[];
+  related?: RelatedTool[];
+}
+const { lang, title, description, steps = [], faq = [], related = [] } = Astro.props;
+const t = useTranslations(lang);
+---
+<ToolLayout
+  lang={lang}
+  title={title}
+  description={description}
+  hub={{ label: t('nav.image'), path: '/image-tools' }}
+  labels={{
+    privacyNote: t('image.privacyNote'),
+    relatedTools: t('image.relatedTools'),
+    allTools: t('image.allTools'),
+  }}
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <slot />
+
+  <Fragment slot="related-extra">
+    <a href={localizedPath(lang, '/pdf-tools')}>{t('nav.pdf')}</a>
+  </Fragment>
+</ToolLayout>
+
+<style is:global>
+  /* ---------- IMAGE PREVIEW ---------- */
+  /* A single decoded image shown before and after processing. The box is sized
+     by aspect-ratio rather than by the image, so choosing a file does not shift
+     the button underneath it downward while the bitmap decodes. */
+  .image-preview {
+    margin-top: 18px;
+    display: grid;
+    place-items: center;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    min-height: 160px;
+  }
+  .image-preview img {
+    max-width: 100%;
+    max-height: 280px;
+    display: block;
+    border-radius: 6px;
+    /* A transparent PNG on a flat panel is unreadable; the chequerboard makes
+       alpha visible, which matters because transparency changes what formats
+       this tool is allowed to offer. */
+    background-image:
+      linear-gradient(45deg, var(--line) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--line) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--line) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--line) 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  }
+
+  /* Before / after figures for a size comparison. */
+  .size-compare {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    text-align: center;
+  }
+  .size-compare .size-cell {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 10px;
+  }
+  .size-compare .size-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .size-compare .size-value {
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
+    font-size: 1rem;
+    color: var(--text);
+    direction: ltr;
+    display: block;
+  }
+  .size-compare .size-cell.after .size-value { color: var(--free); }
+  /* The glyph points from the original to the result, so it must follow the
+     reading direction rather than stay pinned to one side. */
+  .size-compare .size-arrow { color: var(--text-dim); font-size: 1.1rem; }
+  [dir='rtl'] .size-compare .size-arrow { transform: scaleX(-1); }
+
+  .saving-badge {
+    display: inline-block;
+    margin-top: 14px;
+    background: color-mix(in srgb, var(--free) 16%, transparent);
+    color: var(--free);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 560px) {
+    .size-compare { grid-template-columns: 1fr; gap: 8px; }
+    .size-compare .size-arrow { transform: rotate(90deg); }
+    [dir='rtl'] .size-compare .size-arrow { transform: rotate(90deg); }
+  }
+</style>

@@ -1,0 +1,123 @@
+---
+import ImageToolLayout from '../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedImageTools } from '../../data/image-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'هل تنقص جودة الصورة؟',
+    a: 'إي، الضغط يشيل تفاصيل ما تلاحظها العين عادة. على 80% أغلب الصور تنضغط لنص حجمها أو أقل بدون فرق واضح. إذا نزّلت الجودة كثير بتبدأ تشوف تشويش حول الحواف والنصوص.',
+  },
+  {
+    q: 'ليش أحيانًا يقول إن الصورة ما تحتاج ضغط؟',
+    a: 'لأن الأداة ما ترجّع لك ملف أكبر من اللي أعطيتها. إذا كانت صورتك مضغوطة أصلًا بشكل جيد، كل المحاولات تطلع أكبر من الأصل، فنقول لك هذا بصراحة بدل ما نعطيك ملف أسوأ.',
+  },
+  {
+    q: 'وش يصير للصور اللي فيها خلفية شفافة؟',
+    a: 'نكتشف الشفافية تلقائيًا وما نقترح عليك JPEG أبدًا في الوضع التلقائي، لأن JPEG ما يدعم الشفافية وبيحوّل الخلفية الشفافة للون أسود. لو اخترت JPEG بنفسك بننبهك أول، وبنعبّي الخلفية بالأبيض بدل الأسود.',
+  },
+  {
+    q: 'ليش صيغة WebP غالبًا تطلع الأفضل؟',
+    a: 'WebP تضغط أقوى من JPEG بنفس الجودة تقريبًا، وهي الصيغة الوحيدة هنا اللي تدعم الشفافية والضغط في نفس الوقت. كل المتصفحات الحديثة تعرضها. إذا متصفحك ما يدعمها نشيلها من القائمة تلقائيًا.',
+  },
+  {
+    q: 'هل الصورة ترفع لسيرفر؟',
+    a: 'لا. كل شي يصير داخل متصفحك — الصورة ما تغادر جهازك أبدًا، وما فيه حد يومي للاستخدام.',
+  },
+  {
+    q: 'وش يصير لبيانات EXIF وموقع التصوير؟',
+    a: 'تنحذف. إعادة الترميز تشيل كل البيانات المرفقة بما فيها إحداثيات GPS ونوع الكاميرا. هذي ميزة إذا كنت بتنشر الصورة، بس انتبه لها إذا كنت تحتاج تحتفظ بالبيانات.',
+  },
+  {
+    q: 'ليش صورتي ما انقلبت مثل ما يصير بمواقع ثانية؟',
+    a: 'لأن الأداة تقرأ اتجاه التصوير من بيانات EXIF قبل المعالجة. كثير من الأدوات تتجاهله فتطلع صور الجوال مقلوبة على جنب.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع الصورة', text: 'اسحب الصورة لمنطقة الرفع أو اضغط "اختر صورة". تدعم JPG و PNG و WebP وغيرها.' },
+  { name: 'اضبط الجودة', text: 'ابدأ من 80% — هذي أفضل نقطة توازن بين الحجم والوضوح لأغلب الصور.' },
+  { name: 'اختر أقصى عرض إذا تبي', text: 'لو الصورة للويب، تصغيرها لـ 1920 بكسل يقلّص الحجم أكثر من أي ضبط جودة.' },
+  { name: 'اضغط "اضغط الصورة"', text: 'نجرب أكثر من صيغة ونختار الأصغر — وما نرجّع لك ملف أكبر من الأصل أبدًا.' },
+];
+
+const related = relatedImageTools(lang, 'compress-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="ضغط الصور"
+  description="صغّر حجم صورك JPG و PNG و WebP بدون ما تخسر وضوحها — مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="preview" class="image-preview" hidden>
+    <img id="preview-img" alt="" />
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="quality-range">الجودة — <output id="quality-out">80%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.8" />
+      <p class="field-note">كل ما نزلت الجودة صغر الحجم. 80% مناسبة لأغلب الصور.</p>
+    </div>
+
+    <div>
+      <label for="maxedge-select">أقصى عرض أو ارتفاع</label>
+      <select id="maxedge-select">
+        <option value="0">بدون تغيير الأبعاد</option>
+        <option value="2560">2560 بكسل — شاشات كبيرة</option>
+        <option value="1920">1920 بكسل — مناسب للويب</option>
+        <option value="1280">1280 بكسل — مقالات ومدونات</option>
+        <option value="800">800 بكسل — صور مصغّرة</option>
+      </select>
+      <p class="field-note">تصغير الأبعاد يوفّر أكثر من ضبط الجودة، وما نكبّر صورة أصغر من الحد أبدًا.</p>
+    </div>
+
+    <div>
+      <label for="format-select">الصيغة</label>
+      <select id="format-select">
+        <option value="auto">تلقائي — نجرب الكل ونختار الأصغر</option>
+        <option value="webp">WebP</option>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+      </select>
+      <p class="field-note warn" id="format-note" hidden>
+        هذي الصورة فيها خلفية شفافة، و JPEG ما يدعم الشفافية — بتنعبّى بالأبيض. اختر WebP أو PNG إذا تبي تحتفظ فيها.
+      </p>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>اضغط الصورة</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountCompressTool } from '../../lib/image-compress-ui';
+
+  mountCompressTool({
+    processing: 'جاري الضغط...',
+    error: 'حدث خطأ، تأكد إن الملف صورة صالحة وحاول مرة ثانية',
+    download: 'تحميل الصورة المضغوطة',
+    originalLabel: 'الأصلي',
+    resultLabel: 'بعد الضغط',
+    noImprovement: 'صورتك مضغوطة أصلًا بشكل جيد — كل المحاولات طلعت أكبر من الأصل، فما غيّرنا شي. جرّب تنزّل الجودة أو تصغّر الأبعاد.',
+    noFormat: 'متصفحك ما يدعم هذي الصيغة. جرّب "تلقائي" أو اختر صيغة ثانية.',
+    alphaJpegWarning: 'هذي الصورة فيها شفافية و JPEG ما يدعمها.',
+    tooLarge: 'الصورة كبيرة جدًا (الحد 50 ميجابايت). صغّرها أول أو جرّب صورة ثانية.',
+    saved: (percent) => `وفّرت ${percent}% من الحجم`,
+    resizedTo: (width, height) => `الأبعاد الجديدة: ${width}×${height} بكسل`,
+  });
+</script>

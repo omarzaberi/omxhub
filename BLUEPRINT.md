@@ -222,6 +222,17 @@ platform one polished feature at a time.
   Delete Pages, Organize Pages, Rotate, Crop, Compress, Watermark, Page Numbers, Lock,
   Unlock, Images→PDF, PDF→Images — all working entirely client-side. **Not yet built:**
   Add Text, and only that.
+- 🟡 **Image Tools (Phase 2, opened): 1 live** — Compress (`/image-tools/compress-image`),
+  client-side via Canvas with no new dependency. Convert, Resize and Crop are next and reuse
+  the same decode/encode path.
+  - **The section was opened instead of finishing PDF Phase 1.** Add Text is the last PDF
+    tool and it is blocked on Arabic text shaping: doing it properly costs 600 kB–1 MB on a
+    single page (see `IDEAS.md`), which would make a minor tool the heaviest thing on the
+    site. Image tools cost nothing extra — Canvas is already in every browser — so the next
+    unit of user value was cheaper one category over.
+  - **`ToolLayout.astro` was extracted when the second section arrived**, rather than
+    copying 500 lines of tool CSS. `PdfToolLayout` and `ImageToolLayout` are now thin
+    wrappers over it with unchanged props, so none of the 28 PDF pages were touched.
   - **Compress does not take the trade-off the plan assumed.** It was filed as "rasterise
     pages through pdf.js, destroying selectable text and possibly growing text-only PDFs".
     Measuring first showed a third way: almost all the bytes in a large PDF are in its

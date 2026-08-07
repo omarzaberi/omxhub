@@ -1,0 +1,406 @@
+---
+/**
+ * The page chrome every browser-based tool shares, whatever it operates on.
+ *
+ * This was `PdfToolLayout` until the image section arrived. Rather than copy 400
+ * lines of drop-zone, button and status CSS into a second layout — and then fix
+ * every future spacing bug twice — the generic half moved here and both section
+ * layouts became thin wrappers around it.
+ *
+ * The split is by *audience*, not by convenience: anything a tool page needs
+ * regardless of file type lives here, while section-specific chrome (the
+ * encrypted-PDF notice, the page-thumbnail grid, the crop stage) stays in the
+ * layout that owns it. Section names are never hard-coded below — the hub link
+ * and the section labels are passed in, so this file has no opinion about
+ * whether it is rendering a PDF tool or an image tool.
+ */
+import Layout from './Layout.astro';
+import { localizedPath } from '../i18n/utils';
+import type { Lang } from '../i18n/ui';
+import { breadcrumbs, faqPage, graph, howTo } from '../lib/schema';
+
+interface FaqItem { q: string; a: string; }
+interface RelatedTool { label: string; href: string; }
+interface Step { name: string; text: string; }
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** The section hub, with a language-neutral path such as `/image-tools`. */
+  hub: { label: string; path: string };
+  /** Section-specific copy, supplied by the wrapper so this file stays generic. */
+  labels: { privacyNote: string; relatedTools: string; allTools: string };
+  /** Usage steps. Rendered visibly on the page and mirrored as HowTo JSON-LD. */
+  steps?: Step[];
+  faq?: FaqItem[];
+  related?: RelatedTool[];
+}
+const { lang, title, description, hub, labels, steps = [], faq = [], related = [] } = Astro.props;
+
+// Language-neutral path (`/image-tools/compress-image`) for canonical schema URLs.
+const path = Astro.url.pathname.replace(/^\/en/, '').replace(/\/+$/, '') || '/';
+
+const homeLabel = lang === 'ar' ? 'الرئيسية' : 'Home';
+const stepsHeading = lang === 'ar' ? 'طريقة الاستخدام' : 'How to use it';
+const faqHeading = lang === 'ar' ? 'أسئلة شائعة' : 'Frequently Asked Questions';
+
+const schema = graph(
+  breadcrumbs(lang, [
+    { name: homeLabel, path: '/' },
+    { name: hub.label, path: hub.path },
+    { name: title },
+  ]),
+  // Only claim HowTo when the steps are actually rendered below.
+  steps.length ? howTo({ lang, name: title, description, path, steps }) : null,
+  faqPage(faq)
+);
+---
+<Layout title={title} description={description} schema={schema}>
+  <div class="wrap tool-page">
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href={localizedPath(lang, '/')}>{homeLabel}</a>
+      <span>/</span>
+      <a href={localizedPath(lang, hub.path)}>{hub.label}</a>
+      <span>/</span>
+      <span class="current">{title}</span>
+    </nav>
+
+    <h1>{title}</h1>
+    <p class="tool-desc">{description}</p>
+
+    <div class="tool-panel">
+      <slot />
+      {/* Section-specific notices that belong inside the panel, e.g. the
+          encrypted-PDF warning. Empty for sections that need none. */}
+      <slot name="panel-extra" />
+    </div>
+
+    <p class="privacy-note">{labels.privacyNote}</p>
+
+    {steps.length > 0 && (
+      <section class="howto">
+        <h2>{stepsHeading}</h2>
+        <ol class="howto-steps">
+          {steps.map((step, index) => (
+            <li id={`step-${index + 1}`}>
+              <strong>{step.name}</strong>
+              <span>{step.text}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+
+    <p class="support-hint">
+      {lang === 'ar' ? 'عجبتك الأداة؟ ساعدنا نخليها مجانية للأبد — ' : 'Enjoying the tool? Help us keep it free forever — '}
+      <a href={lang === 'ar' ? '/support' : '/en/support'}>{lang === 'ar' ? 'ادعم OMXHub ❤️' : 'Support OMXHub ❤️'}</a>
+    </p>
+
+    {faq.length > 0 && (
+      <section class="faq">
+        <h2>{faqHeading}</h2>
+        {faq.map((item) => (
+          <details>
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </section>
+    )}
+
+    <section class="related">
+      <h2>{labels.relatedTools}</h2>
+      <div class="related-links">
+        {related.map((r) => <a href={r.href}>{r.label}</a>)}
+        <a href={localizedPath(lang, hub.path)} class="all-tools-link">{labels.allTools} ←</a>
+        <slot name="related-extra" />
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style is:global>
+  .tool-page { padding: 32px 0 70px; max-width: 760px; }
+  .breadcrumb {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .current { color: var(--text); }
+
+  .tool-page h1 { font-size: 1.8rem; margin: 0 0 10px; }
+  .tool-desc { color: var(--text-dim); margin-bottom: 28px; font-size: 1rem; }
+
+  .tool-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .privacy-note {
+    font-size: 0.82rem;
+    color: var(--free);
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .support-hint {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 50px;
+  }
+  .support-hint a { color: var(--accent-2); }
+
+  /* ---------- HOW TO ---------- */
+  .howto { margin: 34px 0 40px; }
+  .howto h2 { font-size: 1.2rem; margin-bottom: 16px; }
+  .howto-steps {
+    counter-reset: step;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .howto-steps li {
+    counter-increment: step;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    padding-inline-start: 58px;
+  }
+  .howto-steps li::before {
+    content: counter(step);
+    position: absolute;
+    inset-inline-start: 16px;
+    top: 14px;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .howto-steps strong { display: block; margin-bottom: 4px; }
+  .howto-steps span { color: var(--text-dim); font-size: 0.92rem; }
+
+  .faq { margin-bottom: 50px; }
+  .faq h2, .related h2 { font-size: 1.2rem; margin-bottom: 16px; }
+  .faq details {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+  }
+  .faq summary { cursor: pointer; font-weight: 600; }
+  .faq p { color: var(--text-dim); margin: 10px 0 0; font-size: 0.92rem; }
+
+  .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .related-links a {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 9px 16px;
+    border-radius: 100px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.88rem;
+  }
+  .related-links a:hover { border-color: var(--accent); color: var(--accent); }
+  .all-tools-link { color: var(--accent) !important; }
+
+  @media (max-width: 820px) {
+    .tool-page { padding: 24px 0 56px; }
+    .tool-page h1 { font-size: 1.45rem; }
+    .tool-desc { font-size: 0.95rem; margin-bottom: 22px; }
+    .tool-panel { padding: 18px 16px; border-radius: 14px; }
+    .faq details { padding: 12px 14px; }
+  }
+
+  /* Shared drop-zone + tool UI styles used by every tool page */
+  .drop-zone {
+    border: 2px dashed var(--line);
+    border-radius: 12px;
+    padding: 40px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .drop-zone svg { color: var(--text-dim); margin-bottom: 10px; }
+  .drop-zone .drop-text { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 14px; }
+  .drop-zone input[type="file"] { display: none; }
+  .choose-btn {
+    display: inline-block;
+    min-height: 44px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .file-list { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+  .file-item .file-name {
+    font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: ltr;
+    text-align: left;
+  }
+  .file-item .file-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .file-item .file-remove:hover { color: var(--paid); }
+
+  .tool-options { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .tool-options label { font-size: 0.88rem; color: var(--text-dim); display: block; margin-bottom: 6px; }
+  .tool-options input[type="text"],
+  .tool-options input[type="password"],
+  .tool-options input[type="number"],
+  .tool-options select {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+  .tool-options input[type="range"] { width: 100%; }
+
+  /* Checkbox option. The whole row is the label, so the hit target is the
+     sentence rather than the 16 px box beside it. */
+  .tool-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+  .tool-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Inline guidance under a field — advice and validation, not an alert box. */
+  .field-note {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .field-note.warn { color: var(--paid); }
+
+  /* Pre-flight summary: what a tool can achieve on this file, before committing. */
+  .estimate-box {
+    margin-top: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .estimate-box strong { color: var(--text); }
+  .estimate-box a { color: var(--accent-2); }
+  .estimate-box.warn { border-inline-start-color: var(--paid); }
+
+  .action-btn {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 22px;
+  }
+  .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .action-btn.secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
+
+  .status-msg { text-align: center; padding: 20px 0; color: var(--text-dim); font-size: 0.9rem; }
+  .status-msg.error { color: var(--paid); }
+  .status-msg .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-inline-end: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-box {
+    text-align: center;
+    padding: 24px 0 0;
+  }
+  .thumb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .thumb-grid img {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+</style>

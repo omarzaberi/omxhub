@@ -8,13 +8,6 @@ const t = useTranslations(lang);
 
 const KOFI_URL = 'https://ko-fi.com/omxhub';
 
-const amounts = [
-  { emoji: '☕', label: '$2' },
-  { emoji: '☕', label: '$5' },
-  { emoji: '☕', label: '$10' },
-  { emoji: '🚀', label: '$20' },
-];
-
 const reasons = [
   { icon: '💻', title: 'Development', desc: 'Building new AI and productivity tools continuously' },
   { icon: '☁️', title: 'Infrastructure', desc: 'Hosting, CDN, domain renewals, and maintenance' },
@@ -45,22 +38,6 @@ const schema = trail(lang, [{ name: t('footer.support') }]);
       can keep everything free.
     </p>
     <a class="kofi-btn" href={KOFI_URL} target="_blank" rel="noopener">❤️ Support on Ko-fi</a>
-  </section>
-
-  <section class="wrap section">
-    <h2>Choose an Amount</h2>
-    <div class="amounts-grid">
-      {amounts.map((a) => (
-        <a href={KOFI_URL} target="_blank" rel="noopener" class="amount-card">
-          <span class="emoji">{a.emoji}</span>
-          <span class="label">{a.label}</span>
-        </a>
-      ))}
-      <a href={KOFI_URL} target="_blank" rel="noopener" class="amount-card custom">
-        <span class="emoji">❤️</span>
-        <span class="label">Custom</span>
-      </a>
-    </div>
   </section>
 
   <section class="wrap section">
@@ -111,27 +88,6 @@ const schema = trail(lang, [{ name: t('footer.support') }]);
 
   .section { padding: 30px 0; }
   .section h2 { font-size: 1.3rem; margin-bottom: 20px; }
-
-  .amounts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
-    max-width: 600px;
-  }
-  .amount-card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 20px 10px;
-    text-align: center;
-    text-decoration: none;
-    color: var(--text);
-    transition: border-color 0.15s, transform 0.15s;
-  }
-  .amount-card:hover { border-color: var(--accent-2); transform: translateY(-2px); }
-  .amount-card .emoji { display: block; font-size: 1.6rem; margin-bottom: 6px; }
-  .amount-card .label { font-weight: 700; font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace; }
-  .amount-card.custom { border-style: dashed; }
 
   .reasons-grid {
     display: grid;

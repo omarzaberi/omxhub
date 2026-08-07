@@ -1,0 +1,161 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Can this open a PDF whose password I do not know?',
+    a: 'No, and no honest tool can. Removing the password requires decrypting the file, and decrypting it requires the password. Anything advertising itself as a PDF password "cracker" is either guessing common passwords, uploading your document to a server, or both. This tool needs the password from you and does all its work on your own device.',
+  },
+  {
+    q: 'Is anything lost when the password is removed?',
+    a: 'Some things, yes, and it is only fair to say so. Removing encryption means rebuilding the document, so bookmarks, form fields, attachments, digital signatures and document metadata do not survive. The pages themselves — text, images, layout — come through exactly as they were. If your file depends on any of those extras, keep the original.',
+  },
+  {
+    q: 'Does my password reach your servers?',
+    a: 'No. Decryption happens entirely in your browser. Neither the file nor the password is transmitted anywhere, which is exactly why it is reasonable to type a password into this page.',
+  },
+  {
+    q: 'Why does it say the password is wrong when I am sure it is right?',
+    a: 'PDFs can carry two passwords: a user password that opens the document and an owner password that governs permissions. Either will work here. If both fail, the file may use an encryption method our in-browser library does not support, in which case a desktop PDF reader is the better route.',
+  },
+];
+
+const steps = [
+  { name: 'Upload the protected PDF', text: 'Drag the file onto the drop zone or click "Choose file". It is read in your browser and never uploaded.' },
+  { name: 'Enter the password', text: 'The password that opens the document, or its owner password if you have that instead. You must know it — this tool decrypts, it does not guess.' },
+  { name: 'Click "Unlock PDF"', text: 'The file is decrypted and rebuilt without encryption, entirely on your device.' },
+  { name: 'Download the unlocked file', text: 'It now opens with no password. Bookmarks, form fields and attachments are not carried over, so keep the original if you need them.' },
+];
+
+const related = relatedPdfTools(lang, 'unlock-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Unlock PDF — Remove a Password"
+  description="Remove a known password from a PDF, free and entirely inside your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="pw">Password</label>
+      <input type="password" id="pw" autocomplete="current-password" placeholder="The password that opens this file" />
+    </div>
+    <p class="field-note">You need to know the password. This tool decrypts a file — it cannot guess a password you have lost.</p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Unlock PDF</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfCrypto } from '../../../lib/pdf-libs';
+  import { looksEncrypted } from '../../../lib/pdf-encrypted';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const pw = document.getElementById('pw') as HTMLInputElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  pw.addEventListener('input', () => {
+    actionBtn.disabled = !currentFile || !pw.value;
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    void loadPdfCrypto();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    statusEl.hidden = true;
+    optionsEl.hidden = false;
+    actionBtn.disabled = !pw.value;
+
+    // Not an error — just a useful thing to know before typing a password.
+    if (!looksEncrypted(await f.arrayBuffer())) {
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg';
+      statusEl.textContent =
+        'This file does not appear to be password-protected — it should already open without one.';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile || !pw.value) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Decrypting...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = await loadPdfCrypto();
+      const bytes = await currentFile.arrayBuffer();
+
+      let source;
+      try {
+        source = await PDFDocument.load(bytes, { password: pw.value });
+      } catch {
+        // A failed load here is overwhelmingly a wrong password, and saying so
+        // is more useful than a generic failure.
+        statusEl.className = 'status-msg error';
+        statusEl.textContent =
+          'That password did not open the file. Both the user and owner passwords will work — try the other one if you have it.';
+        return;
+      }
+
+      // Decrypting in place is not enough: the security handler survives a
+      // re-save and the output stays encrypted. Copying the pages into a fresh
+      // document is the only reliable way to produce a genuinely open file —
+      // which is also why bookmarks and form fields do not come along.
+      const out = await PDFDocument.create();
+      const pages = await out.copyPages(source, source.getPageIndices());
+      pages.forEach((p) => out.addPage(p));
+
+      const outBytes = await out.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML =
+        `<p>Unlocked — ${pages.length} page${pages.length === 1 ? '' : 's'}, no password required.</p>` +
+        `<a class="action-btn" href="${url}" download="unlocked.pdf">⬇ Download File</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong — make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

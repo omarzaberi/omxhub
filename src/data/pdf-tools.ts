@@ -79,12 +79,57 @@ export const pdfTools: readonly PdfTool[] = [
     },
   },
   {
+    slug: 'crop-pdf',
+    icon: '📐',
+    name: { ar: 'قص PDF', en: 'Crop PDF' },
+    desc: {
+      ar: 'قص هوامش كل الصفحات بالسحب على المعاينة أو بالنسبة المئوية',
+      en: 'Trim the margins off every page by dragging on a live preview',
+    },
+  },
+  {
     slug: 'watermark-pdf',
     icon: '💧',
     name: { ar: 'علامة مائية', en: 'Watermark PDF' },
     desc: {
       ar: 'أضف نص كعلامة مائية على كل صفحات ملف PDF',
       en: 'Add a text watermark across every page of a PDF',
+    },
+  },
+  {
+    slug: 'page-numbers',
+    icon: '🔢',
+    name: { ar: 'أرقام الصفحات', en: 'Page Numbers' },
+    desc: {
+      ar: 'أضف أرقام الصفحات في أي زاوية وبرقم بداية من اختيارك',
+      en: 'Add page numbers in any corner, starting from any number',
+    },
+  },
+  {
+    slug: 'compress-pdf',
+    icon: '🗜️',
+    name: { ar: 'ضغط PDF', en: 'Compress PDF' },
+    desc: {
+      ar: 'صغّر حجم الملف بإعادة ضغط صوره مع بقاء النص كما هو',
+      en: 'Shrink a file by recompressing its images, keeping text selectable',
+    },
+  },
+  {
+    slug: 'lock-pdf',
+    icon: '🔒',
+    name: { ar: 'حماية PDF', en: 'Lock PDF' },
+    desc: {
+      ar: 'شفّر ملف PDF بكلمة مرور داخل متصفحك بالكامل',
+      en: 'Encrypt a PDF with a password, entirely inside your browser',
+    },
+  },
+  {
+    slug: 'unlock-pdf',
+    icon: '🔓',
+    name: { ar: 'فك حماية PDF', en: 'Unlock PDF' },
+    desc: {
+      ar: 'شِل كلمة المرور المعروفة من ملف PDF محمي',
+      en: 'Remove a password you know from a protected PDF',
     },
   },
   {

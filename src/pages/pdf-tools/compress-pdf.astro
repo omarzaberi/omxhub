@@ -1,0 +1,190 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'هل النص بيظل قابل للتحديد والبحث؟',
+    a: 'إي. إحنا نعيد ضغط الصور اللي داخل الملف بس — النصوص والروابط والرسومات المتجهة ما نلمسها أبدًا. كثير من أدوات الضغط داخل المتصفح تحوّل كل صفحة لصورة، وهذا فعلًا يصغّر الملف بس يخليك ما تقدر تحدد ولا تبحث ولا تنسخ ولا كلمة. شفنا إن الثمن هذا غالي زيادة.',
+  },
+  {
+    q: 'ليش ملفي ما صغر إلا شوي؟',
+    a: 'لأنه أصلًا كان مضبوط. معظم حجم أي ملف PDF كبير يكون في الصور والمستندات الممسوحة؛ الملف النصي أصلًا ما ياخذ إلا كم كيلوبايت للصفحة وما فيه شي نضغطه. إحنا نفحص ملفك قبل ما تبدأ ونقولك وش تتوقع، بدل ما نلفّ عليك عشر ثواني ونرجّع لك نفس الملف.',
+  },
+  {
+    q: 'ممكن الأداة تكبّر حجم ملفي؟',
+    a: 'لا. كل صورة ما نبقيها إلا إذا طلع حجمها بعد إعادة الضغط أصغر فعلًا، ولو ما قدرنا نحسّن شي نرجّع لك ملفك الأصلي كما هو. أداة ضغط ترجّع لك ملف أكبر تكون فشلت في الشي الوحيد اللي انطلبت منها.',
+  },
+  {
+    q: 'وش نوع الصور اللي تنضغط؟',
+    a: 'صور JPEG، وهي اللي تطلعها الماسحات الضوئية وكاميرات الجوال، وفيها يكون الحجم غالبًا. الصور بترميزات ثانية — أو اللي فيها شفافية — نتجاوزها بدل ما نخمّن فيها، لأن تحويلها صح يحتاج تعامل مع مساحات الألوان والشفافية، ولو غلطنا فيها غلطة بسيطة بنخرب الصورة بدل ما نصغّرها.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف". الملف يُقرأ داخل متصفحك وما يترفع لأي مكان.' },
+  { name: 'اقرأ التقدير', text: 'نفحص الملف أول ونقولك كم منه فعلًا قابل للضغط، عشان تعرف إذا يستاهل قبل ما تبدأ.' },
+  { name: 'اختر مستوى الجودة', text: '"متوازن" يناسب أغلب الملفات. "أصغر حجم" يضحّي بوضوح الصور مقابل الحجم، و"أعلى جودة" يخلي الصور واضحة ويوفّر أقل.' },
+  { name: 'اضغط "اضغط الملف"', text: 'نعطيك الحجم قبل وبعد، والملف المضغوط ينزل على طول. ملفك الأصلي يبقى كما هو.' },
+];
+
+const related = relatedPdfTools(lang, 'compress-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="ضغط ملف PDF"
+  description="صغّر حجم ملف PDF بإعادة ضغط صوره مع بقاء النص قابلًا للتحديد، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="estimate" class="estimate-box" hidden></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="quality-select">الجودة</label>
+      <select id="quality-select">
+        <option value="medium" selected>متوازن — جودة جيدة وحجم أصغر بكثير</option>
+        <option value="low">أصغر حجم — نقص واضح في تفاصيل الصور</option>
+        <option value="high">أعلى جودة — أصغر مع بقاء الصور واضحة</option>
+      </select>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>اضغط الملف</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { estimate, compress, type QualityLevel } from '../../lib/pdf-compress';
+  import { looksEncrypted } from '../../lib/pdf-encrypted';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const estimateEl = document.getElementById('estimate')!;
+  const optionsEl = document.getElementById('options')!;
+  const qualitySelect = document.getElementById('quality-select') as HTMLSelectElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  const size = (bytes: number) =>
+    bytes >= 1024 * 1024
+      ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(bytes / 1024))} kB`;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span><span>${size(f.size)}</span></div>`;
+    estimateEl.hidden = false;
+    estimateEl.className = 'estimate-box';
+    estimateEl.innerHTML = '<span class="spinner"></span> نفحص وش ممكن نضغطه...';
+    optionsEl.hidden = true;
+    actionBtn.disabled = true;
+    statusEl.hidden = true;
+
+    const bytes = await f.arrayBuffer();
+    if (looksEncrypted(bytes)) {
+      estimateEl.className = 'estimate-box warn';
+      estimateEl.innerHTML =
+        'هذا الملف محمي بكلمة مرور، فما نقدر نقرأ محتواه. ' +
+        'شِل الحماية أول من <a href="/pdf-tools/unlock-pdf">فك حماية PDF</a> وبعدين ارجع.';
+      return;
+    }
+
+    try {
+      const e = await estimate(f);
+      if (e.compressibleImages === 0) {
+        // نقولها من الآن بدل ما ننتظره بلا فايدة.
+        estimateEl.className = 'estimate-box warn';
+        estimateEl.innerHTML =
+          '<strong>ما فيه شي نضغطه هنا.</strong> الملف ما فيه صور JPEG — ' +
+          'كله نصوص ورسومات متجهة، وهذي أصلًا بأصغر حجم ممكن تقريبًا. ' +
+          'ضغطه بيرجّع لك نفس الملف.';
+        return;
+      }
+      const pct = Math.round(e.ratio * 100);
+      estimateEl.className = 'estimate-box';
+      estimateEl.innerHTML =
+        `<strong>${e.compressibleImages} صورة</strong> ` +
+        `تشكّل حوالي <strong>${pct}%</strong> من الملف يمكن إعادة ضغطها` +
+        (e.skippedImages ? `، و${e.skippedImages} صورة ثانية بنتركها كما هي.` : '.') +
+        (pct < 20 ? ' معظم الملف نصوص، فتوقّع توفير بسيط.' : '');
+      optionsEl.hidden = false;
+      actionBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      estimateEl.className = 'estimate-box warn';
+      estimateEl.textContent = 'ما قدرنا نقرأ الملف، تأكد إنه PDF صالح وحاول مرة ثانية';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري الضغط...';
+    actionBtn.disabled = true;
+
+    try {
+      const result = await compress(currentFile, qualitySelect.value as QualityLevel, (fraction) => {
+        statusEl.innerHTML = `<span class="spinner"></span> جاري الضغط... ${Math.round(fraction * 100)}%`;
+      });
+
+      const saved = result.originalBytes - result.finalBytes;
+      const pct = Math.round((saved / result.originalBytes) * 100);
+      const blob = new Blob([result.bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      if (saved <= 0) {
+        // نتيجة صادقة، مو نجاح شكلي.
+        statusEl.className = 'status-msg';
+        statusEl.innerHTML =
+          '<p>صور هذا الملف أصلًا مضغوطة لأقصى حد تقدر عليه هذي الطريقة، ' +
+          'يعني ملفك الأصلي هو أصغر نسخة. ما غيّرنا شي.</p>';
+        return;
+      }
+
+      statusEl.innerHTML =
+        `<p><strong>${size(result.originalBytes)} ← ${size(result.finalBytes)}</strong>` +
+        ` — أصغر بـ ${pct}%، والنص كما هو.</p>` +
+        `<a class="action-btn" href="${url}" download="compressed.pdf">⬇ تحميل الملف</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

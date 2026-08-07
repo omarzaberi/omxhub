@@ -44,6 +44,7 @@ const related = relatedPdfTools(lang, 'pdf-to-images');
   // The worker wiring lives in the loader so the 330 kB worker asset is not
   // even referenced by this page until a render actually starts.
   import { loadPdfJs, loadJsZip } from '../../lib/pdf-libs';
+  import { guardEncrypted } from '../../lib/pdf-encrypted';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -89,6 +90,7 @@ const related = relatedPdfTools(lang, 'pdf-to-images');
     try {
       const pdfjsLib = await loadPdfJs();
       const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
       const images: { name: string; blob: Blob }[] = [];
 

@@ -22,6 +22,7 @@
  */
 
 type PdfLib = typeof import('pdf-lib');
+type PdfCrypto = typeof import('@cantoo/pdf-lib');
 type PdfJs = typeof import('pdfjs-dist');
 type JsZipCtor = typeof import('jszip').default;
 
@@ -31,6 +32,26 @@ let pdfLibPromise: Promise<PdfLib> | null = null;
 export function loadPdfLib(): Promise<PdfLib> {
   pdfLibPromise ??= import('pdf-lib');
   return pdfLibPromise;
+}
+
+let pdfCryptoPromise: Promise<PdfCrypto> | null = null;
+
+/**
+ * `@cantoo/pdf-lib` — a maintained fork of pdf-lib that can read and write
+ * encrypted PDFs. Only the Lock and Unlock tools need it.
+ *
+ * Upstream pdf-lib has no encryption support at all and no plans for it, so
+ * those two tools are impossible without a second engine. It is a superset of
+ * the API, so replacing pdf-lib with it everywhere would have worked — and that
+ * is exactly why it is worth being deliberate about not doing so: the fork is
+ * **272 kB gzipped against pdf-lib's 206 kB**, so a site-wide swap would put an
+ * extra 66 kB on all thirteen other tools to serve two. Loading it from here
+ * instead means only the two pages that need encryption ever pay for it, and
+ * the rest of the catalogue is untouched by the decision.
+ */
+export function loadPdfCrypto(): Promise<PdfCrypto> {
+  pdfCryptoPromise ??= import('@cantoo/pdf-lib');
+  return pdfCryptoPromise;
 }
 
 let jsZipPromise: Promise<JsZipCtor> | null = null;

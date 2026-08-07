@@ -51,6 +51,7 @@ const related = relatedPdfTools(lang, 'split-pdf');
 
 <script>
   import { loadPdfLib, loadJsZip } from '../../../lib/pdf-libs';
+  import { guardEncrypted } from '../../../lib/pdf-encrypted';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -70,6 +71,7 @@ const related = relatedPdfTools(lang, 'split-pdf');
     // rather than merely warming it. JSZip is warmed in parallel because the
     // "all pages" mode will need it a moment later.
     const [{ PDFDocument }, bytes] = await Promise.all([loadPdfLib(), f.arrayBuffer()]);
+    if (guardEncrypted(bytes)) return;
     void loadJsZip();
     const doc = await PDFDocument.load(bytes);
     pageCount = doc.getPageCount();
@@ -118,6 +120,7 @@ const related = relatedPdfTools(lang, 'split-pdf');
     try {
       const { PDFDocument } = await loadPdfLib();
       const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
       const srcDoc = await PDFDocument.load(bytes);
 
       if (mode === 'range') {

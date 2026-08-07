@@ -1,0 +1,185 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'قد إيش التشفير قوي؟',
+    a: 'التشفير AES-128، وهو التشفير المدمج في معيار PDF ويشتغل مع كل برامج القراءة. حماية حقيقية مو قفل شكلي — بس مو AES-256 الأحدث، لأن المكتبة اللي نشتغل فيها داخل متصفحك ما تقدر تنتجه حاليًا. لملف اختبار أو مسودة عقد أو مستند بترسله بالإيميل، AES-128 مناسب. أما الشي اللي تسريبه يسبب ضرر جدي فالأفضل تعتمد على تشفير القرص أو الأرشيف بدل كلمة مرور PDF.',
+  },
+  {
+    q: 'هل كلمة المرور تنرسل لأي مكان؟',
+    a: 'لا. التشفير كله يصير داخل متصفحك، وهذا بالضبط السبب اللي يخلي أداة زي هذي تستاهل تأتمنها على كلمة مرور. ولا شي — لا الملف ولا كلمة المرور — ينرسل لنا ولا لغيرنا. سكّر الصفحة وما يبقى أثر لأي منهما.',
+  },
+  {
+    q: 'وش يصير لو نسيت كلمة المرور؟',
+    a: 'الملف ما يمكن استرجاعه، لا منّا ولا من غيرنا. هذا معنى التشفير. احفظ كلمة المرور بمكان آمن قبل ما تسكّر الصفحة، لأنه ما فيه رابط استعادة ولا باب خلفي.',
+  },
+  {
+    q: 'أقدر أشيل كلمة المرور بعدين؟',
+    a: 'إي، بأداة فك حماية PDF عندنا — بشرط إنك تعرف كلمة المرور. ما تقدر تكسر كلمة مرور نسيتها.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف". الملف يُقرأ داخل متصفحك وما يترفع لأي مكان.' },
+  { name: 'اختر كلمة المرور', text: 'اكتبها مرتين عشان غلطة طباعة ما تقفل عليك ملفك أنت. أي طول مقبول، بس العبارة الطويلة أصعب بكثير في التخمين.' },
+  { name: 'اضغط "احمِ الملف"', text: 'الملف ينشفّر داخل متصفحك بـ AES-128. لا الملف ولا كلمة المرور يطلعون من جهازك.' },
+  { name: 'حمّل الملف واحفظ كلمة المرور', text: 'فتح الملف صار يحتاج كلمة المرور. احفظها بمكان آمن أول، لأن كلمة المرور المنسية ما يقدر أحد يرجّعها — ولا إحنا.' },
+];
+
+const related = relatedPdfTools(lang, 'lock-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="حماية ملف PDF بكلمة مرور"
+  description="شفّر ملف PDF بكلمة مرور باستخدام AES-128، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="pw">كلمة المرور</label>
+      <input type="password" id="pw" autocomplete="new-password" placeholder="اختر كلمة مرور" />
+    </div>
+    <div>
+      <label for="pw2">تأكيد كلمة المرور</label>
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="اكتبها مرة ثانية" />
+    </div>
+    <p class="field-note" id="pw-note" role="status"></p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>احمِ الملف</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfCrypto } from '../../lib/pdf-libs';
+  import { looksEncrypted } from '../../lib/pdf-encrypted';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const pw = document.getElementById('pw') as HTMLInputElement;
+  const pw2 = document.getElementById('pw2') as HTMLInputElement;
+  const note = document.getElementById('pw-note')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  function validate() {
+    const a = pw.value;
+    const b = pw2.value;
+    if (!a) {
+      note.textContent = '';
+      actionBtn.disabled = true;
+      return;
+    }
+    if (b && a !== b) {
+      note.textContent = 'كلمتا المرور مو متطابقتين.';
+      note.className = 'field-note warn';
+      actionBtn.disabled = true;
+      return;
+    }
+    if (!b) {
+      note.textContent = 'اكتب كلمة المرور مرة ثانية للتأكيد.';
+      note.className = 'field-note';
+      actionBtn.disabled = true;
+      return;
+    }
+    // نصيحة مو شرط — الملف ملفه والقرار قراره.
+    note.textContent = a.length < 8
+      ? 'بتشتغل، بس العبارة الأطول أصعب بكثير في التخمين.'
+      : 'كلمتا المرور متطابقتين. احفظها بمكان آمن — ما يمكن استرجاعها.';
+    note.className = a.length < 8 ? 'field-note warn' : 'field-note';
+    actionBtn.disabled = !currentFile;
+  }
+
+  pw.addEventListener('input', validate);
+  pw2.addEventListener('input', validate);
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    void loadPdfCrypto();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    statusEl.hidden = true;
+
+    if (looksEncrypted(await f.arrayBuffer())) {
+      optionsEl.hidden = true;
+      actionBtn.disabled = true;
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.innerHTML =
+        'هذا الملف عليه كلمة مرور أصلًا. شِل القديمة من ' +
+        '<a href="/pdf-tools/unlock-pdf">فك حماية PDF</a> قبل ما تحط وحدة جديدة.';
+      return;
+    }
+
+    optionsEl.hidden = false;
+    validate();
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile || !pw.value || pw.value !== pw2.value) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري التشفير...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = await loadPdfCrypto();
+      const doc = await PDFDocument.load(await currentFile.arrayBuffer());
+      doc.encrypt({
+        userPassword: pw.value,
+        // كلمة مرور المالك تتحكم بالصلاحيات لا بالفتح. نخليها نفس الكلمة عشان
+        // يكون فيه سر واحد يحفظه المستخدم؛ اثنتين تعطي إحساس زائف بالتفصيل،
+        // لأن أي وحدة منهما تفتح الملف أصلًا.
+        ownerPassword: pw.value,
+        permissions: { printing: 'highResolution' },
+      });
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML =
+        '<p>تم التشفير. بتحتاج كلمة المرور هذي عشان تفتح الملف — وما فيه طريقة لاستعادتها.</p>' +
+        `<a class="action-btn" href="${url}" download="locked.pdf">⬇ تحميل الملف</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

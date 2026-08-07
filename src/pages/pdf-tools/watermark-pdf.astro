@@ -9,10 +9,11 @@ const t = useTranslations(lang);
 const faq = [
   { q: 'أقدر أغير لون أو حجم العلامة المائية؟', a: 'حاليًا العلامة رمادية شفافة بحجم متوسط تناسب أغلب المستندات. خيارات تخصيص أكثر قادمة قريبًا.' },
   { q: 'هل العلامة تنحط على كل الصفحات؟', a: 'نعم، تنحط بشكل مائل بمنتصف كل صفحة بالملف.' },
+  { q: 'أقدر أستخدم نص عربي كعلامة مائية؟', a: 'لسه لا. خطوط PDF القياسية اللي نرسم فيها تدعم الحروف اللاتينية والأرقام وعلامات الترقيم بس، فالأداة تعطيك الحروف اللي ما تقدر تستخدمها بدل ما تفشل بصمت. دعم العربي عدل يحتاج تضمين خط وتشكيل حروف حقيقي، ونفضّل نبنيه صح بدال ما ننزّل شي يطلع نصك مقلوب ومفكّك.' },
 ];
 const steps = [
   { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف".' },
-  { name: 'اكتب نص العلامة المائية', text: 'مثل "مسودة" أو "سري" أو اسم شركتك. النص الافتراضي OMXHub وتقدر تغيّره.' },
+  { name: 'اكتب نص العلامة المائية', text: 'مثل Draft أو Confidential أو اسم شركتك بالإنجليزي. النص الافتراضي OMXHub وتقدر تغيّره. النص العربي غير مدعوم لين الآن.' },
   { name: 'اضغط "إضافة العلامة المائية"', text: 'النص ينحط مائل بمنتصف كل صفحة بلون رمادي شفاف ما يحجب المحتوى.' },
   { name: 'حمّل الناتج', text: 'ينزل ملف PDF جديد بالعلامة المائية، والملف الأصلي يبقى كما هو.' },
 ];
@@ -38,7 +39,7 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
   <div id="options" class="tool-options" hidden>
     <div>
       <label for="wm-text">نص العلامة المائية</label>
-      <input type="text" id="wm-text" placeholder="مثال: مسودة، سري، عيّنة" value="OMXHub" />
+      <input type="text" id="wm-text" placeholder="مثال: Draft، Confidential، Sample" value="OMXHub" />
     </div>
   </div>
 
@@ -48,6 +49,8 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
 
 <script>
   import { loadPdfLib } from '../../lib/pdf-libs';
+  import { guardEncrypted } from '../../lib/pdf-encrypted';
+  import { unsupportedChars } from '../../lib/pdf-text';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -87,6 +90,20 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
   actionBtn.addEventListener('click', async () => {
     if (!currentFile) return;
     const text = wmText.value.trim() || 'OMXHub';
+
+    // نفحص النص قبل ما نفتح الملف أصلًا. الخطوط القياسية بترميز WinAnsi، يعني
+    // النص العربي يطيّح pdf-lib، وبعدها المعالج العام تحت يلوم ملف المستخدم —
+    // وهذا خطأ ويوصّله لطريق مسدود. راجع src/lib/pdf-text.ts.
+    const unsupported = unsupportedChars(text);
+    if (unsupported.length) {
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent =
+        `العلامة المائية ما تقدر تستخدم هذي الحروف حاليًا: ${unsupported.join(' ')} — ` +
+        'خطوط PDF القياسية تدعم الحروف اللاتينية والأرقام وعلامات الترقيم بس. ملفك سليم.';
+      return;
+    }
+
     statusEl.hidden = false;
     statusEl.className = 'status-msg';
     statusEl.innerHTML = '<span class="spinner"></span> جاري الإضافة...';
@@ -94,6 +111,7 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
     try {
       const { PDFDocument, StandardFonts, rgb, degrees } = await loadPdfLib();
       const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
       const doc = await PDFDocument.load(bytes);
       const font = await doc.embedFont(StandardFonts.HelveticaBold);
       const fontSize = 40;

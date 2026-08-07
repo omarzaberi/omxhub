@@ -1,0 +1,185 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'How strong is the encryption?',
+    a: 'It is AES-128, the encryption built into the PDF standard and supported by every PDF reader. It is real protection, not a cosmetic lock — but it is not the newer AES-256, which the library we use in your browser cannot currently produce. For an exam paper, a contract draft or a document you are emailing, AES-128 is appropriate. For something whose disclosure would be genuinely serious, use full-disk or archive encryption instead of relying on a PDF password.',
+  },
+  {
+    q: 'Does my password get sent anywhere?',
+    a: 'No. The encryption happens entirely inside your browser, which is the whole reason this tool can be trusted with a password at all. Nothing — not the file, not the password — is transmitted to us or to anyone else. Close the tab and no trace of either remains.',
+  },
+  {
+    q: 'What happens if I forget the password?',
+    a: 'The document is unrecoverable, by us and by anyone else. That is what encryption means. Store the password somewhere safe before you close this page, because there is no reset link and no back door.',
+  },
+  {
+    q: 'Can I remove the password later?',
+    a: 'Yes, with our Unlock PDF tool — as long as you know the password. It cannot break one you have forgotten.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". It is read in your browser and never uploaded.' },
+  { name: 'Choose a password', text: 'Type it twice so a typo cannot lock you out of your own document. Anything from a single character upward is accepted, but a long passphrase is far harder to guess.' },
+  { name: 'Click "Lock PDF"', text: 'The file is encrypted in your browser with AES-128. Neither the file nor the password ever leaves your device.' },
+  { name: 'Download and store the password', text: 'Opening the file will now require the password. Save it somewhere safe first — a forgotten password cannot be recovered by anyone, including us.' },
+];
+
+const related = relatedPdfTools(lang, 'lock-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Lock PDF with a Password"
+  description="Encrypt a PDF with a password using AES-128, free and entirely inside your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="pw">Password</label>
+      <input type="password" id="pw" autocomplete="new-password" placeholder="Choose a password" />
+    </div>
+    <div>
+      <label for="pw2">Confirm password</label>
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="Type it again" />
+    </div>
+    <p class="field-note" id="pw-note" role="status"></p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Lock PDF</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfCrypto } from '../../../lib/pdf-libs';
+  import { looksEncrypted } from '../../../lib/pdf-encrypted';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const pw = document.getElementById('pw') as HTMLInputElement;
+  const pw2 = document.getElementById('pw2') as HTMLInputElement;
+  const note = document.getElementById('pw-note')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  function validate() {
+    const a = pw.value;
+    const b = pw2.value;
+    if (!a) {
+      note.textContent = '';
+      actionBtn.disabled = true;
+      return;
+    }
+    if (b && a !== b) {
+      note.textContent = 'The two passwords do not match.';
+      note.className = 'field-note warn';
+      actionBtn.disabled = true;
+      return;
+    }
+    if (!b) {
+      note.textContent = 'Type the password again to confirm.';
+      note.className = 'field-note';
+      actionBtn.disabled = true;
+      return;
+    }
+    // Advice, not a gate — it is the user's document and their judgement.
+    note.textContent = a.length < 8
+      ? 'That will work, but a longer passphrase is much harder to guess.'
+      : 'Passwords match. Store this somewhere safe — it cannot be recovered.';
+    note.className = a.length < 8 ? 'field-note warn' : 'field-note';
+    actionBtn.disabled = !currentFile;
+  }
+
+  pw.addEventListener('input', validate);
+  pw2.addEventListener('input', validate);
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    void loadPdfCrypto();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    statusEl.hidden = true;
+
+    if (looksEncrypted(await f.arrayBuffer())) {
+      optionsEl.hidden = true;
+      actionBtn.disabled = true;
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.innerHTML =
+        'This PDF already has a password. Remove the existing one with ' +
+        '<a href="/en/pdf-tools/unlock-pdf">Unlock PDF</a> before setting a new one.';
+      return;
+    }
+
+    optionsEl.hidden = false;
+    validate();
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile || !pw.value || pw.value !== pw2.value) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Encrypting...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = await loadPdfCrypto();
+      const doc = await PDFDocument.load(await currentFile.arrayBuffer());
+      doc.encrypt({
+        userPassword: pw.value,
+        // The owner password governs permissions rather than opening. Setting it
+        // to the same value keeps one secret for the user to remember; two would
+        // be a false sense of granularity, since either one opens the document.
+        ownerPassword: pw.value,
+        permissions: { printing: 'highResolution' },
+      });
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML =
+        '<p>Encrypted. You will need this password to open the file — there is no way to recover it.</p>' +
+        `<a class="action-btn" href="${url}" download="locked.pdf">⬇ Download File</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong — make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

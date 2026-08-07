@@ -1,0 +1,160 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'تقدر تفتح ملف ما أعرف كلمة مروره؟',
+    a: 'لا، وما فيه أداة صادقة تقدر. شيل كلمة المرور يتطلب فك تشفير الملف، وفك التشفير يتطلب كلمة المرور. أي أداة تسوّق نفسها على إنها "تكسر" كلمات مرور PDF إما تخمّن كلمات شائعة، أو ترفع ملفك لسيرفر، أو الاثنين. هذي الأداة تحتاج كلمة المرور منك، وكل شغلها يصير على جهازك.',
+  },
+  {
+    q: 'هل يضيع شي لما تنشال كلمة المرور؟',
+    a: 'إي فيه أشياء، ومن الإنصاف نقولها. إزالة التشفير تعني إعادة بناء المستند، فالعلامات المرجعية وحقول النماذج والمرفقات والتوقيعات الرقمية وبيانات المستند ما تنجو. أما الصفحات نفسها — النص والصور والتنسيق — فتجي كما هي بالضبط. لو ملفك يعتمد على أي من الإضافات هذي، احتفظ بالأصل.',
+  },
+  {
+    q: 'هل كلمة المرور توصل لسيرفراتكم؟',
+    a: 'لا. فك التشفير يصير بالكامل داخل متصفحك. لا الملف ولا كلمة المرور ينرسلون لأي مكان، وهذا بالضبط اللي يخلي كتابة كلمة مرور بهذي الصفحة شي معقول.',
+  },
+  {
+    q: 'ليش يقول كلمة المرور غلط وأنا متأكد إنها صح؟',
+    a: 'ملفات PDF ممكن تحمل كلمتي مرور: وحدة للمستخدم تفتح المستند، ووحدة للمالك تتحكم بالصلاحيات. الاثنتين يشتغلون هنا. لو فشلت الاثنتين، يمكن الملف يستخدم طريقة تشفير ما تدعمها مكتبتنا داخل المتصفح، وفي الحالة هذي برنامج PDF على سطح المكتب يكون الطريق الأفضل.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع الملف المحمي', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف". الملف يُقرأ داخل متصفحك وما يترفع لأي مكان.' },
+  { name: 'اكتب كلمة المرور', text: 'كلمة المرور اللي تفتح المستند، أو كلمة مرور المالك لو هي اللي عندك. لازم تكون تعرفها — الأداة تفك التشفير ما تخمّنه.' },
+  { name: 'اضغط "فك الحماية"', text: 'الملف ينفك تشفيره ويتعاد بناؤه بدون تشفير، كل هذا على جهازك.' },
+  { name: 'حمّل الملف المفكوك', text: 'صار يفتح بدون كلمة مرور. العلامات المرجعية وحقول النماذج والمرفقات ما تنتقل معه، فاحتفظ بالأصل لو تحتاجها.' },
+];
+
+const related = relatedPdfTools(lang, 'unlock-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="فك حماية ملف PDF"
+  description="شِل كلمة المرور المعروفة من ملف PDF، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="pw">كلمة المرور</label>
+      <input type="password" id="pw" autocomplete="current-password" placeholder="كلمة المرور اللي تفتح هذا الملف" />
+    </div>
+    <p class="field-note">لازم تعرف كلمة المرور. الأداة تفك تشفير الملف — ما تقدر تخمّن كلمة مرور ضايعة.</p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>فك الحماية</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfCrypto } from '../../lib/pdf-libs';
+  import { looksEncrypted } from '../../lib/pdf-encrypted';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const pw = document.getElementById('pw') as HTMLInputElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  pw.addEventListener('input', () => {
+    actionBtn.disabled = !currentFile || !pw.value;
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    void loadPdfCrypto();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    statusEl.hidden = true;
+    optionsEl.hidden = false;
+    actionBtn.disabled = !pw.value;
+
+    // مو خطأ — بس معلومة مفيدة قبل ما يكتب كلمة مرور.
+    if (!looksEncrypted(await f.arrayBuffer())) {
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg';
+      statusEl.textContent = 'هذا الملف ما يبدو عليه إنه محمي بكلمة مرور — يفترض إنه يفتح بدونها أصلًا.';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile || !pw.value) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري فك التشفير...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = await loadPdfCrypto();
+      const bytes = await currentFile.arrayBuffer();
+
+      let source;
+      try {
+        source = await PDFDocument.load(bytes, { password: pw.value });
+      } catch {
+        // فشل التحميل هنا يكون في الغالب كلمة مرور خاطئة، وقولها أنفع من
+        // رسالة خطأ عامة.
+        statusEl.className = 'status-msg error';
+        statusEl.textContent =
+          'كلمة المرور هذي ما فتحت الملف. كلمة مرور المستخدم وكلمة مرور المالك الاثنتين تشتغلان — جرّب الثانية لو عندك.';
+        return;
+      }
+
+      // فك التشفير لوحده ما يكفي: معالج الحماية يبقى بعد إعادة الحفظ ويطلع
+      // الملف مشفّر مرة ثانية. نسخ الصفحات لمستند جديد هي الطريقة الوحيدة
+      // المضمونة لإنتاج ملف مفتوح فعلًا — وهذا نفسه سبب ضياع العلامات
+      // المرجعية وحقول النماذج.
+      const out = await PDFDocument.create();
+      const pages = await out.copyPages(source, source.getPageIndices());
+      pages.forEach((p) => out.addPage(p));
+
+      const outBytes = await out.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML =
+        `<p>تم فك الحماية — ${pages.length} صفحة، بدون كلمة مرور.</p>` +
+        `<a class="action-btn" href="${url}" download="unlocked.pdf">⬇ تحميل الملف</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

@@ -51,6 +51,7 @@ const related = relatedPdfTools(lang, 'rotate-pdf');
 
 <script>
   import { loadPdfLib } from '../../lib/pdf-libs';
+  import { guardEncrypted } from '../../lib/pdf-encrypted';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -97,6 +98,7 @@ const related = relatedPdfTools(lang, 'rotate-pdf');
     try {
       const { PDFDocument, degrees } = await loadPdfLib();
       const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
       const doc = await PDFDocument.load(bytes);
       doc.getPages().forEach((page) => {
         const current = page.getRotation().angle;

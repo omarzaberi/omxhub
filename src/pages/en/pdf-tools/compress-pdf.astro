@@ -1,0 +1,190 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Will my text stay selectable and searchable?',
+    a: 'Yes. We only re-encode the images inside your PDF — text, links and vector graphics are never touched. Many browser-based compressors turn every page into a picture, which does shrink the file but leaves you unable to select, search or copy a single word. We decided that was too high a price.',
+  },
+  {
+    q: 'Why did my file barely shrink?',
+    a: 'Because it was already efficient. Almost all the weight in a large PDF is in its photographs and scans; a text-only document is already only a few kilobytes per page and there is simply nothing to squeeze. We check your file before you commit and tell you what to expect, rather than spinning for ten seconds and handing back the same thing.',
+  },
+  {
+    q: 'Can this tool ever make my file bigger?',
+    a: 'No. Every image is kept only if re-encoding it actually came out smaller, and if nothing could be improved we return your original file untouched. A compressor that hands back something larger has failed at the one thing it was asked to do.',
+  },
+  {
+    q: 'Which images get compressed?',
+    a: 'JPEG images, which is what scanners and phone cameras produce and where the weight almost always is. Images using other encodings — or carrying transparency — are skipped rather than guessed at, because converting those correctly means handling colour spaces and alpha, and getting it subtly wrong would corrupt the picture instead of shrinking it.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". It is read in your browser and never uploaded.' },
+  { name: 'Read the estimate', text: 'We inspect the file first and tell you how much of it is actually compressible, so you know whether it is worth doing before you start.' },
+  { name: 'Pick a quality level', text: 'Balanced suits most documents. Smallest file trades visible image quality for size; Best quality keeps images crisp and saves less.' },
+  { name: 'Click "Compress PDF"', text: 'You get the before and after sizes, and the compressed file downloads. Your original is left untouched.' },
+];
+
+const related = relatedPdfTools(lang, 'compress-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Compress PDF"
+  description="Shrink a PDF by recompressing its images while keeping text selectable, free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="estimate" class="estimate-box" hidden></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="quality-select">Quality</label>
+      <select id="quality-select">
+        <option value="medium" selected>Balanced — good quality, much smaller</option>
+        <option value="low">Smallest file — visible loss of image detail</option>
+        <option value="high">Best quality — smaller, images stay crisp</option>
+      </select>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Compress PDF</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { estimate, compress, type QualityLevel } from '../../../lib/pdf-compress';
+  import { looksEncrypted } from '../../../lib/pdf-encrypted';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const estimateEl = document.getElementById('estimate')!;
+  const optionsEl = document.getElementById('options')!;
+  const qualitySelect = document.getElementById('quality-select') as HTMLSelectElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  const size = (bytes: number) =>
+    bytes >= 1024 * 1024
+      ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(bytes / 1024))} kB`;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span><span>${size(f.size)}</span></div>`;
+    estimateEl.hidden = false;
+    estimateEl.className = 'estimate-box';
+    estimateEl.innerHTML = '<span class="spinner"></span> Checking what can be compressed...';
+    optionsEl.hidden = true;
+    actionBtn.disabled = true;
+    statusEl.hidden = true;
+
+    const bytes = await f.arrayBuffer();
+    if (looksEncrypted(bytes)) {
+      estimateEl.className = 'estimate-box warn';
+      estimateEl.innerHTML =
+        'This PDF is password-protected, so its contents cannot be read. ' +
+        'Remove the password with <a href="/en/pdf-tools/unlock-pdf">Unlock PDF</a> first, then come back.';
+      return;
+    }
+
+    try {
+      const e = await estimate(f);
+      if (e.compressibleImages === 0) {
+        // Say so now rather than after a pointless wait.
+        estimateEl.className = 'estimate-box warn';
+        estimateEl.innerHTML =
+          '<strong>There is nothing here to compress.</strong> This file has no JPEG images in it — ' +
+          'it is text and vector graphics, which are already about as small as they can be. ' +
+          'Compressing it would hand you back the same file.';
+        return;
+      }
+      const pct = Math.round(e.ratio * 100);
+      estimateEl.className = 'estimate-box';
+      estimateEl.innerHTML =
+        `<strong>${e.compressibleImages} image${e.compressibleImages === 1 ? '' : 's'}</strong> ` +
+        `making up about <strong>${pct}%</strong> of this file can be recompressed` +
+        (e.skippedImages ? `. ${e.skippedImages} other image${e.skippedImages === 1 ? '' : 's'} will be left alone.` : '.') +
+        (pct < 20 ? ' Most of this file is text, so expect a modest saving.' : '');
+      optionsEl.hidden = false;
+      actionBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      estimateEl.className = 'estimate-box warn';
+      estimateEl.textContent = 'Could not read that file — make sure it is a valid PDF and try again';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Compressing...';
+    actionBtn.disabled = true;
+
+    try {
+      const result = await compress(currentFile, qualitySelect.value as QualityLevel, (fraction) => {
+        statusEl.innerHTML = `<span class="spinner"></span> Compressing... ${Math.round(fraction * 100)}%`;
+      });
+
+      const saved = result.originalBytes - result.finalBytes;
+      const pct = Math.round((saved / result.originalBytes) * 100);
+      const blob = new Blob([result.bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      if (saved <= 0) {
+        // Honest outcome, not a fake success.
+        statusEl.className = 'status-msg';
+        statusEl.innerHTML =
+          '<p>These images were already compressed as far as this method can take them, ' +
+          'so your original file is the smallest version. Nothing was changed.</p>';
+        return;
+      }
+
+      statusEl.innerHTML =
+        `<p><strong>${size(result.originalBytes)} → ${size(result.finalBytes)}</strong>` +
+        ` — ${pct}% smaller, text untouched.</p>` +
+        `<a class="action-btn" href="${url}" download="compressed.pdf">⬇ Download File</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong — make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

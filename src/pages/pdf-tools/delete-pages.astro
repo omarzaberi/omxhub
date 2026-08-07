@@ -76,6 +76,7 @@ const related = relatedPdfTools(lang, 'delete-pages');
 
 <script>
   import { loadPdfLib } from '../../lib/pdf-libs';
+  import { guardEncrypted } from '../../lib/pdf-encrypted';
   import { createPageGrid, THUMB_LIMIT } from '../../lib/pdf-page-grid';
 
   const dropZone = document.getElementById('drop-zone')!;
@@ -113,6 +114,7 @@ const related = relatedPdfTools(lang, 'delete-pages');
     void loadPdfLib();
     fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
     try {
+      if (guardEncrypted(await f.arrayBuffer())) return;
       const pages = await grid.load(f);
       toolbarEl.hidden = false;
       limitNote.hidden = pages <= THUMB_LIMIT;

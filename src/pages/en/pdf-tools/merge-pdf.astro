@@ -42,6 +42,7 @@ const related = relatedPdfTools(lang, 'merge-pdf');
 
 <script>
   import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { guardEncrypted } from '../../../lib/pdf-encrypted';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -109,6 +110,7 @@ const related = relatedPdfTools(lang, 'merge-pdf');
       const merged = await PDFDocument.create();
       for (const file of files) {
         const bytes = await file.arrayBuffer();
+        if (guardEncrypted(bytes)) return;
         const doc = await PDFDocument.load(bytes);
         const pages = await merged.copyPages(doc, doc.getPageIndices());
         pages.forEach((p) => merged.addPage(p));

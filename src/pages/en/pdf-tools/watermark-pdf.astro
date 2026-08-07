@@ -9,6 +9,7 @@ const t = useTranslations(lang);
 const faq = [
   { q: 'Can I change the watermark color or size?', a: "Currently it's a semi-transparent gray watermark at a medium size that fits most documents. More customization is coming soon." },
   { q: 'Does the watermark appear on every page?', a: 'Yes, it\'s placed diagonally across the center of every page in the file.' },
+  { q: 'Can I use Arabic text as a watermark?', a: 'Not yet. The standard PDF fonts we draw with cover Latin letters, numbers and punctuation only, so the tool will tell you which characters it cannot use rather than failing silently. Adding Arabic properly needs font embedding plus real letter shaping, and we would rather build that well than ship something that renders your text backwards.' },
 ];
 const steps = [
   { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file".' },
@@ -48,6 +49,8 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
 
 <script>
   import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { guardEncrypted } from '../../../lib/pdf-encrypted';
+  import { unsupportedChars } from '../../../lib/pdf-text';
 
   const dropZone = document.getElementById('drop-zone')!;
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -87,6 +90,21 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
   actionBtn.addEventListener('click', async () => {
     if (!currentFile) return;
     const text = wmText.value.trim() || 'OMXHub';
+
+    // Check the text before touching the file. The standard fonts are
+    // WinAnsi-encoded, so Arabic makes pdf-lib throw — and the generic handler
+    // below would then blame the user's PDF, which is both wrong and a dead end
+    // for them. See src/lib/pdf-text.ts.
+    const unsupported = unsupportedChars(text);
+    if (unsupported.length) {
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent =
+        `The watermark can't include these characters yet: ${unsupported.join(' ')} — ` +
+        'the standard PDF fonts cover Latin letters, numbers and punctuation only. Your file is fine.';
+      return;
+    }
+
     statusEl.hidden = false;
     statusEl.className = 'status-msg';
     statusEl.innerHTML = '<span class="spinner"></span> Adding watermark...';
@@ -94,6 +112,7 @@ const related = relatedPdfTools(lang, 'watermark-pdf');
     try {
       const { PDFDocument, StandardFonts, rgb, degrees } = await loadPdfLib();
       const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
       const doc = await PDFDocument.load(bytes);
       const font = await doc.embedFont(StandardFonts.HelveticaBold);
       const fontSize = 40;

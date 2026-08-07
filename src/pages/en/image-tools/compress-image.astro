@@ -115,9 +115,14 @@ const related = relatedImageTools(lang, 'compress-image');
     resultLabel: 'Compressed',
     noImprovement: 'Your image is already well compressed — every attempt came out larger than the original, so nothing was changed. Try lowering the quality or capping the dimensions.',
     noFormat: 'Your browser cannot encode that format. Try "Auto" or pick another one.',
-    alphaJpegWarning: 'This image has transparency and JPEG cannot store it.',
     tooLarge: 'That image is too large (50 MB limit). Resize it first or try another one.',
-    saved: (percent) => `${percent}% smaller`,
+    smaller: (percent) => `${percent}% smaller`,
+    // Compress never returns a larger file, so these two are unreachable here.
+    // They exist because the result panel is shared with the tools where growth
+    // is a legitimate outcome, and a shared panel with per-tool gaps in it is
+    // how one of them ends up silently showing nothing.
+    larger: (percent) => `${percent}% larger`,
+    same: 'Same size as the original',
     resizedTo: (width, height) => `New dimensions: ${width}×${height}px`,
   });
 </script>

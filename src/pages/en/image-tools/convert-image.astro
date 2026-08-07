@@ -1,0 +1,114 @@
+---
+import ImageToolLayout from '../../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedImageTools } from '../../../data/image-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Why is my file larger after converting?',
+    a: 'Because that is sometimes the correct answer. PNG is a lossless format, so converting a JPEG to PNG normally produces a file several times bigger — nothing has gone wrong, that is simply what the two formats are. This tool does what you asked and tells you exactly how much the size changed, rather than handing back your original and pretending it converted anything. If your goal is a smaller file, the Compress Image tool is the one you want.',
+  },
+  {
+    q: 'What happens to a transparent background?',
+    a: 'It survives in WebP and PNG, because both support an alpha channel. JPEG has none at all, so if you pick it for a transparent image we warn you before converting and fill the background with white — black is what you get if the browser is left to decide, and it looks like a bug rather than a trade-off.',
+  },
+  {
+    q: 'Which format should I pick?',
+    a: 'WebP for anything going on the web: it compresses harder than JPEG, keeps transparency, and every current browser displays it. JPEG for photographs headed somewhere older, or into software that cannot read WebP. PNG for logos, graphics, and anything that needs transparency with no loss at all.',
+  },
+  {
+    q: 'Can I convert from HEIC or AVIF?',
+    a: 'Yes, if your browser can decode them — Safari opens HEIC, and current browsers open AVIF. The tool uses your browser\'s own decoder, so any format it can display it can convert. Output is limited to WebP, JPEG and PNG, because those are the three a canvas can write.',
+  },
+  {
+    q: 'Does converting change the image dimensions?',
+    a: 'Never. The output has exactly the dimensions the input had. Changing resolution is the Resize tool\'s job, and folding it in here would mean your converted file differs from its source in two ways instead of one.',
+  },
+  {
+    q: 'What happens to EXIF data and GPS location?',
+    a: 'It is removed. Re-encoding strips all attached metadata, including GPS coordinates and camera model. That is useful if you are publishing the image, but worth knowing if you need to keep that data.',
+  },
+  {
+    q: 'Is my image uploaded to a server?',
+    a: 'No. Everything happens inside your browser — the image never leaves your device, and there is no daily usage limit.',
+  },
+];
+
+const steps = [
+  { name: 'Upload an image', text: 'Drag it onto the drop zone or click "Choose image". Any format your browser can open will work.' },
+  { name: 'Pick the format you need', text: 'WebP for the web, JPEG for photographs, PNG for transparency and graphics.' },
+  { name: 'Set the quality for WebP or JPEG', text: 'PNG is lossless, so it has no quality slider at all — showing one would imply a trade-off that does not exist.' },
+  { name: 'Click "Convert Image"', text: 'You get exactly the format you asked for, and a plain statement of which way the file size went.' },
+];
+
+const related = relatedImageTools(lang, 'convert-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="Convert Image"
+  description="Convert images between WebP, JPEG and PNG in one click — free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="preview" class="image-preview" hidden>
+    <img id="preview-img" alt="" />
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="format-select">Convert to</label>
+      <select id="format-select">
+        <option value="webp">WebP — best for the web</option>
+        <option value="jpeg">JPEG — for photographs</option>
+        <option value="png">PNG — lossless, keeps transparency</option>
+      </select>
+      <p class="field-note warn" id="alpha-note" hidden>
+        This image has a transparent background and JPEG cannot store transparency — it will be filled with white. Choose WebP or PNG to keep it.
+      </p>
+      <p class="field-note" id="same-note" hidden></p>
+    </div>
+
+    <div id="quality-row">
+      <label for="quality-range">Quality — <output id="quality-out">90%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.9" />
+      <p class="field-note">90% suits a conversion: it holds the detail without inflating the file for nothing.</p>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Convert Image</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountConvertTool } from '../../../lib/image-convert-ui';
+
+  mountConvertTool({
+    processing: 'Converting...',
+    error: 'Something went wrong — make sure the file is a valid image and try again',
+    tooLarge: 'That image is too large (50 MB limit). Resize it first or try another one.',
+    noFormat: 'Your browser cannot write that format. Pick another one from the list.',
+    alphaWarning: 'This image has transparency and JPEG cannot store it.',
+    sameFormatNote: (format) => `Your image is already ${format}. Converting to the same format re-encodes it — slightly lower quality, and usually a larger file. Only useful if you are deliberately lowering the quality.`,
+    download: 'Download Converted Image',
+    originalLabel: 'Original',
+    resultLabel: 'Converted',
+    smaller: (percent) => `${percent}% smaller`,
+    larger: (percent) => `${percent}% larger — normal for this format`,
+    same: 'Roughly the same size',
+    producedNote: (format, width, height) => `Produced: ${format} at ${width}×${height}px`,
+    flattenedNote: 'The transparent background was filled with white, because JPEG cannot store transparency.',
+  });
+</script>

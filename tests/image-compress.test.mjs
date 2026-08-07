@@ -4,24 +4,21 @@
  * The actual encode is `canvas.toBlob`, which is the browser's job and is not
  * where the danger is. The danger is everything around it: offering JPEG for an
  * image with transparency (which silently turns it black), handing back a file
- * larger than the one the user gave us, upscaling on a resize, and letting one
- * failed candidate lose the results of the others. Those are what is pinned here.
+ * larger than the one the user gave us, and letting one failed candidate lose
+ * the results of the others. Those are what is pinned here.
  *
- * The encoder is therefore a stub that reports whatever size a test wants. No
- * pixels are ever encoded, because the module never looks at pixels — it only
- * decides what to ask for and which answer to keep.
+ * The shared arithmetic this module leans on — `fitWithin`, `chooseBest`,
+ * `outputFileName` — moved to `image-core.ts` when the second image tool
+ * arrived, and is covered by `tests/image-core.test.mjs`. What is left here is
+ * only what Compress itself decides.
+ *
+ * The encoder is a stub that reports whatever size a test wants. No pixels are
+ * ever encoded, because the module never looks at pixels — it only decides what
+ * to ask for and which answer to keep.
  *
  * Run with: npm test
  */
-import {
-  candidateFormats,
-  chooseBest,
-  compressImage,
-  fitWithin,
-  formatBytes,
-  outputFileName,
-  savingPercent,
-} from '../src/lib/image-compress.ts';
+import { candidateFormats, compressImage } from '../src/lib/image-compress.ts';
 
 let pass = 0;
 let fail = 0;
@@ -52,22 +49,6 @@ const base = {
   webpSupported: true,
 };
 
-// ------------------------------------------------- fitWithin
-
-{
-  check('landscape scales on its longest edge', JSON.stringify(fitWithin({ width: 4000, height: 2000 }, 1000)) === JSON.stringify({ width: 1000, height: 500 }));
-  check('portrait scales on its longest edge', JSON.stringify(fitWithin({ width: 2000, height: 4000 }, 1000)) === JSON.stringify({ width: 500, height: 1000 }));
-
-  const small = fitWithin({ width: 900, height: 300 }, 4000);
-  check('never upscales a smaller image', small.width === 900 && small.height === 300);
-
-  const off = fitWithin({ width: 1234, height: 999 }, 0);
-  check('maxEdge of 0 leaves resolution alone', off.width === 1234 && off.height === 999);
-
-  const sliver = fitWithin({ width: 5000, height: 3 }, 100);
-  check('a dimension never rounds down to zero', sliver.height >= 1, `got ${sliver.height}`);
-}
-
 // ------------------------------------------------- candidateFormats
 
 {
@@ -90,15 +71,6 @@ const base = {
 
   const impossible = candidateFormats({ sourceType: 'image/png', hasAlpha: false, requested: 'webp', webpSupported: false });
   check('asking for webp where it is unsupported yields nothing', impossible.length === 0);
-}
-
-// ------------------------------------------------- chooseBest
-
-{
-  check('picks the smallest winner', chooseBest([{ format: 'jpeg', size: 80 }, { format: 'webp', size: 60 }], 100).format === 'webp');
-  check('rejects anything not smaller than the original', chooseBest([{ format: 'jpeg', size: 100 }], 100) === null);
-  check('rejects a failed encode reporting zero', chooseBest([{ format: 'jpeg', size: 0 }], 100) === null);
-  check('ties go to the earlier, more-preferred candidate', chooseBest([{ format: 'webp', size: 50 }, { format: 'jpeg', size: 50 }], 100).format === 'webp');
 }
 
 // ------------------------------------------------- the size promise
@@ -142,7 +114,7 @@ const base = {
 // ------------------------------------------------- resilience
 
 {
-  const flaky = async (format, dim, quality) => {
+  const flaky = async (format) => {
     if (format === 'webp') throw new Error('encoder exploded');
     return { size: 30_000, type: 'image/jpeg' };
   };
@@ -153,21 +125,6 @@ const base = {
 {
   const result = await compressImage({ ...base, requested: 'webp', webpSupported: false }, stubEncoder({}));
   check('no possible format is reported distinctly from no improvement', result.kept === true && result.reason === 'no-format');
-}
-
-// ------------------------------------------------- presentation
-
-{
-  check('savingPercent never goes negative', savingPercent(100, 250) === 0);
-  check('savingPercent handles an empty original', savingPercent(0, 0) === 0);
-  check('bytes render as B', formatBytes(512) === '512 B');
-  check('bytes render as KB', formatBytes(2048) === '2.0 KB');
-  check('bytes render as MB', formatBytes(5 * 1024 * 1024) === '5.00 MB');
-  check('the download keeps the stem and takes the winning extension', outputFileName('My Photo.PNG', 'webp') === 'My Photo-compressed.webp');
-  check('a name with no extension still works', outputFileName('photo', 'jpeg') === 'photo-compressed.jpg');
-  check('a version number is not mistaken for an extension', outputFileName('Report v1.2 final', 'jpeg') === 'Report v1.2 final-compressed.jpg', outputFileName('Report v1.2 final', 'jpeg'));
-  check('a real extension is still stripped when a dot precedes it', outputFileName('Report v1.2 final.png', 'jpeg') === 'Report v1.2 final-compressed.jpg');
-  check('an Arabic file name survives intact', outputFileName('صورة المنتج.png', 'webp') === 'صورة المنتج-compressed.webp');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

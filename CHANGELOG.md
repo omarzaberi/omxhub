@@ -12,6 +12,80 @@ All notable changes to OMXHub are documented in this file.
 ## 2026-08-07
 
 ### Added
+- **Three more image tools, in both languages** — Convert (`/image-tools/convert-image`),
+  Resize (`/image-tools/resize-image`) and Crop (`/image-tools/crop-image`). Image tools:
+  **1 → 4**. Six new indexable pages with the usual anatomy: unique title and description,
+  four visible steps plus `HowTo`, seven FAQs plus `FAQPage`, and visible breadcrumbs plus
+  `BreadcrumbList`. Still Canvas only — **no new dependency, and no new bytes on any existing
+  page.**
+- **The section's related-link chain now closes on itself.** With four tools,
+  `relatedImageTools` gives every image tool exactly 3 outbound and 3 inbound links, wrapping
+  around the catalogue — the same closed crawl chain the PDF section has, in which no tool can
+  become orphaned as the set grows. The hub grid and the sitemap already derived from the same
+  array, so shipping three tools was a one-file change to `src/data/image-tools.ts`.
+- **Convert delivers the format you asked for, even when the file gets bigger** — the one
+  deliberate exception to the rule Compress set, and the reason it is an exception is written
+  into the module. A JPEG converted to PNG is normally several times larger; refusing it, as
+  Compress would, means the tool never does the single thing it exists for. What survives is
+  the *honest* half of the rule: the size change is always stated, growth is rendered in the
+  warning colour at exactly the prominence a saving would have had, and it is never hidden.
+  One shared `sizeVerdict` decides that, so no tool can present a 40% larger file as a win by
+  accident — it does not write its own result panel.
+- **Resize is built around naming the constraint, not two number boxes.** Five modes —
+  longest edge, exact width, exact height, percentage, exact dimensions — because people
+  arrive knowing which constraint they care about, and a bare width/height pair makes them
+  compute the other number and breaks the aspect ratio when they get it slightly wrong. The
+  final dimensions update live as you type, *including* the case people are most often
+  surprised by ("this will not change anything"), since the arithmetic runs on numbers rather
+  than pixels and there is no reason to make someone press a button to find out.
+- **Upscaling is refused by default and permitted on request.** Enlarging cannot add detail,
+  but "exactly 1000 px wide" from a 600 px source is a real requirement, and a tool that
+  quietly returns 600 px has ignored the request rather than protected the user. So it is a
+  visible checkbox, and the warning beside it appears only when the current numbers would
+  actually need it.
+- **Crop is draggable, and the drag is never the only way in.** Four percentage fields —
+  position and size — are bound to the same state in both directions, and are the
+  keyboard-accessible mechanism; the corner handles are `aria-hidden`, because assistive
+  technology cannot perform that gesture. Same contract as the PDF crop tool, and the wiring
+  test now asserts the handles stay hidden on every built page.
+- **Six aspect-ratio presets, correct on non-square images.** The rectangle is stored as
+  fractions of each axis while a ratio is expressed in real pixels, so on a 2:1 photo a square
+  crop is 50% wide and 100% tall — `w === h` would give a wide rectangle. That is the classic
+  bug in fraction-based croppers and it has its own test.
+- **`tests/image-tool-wiring.test.mjs`** — every `mount*` function returns early if a single
+  element id is missing, which produces a page that renders perfectly and does nothing when
+  you press the button: no console error, no failing build, and the SEO checks pass because
+  the markup is fine. Four tools across two locales is eight chances to ship that. The test
+  reads the required ids **out of the UI modules themselves** rather than from a checklist, so
+  adding a control extends the coverage automatically and a new tool is covered as soon as it
+  is in the catalogue. Runs after the build, beside `deferred-scripts.test.mjs`.
+- Four new unit-test files — `image-core`, `image-convert`, `image-resize`, `image-crop` —
+  added to `test:unit`.
+
+### Changed
+- **`image-core.ts` and `image-io.ts` extracted, the same move `ToolLayout.astro` made.**
+  All of it was inside the Compress tool, which was right while Compress was the only image
+  tool and stopped being right the moment a second arrived: `fitWithin` is the whole of
+  Resize, and importing it from a module named *compress* into the Crop tool would be a lie
+  about what the code is for. `image-core.ts` holds the pure arithmetic (Node-testable),
+  `image-io.ts` the browser half, and `image-result.ts` the closing panel.
+- **The three rules Compress established now have exactly one implementation each.** They
+  were the reason to extract rather than copy — each is a way this category silently ruins
+  files, and four near-identical copies is how three of them stay right and the fourth drifts:
+  transparency detected from pixels (a 128 px probe, not the extension), EXIF orientation
+  applied at decode, and JPEG flattened to white deliberately rather than to black by
+  omission. A tool added later cannot forget them, because it does not implement them.
+- **Cropping reuses the shared canvas encoder with a source rectangle** instead of being a
+  second pixel path, so it inherits the white-fill and high-quality smoothing behaviour rather
+  than reimplementing them almost the same way.
+- Compress was rewired onto the shared modules with **no behaviour change**; its own tests
+  still pass unchanged, and the "never larger" promise stays specific to it.
+- The image hub's meta descriptions and closing note updated for a four-tool section.
+- Verified after build: **176 pages, 3129 SEO assertions, 0 failures**; 356 unit assertions
+  across eleven files (171 of them the five image modules), plus 41 wiring assertions over
+  the eight built image-tool pages.
+
+### Added
 - **The Image Tools section, opened with Compress** — `/image-tools/compress-image` and its
   English twin, plus the `/image-tools` hub in both languages. Four new indexable pages with
   the usual anatomy: unique title and description, four visible steps plus `HowTo`, seven

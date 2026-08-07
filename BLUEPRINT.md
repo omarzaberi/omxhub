@@ -222,9 +222,40 @@ platform one polished feature at a time.
   Delete Pages, Organize Pages, Rotate, Crop, Compress, Watermark, Page Numbers, Lock,
   Unlock, Images→PDF, PDF→Images — all working entirely client-side. **Not yet built:**
   Add Text, and only that.
-- 🟡 **Image Tools (Phase 2, opened): 1 live** — Compress (`/image-tools/compress-image`),
-  client-side via Canvas with no new dependency. Convert, Resize and Crop are next and reuse
-  the same decode/encode path.
+- 🟡 **Image Tools (Phase 2): 4 live** — Compress, Convert, Resize and Crop, all client-side
+  via Canvas with **no new dependency**. Remove Background, Upscaler, Watermark and OCR are
+  still unbuilt.
+  - **The three rules Compress set now hold for the whole section, with one implementation
+    each.** Transparency is detected from pixels rather than the file extension (a 128 px
+    probe — most PNGs are opaque, and guessing either way ruins a file); EXIF orientation is
+    applied at decode, which is the difference between a phone photo coming back upright and
+    coming back on its side; and JPEG's lack of an alpha channel is handled by filling white
+    deliberately instead of compositing to black by omission. They live in `image-io.ts`
+    because four copies is how three stay right and the fourth drifts — a tool added later
+    cannot forget them, since it does not implement them.
+  - **The "never return a larger file" promise is Compress's alone, and that is deliberate.**
+    Making the file smaller *is* the request there, so refusing to grow it costs nothing.
+    Convert, Resize and Crop are asked for something else: a JPEG converted to PNG is normally
+    several times larger, and a converter that hands back the original because the PNG grew
+    has failed at the one thing it exists for. What all four share is the honest half —
+    **the size change is always stated and growth is never hidden**, rendered in the warning
+    colour at the prominence a saving would have had. One `sizeVerdict` decides it and one
+    shared result panel renders it, so no tool can present a 40% larger file as a win by
+    accident.
+  - **Every image tool links to the other three**, wrapping around `src/data/image-tools.ts` —
+    a closed crawl chain with no orphan, the same property the PDF catalogue gives. The hub
+    grid and the sitemap derive from the same array, so adding a tool is a one-file change.
+  - **A crop rectangle is never the only way to crop.** Four percentage fields are bound to
+    the same state in both directions and are the keyboard-accessible mechanism; the corner
+    handles are `aria-hidden` because assistive technology cannot perform a drag. Identical
+    contract to the PDF crop tool, different model — insets there because a PDF crop applies
+    to pages that may differ in size, a rectangle here because fixed aspect ratios are what
+    people actually want from an image and are trivial on `{x, y, w, h}`.
+  - **A page that renders perfectly and does nothing is the failure mode this section
+    invented**, because every `mount*` bails out silently when one element id is missing.
+    `tests/image-tool-wiring.test.mjs` reads the required ids out of the UI modules themselves
+    rather than from a checklist, so it cannot go stale and covers a new tool the moment it
+    enters the catalogue.
   - **The section was opened instead of finishing PDF Phase 1.** Add Text is the last PDF
     tool and it is blocked on Arabic text shaping: doing it properly costs 600 kB–1 MB on a
     single page (see `IDEAS.md`), which would make a minor tool the heaviest thing on the
@@ -334,10 +365,15 @@ platform one polished feature at a time.
   every built page for one valid `@graph`, a self-referencing canonical, ar/en/x-default
   hreflang, exactly one `h1`, sitemap/`noindex` agreement, zero broken internal links, and
   that every marked-up step, FAQ question and breadcrumb really appears in the visible text.
-  Currently 166 pages, 2,891 assertions, 0 failures. Six unit-test files (185 assertions) run
-  *before* the build so they fail fast: the rotation geometry, the text-encoding guard, the
-  crop state machine, the compression surgery, the encryption round trip, and an end-to-end
-  check that reads what the tools actually wrote into a PDF back out of its content stream.
+  Currently 176 pages, 3,129 assertions, 0 failures. Eleven unit-test files (356 assertions)
+  run *before* the build so they fail fast: the rotation geometry, the text-encoding guard,
+  the PDF crop state machine, the compression surgery, the encryption round trip, an
+  end-to-end check that reads what the tools actually wrote into a PDF back out of its
+  content stream, and five image modules — the shared arithmetic, the compression decisions,
+  conversion, resize geometry and crop geometry. A further post-build check
+  (`tests/image-tool-wiring.test.mjs`) asserts every image tool page really is wired to the
+  module that drives it, because a missing element id produces a page that renders perfectly
+  and does nothing — a failure the SEO assertions cannot see, since the markup is fine.
 - ✅ **A password-protected PDF gets a true error message.** pdf-lib cannot read encrypted
   files and does not fail cleanly on one — it fails mid-parse, so every tool used to report
   that the document was invalid. It was not; it was locked. Every tool now detects this and

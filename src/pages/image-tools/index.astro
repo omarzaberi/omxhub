@@ -9,7 +9,7 @@ const t = useTranslations(lang);
 
 const schema = trail(lang, [{ name: t('nav.image') }]);
 ---
-<Layout title={t('nav.image')} description="أدوات صور مجانية تشتغل بالكامل داخل متصفحك — ضغط الصور بدون فقدان الجودة" schema={schema}>
+<Layout title={t('nav.image')} description="أدوات صور مجانية تشتغل بالكامل داخل متصفحك — ضغط وتحويل وتصغير وقص الصور بدون رفع لأي سيرفر" schema={schema}>
   <section class="wrap section">
     <h1>{t('nav.image')}</h1>
     <p class="subtitle">
@@ -26,7 +26,8 @@ const schema = trail(lang, [{ name: t('nav.image') }]);
       ))}
     </div>
     <p class="more-note">
-      القسم جديد وقاعد يكبر. لين ما تنزل بقية أدوات الصور، تلقى مجموعة كاملة من
+      القسم قاعد يكبر، وفيه أدوات جاية: إزالة الخلفية وتكبير الدقة والعلامة المائية.
+      وبينها وبين ذاك، تلقى مجموعة كاملة من
       <a href={localizedPath(lang, '/pdf-tools')}>أدوات PDF</a> تشتغل بنفس الطريقة — كل شي داخل متصفحك.
     </p>
   </section>

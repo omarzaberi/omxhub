@@ -9,7 +9,7 @@ const t = useTranslations(lang);
 
 const schema = trail(lang, [{ name: t('nav.image') }]);
 ---
-<Layout title={t('nav.image')} description="Free image tools that run entirely in your browser — compress images without visibly losing quality" schema={schema}>
+<Layout title={t('nav.image')} description="Free image tools that run entirely in your browser — compress, convert, resize and crop images with nothing uploaded to a server" schema={schema}>
   <section class="wrap section">
     <h1>{t('nav.image')}</h1>
     <p class="subtitle">
@@ -26,9 +26,10 @@ const schema = trail(lang, [{ name: t('nav.image') }]);
       ))}
     </div>
     <p class="more-note">
-      This section is new and still growing. Until the rest of the image tools land, there is a
-      full set of <a href={localizedPath(lang, '/pdf-tools')}>PDF tools</a> that work the same
-      way — everything inside your browser.
+      The section is still growing — background removal, upscaling and watermarking are next.
+      In the meantime there is a full set of
+      <a href={localizedPath(lang, '/pdf-tools')}>PDF tools</a> that work the same way —
+      everything inside your browser.
     </p>
   </section>
 </Layout>

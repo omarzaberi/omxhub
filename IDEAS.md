@@ -84,24 +84,52 @@ No backend, no paid API.**
 
 ### Image — Phase 2
 
-- ✅ **Compress — live** at `/image-tools/compress-image`. Canvas only, no new dependency.
-- 🟡 **Next batch: Convert · Resize · Crop.** All three reuse the decode/encode path Compress
-  already established, so they are page work rather than engine work.
-- ⬜ Remove Background · Upscaler · Watermark
-- ⬜ OCR — only if it can run without a paid API, which the Blueprint currently rules out.
+- 🟡 **4 of 8 live**: Compress, Convert, Resize and Crop. Canvas only, no new dependency.
+- ⬜ **Remove Background** — the most-wanted tool in this category and the only one of the
+  four remaining that is not obviously free. A usable result needs a segmentation model in
+  the browser (ONNX Runtime Web or TF.js plus weights), which is a real page-weight decision
+  of the same kind Add Text is, not a page to write. Worth measuring before committing.
+- ⬜ **Upscaler** — same question. Bicubic upscaling is trivial and adds no detail, which is
+  precisely what the Resize tool already refuses to pretend; anything better is a model.
+  Shipping a "upscaler" that only stretches pixels would be the dishonest version.
+- ⬜ **Watermark** — genuinely page work, and the closest of the three to the batch just
+  shipped. Text watermarks hit the same Arabic shaping problem as PDF Add Text, but with a
+  crucial difference: a canvas *does* shape and reorder Arabic correctly, so this one is
+  free where the PDF version costs 600 kB–1 MB.
+- ⬜ **OCR** — only if it can run without a paid API, which the Blueprint currently rules out.
 
-**What Compress settled for the whole section.** Three decisions were made once and should
-hold for every image tool that follows, because each of them is a way this category silently
-ruins files:
+### Image — follow-ups from what shipped
+
+- ⬜ **Batch processing across the section.** All four tools take one image at a time. Convert
+  and Resize are the two most often wanted on a whole folder ("turn these 20 into WebP"), and
+  `jszip` is already a dependency, so the output side is solved. What is not solved is the
+  honest part: partial failures, progress on a long run, and memory on twenty 40-megapixel
+  decodes. Worth doing as one change across all four rather than bolting onto two — adding
+  it to three tools and leaving the fourth single-file is the real inconsistency.
+- ⬜ **Downscale during compression.** Compress caps the longest edge on request but never
+  suggests it. A 4000 px scan in a 1200 px layout is carrying 10× the pixels anyone will see,
+  and the tool now has `targetDimensions` next door to compute the sensible answer.
+- ⬜ **A crop preview of the result**, not just the pixel count. The stage shows what is being
+  kept; it does not show what it will look like once the ratio preset is applied.
+
+**What the first four settled for the whole section.** These are decided, implemented once,
+and should not be re-litigated per tool — each is a way this category silently ruins files:
 
 - **Transparency is detected from pixels, not from the file extension.** Most PNGs are
   opaque, and assuming otherwise forfeits real compression; assuming the reverse turns a
   logo's background black. A 128 px probe answers it in a millisecond.
 - **EXIF orientation is applied at decode** (`imageOrientation: 'from-image'`). Skip it and
   every phone photo comes back on its side — the single most common complaint about tools
-  in this category.
-- **Never return a larger file.** Every candidate is measured against the original and the
-  original wins ties. The user is told plainly when nothing beat it.
+  in this category. On Crop it is worse than cosmetic: crop a sideways preview and the result
+  comes from the wrong part of the photo.
+- **The size change is always stated and growth is never hidden.** Compress additionally
+  guarantees it never returns a larger file, because shrinking is the whole request there.
+  The other three cannot make that promise without failing at their own job — a JPEG
+  converted to PNG is legitimately several times bigger — so they inherit the honest half:
+  one `sizeVerdict`, one shared result panel, growth in the warning colour.
+- **A drag is never the only way in.** Crop's four percentage fields are the accessible
+  mechanism, not a convenience; the handles are `aria-hidden`. Any future tool with a
+  pointer-driven canvas owes the same.
 
 ### Video — Phase 2
 
@@ -210,8 +238,14 @@ ruins files:
 
 - ⬜ **Extend `scripts/verify-seo.mjs`** as new sections land, so every launch is covered by the
   same assertions rather than a one-off check.
-- ⬜ **Apply the single-source catalogue pattern** used for PDF tools to the other sets as they
-  grow, so no list is ever maintained by hand in more than one place.
+- 🟡 **Apply the single-source catalogue pattern** used for PDF tools to the other sets as they
+  grow, so no list is ever maintained by hand in more than one place. Done for image tools;
+  still to do for every section built after them.
+- ⬜ **Extend the wiring check beyond image tools.** `tests/image-tool-wiring.test.mjs` reads
+  the element ids a tool's module needs straight out of its source and asserts the built pages
+  contain them, which catches the silent-dead-page failure that neither the build nor the SEO
+  assertions can see. The 28 PDF tool pages have exactly the same failure mode and are not
+  covered yet.
 - ⬜ **Fold the font audit into the scripted build check**, the way the SEO assertions already are.
 
 ## Future Products

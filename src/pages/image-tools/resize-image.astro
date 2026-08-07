@@ -1,0 +1,172 @@
+---
+import ImageToolLayout from '../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedImageTools } from '../../data/image-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'ليش فيه أوضاع بدل خانتين للعرض والارتفاع؟',
+    a: 'لأن الخانتين تبدو أبسط وهي عمليًا أسوأ. أغلب الناس يجون وهم عارفين القيد اللي يهمهم: "لا يتجاوز 1920"، "بالضبط 300 عرض"، "النص". خانتان تجبرك تحسب الرقم الثاني بنفسك، وأي خطأ بسيط يكسر تناسب الصورة. تسمية القيد يخلي الجواب مضبوط من أول مرة.',
+  },
+  {
+    q: 'ليش ما يكبّر الصورة تلقائيًا؟',
+    a: 'لأن التكبير ما يضيف تفاصيل — يمدّ البكسلات الموجودة فتطلع الصورة ضبابية. بس ما منعناه: أحيانًا تحتاج "بالضبط 1000 بكسل عرض" لقالب أو منصة، وأداة ترجّع لك 600 تكون تجاهلت طلبك مو حمتك. فالتكبير خيار ظاهر تفعّله بنفسك، ونقول لك متى إعداداتك بتحتاجه.',
+  },
+  {
+    q: 'وش الفرق بين "أبعاد محددة" مع قفل التناسب وبدونه؟',
+    a: 'مع القفل نحط الصورة كاملة داخل المربع اللي حددته بدون ما نقص منها شي — فممكن تطلع أصغر من أحد البعدين. بدون القفل ننفّذ الرقمين حرفيًا والصورة تنمط. القص لملء المربع بالضبط شغل أداة القص، وسويناه هنا بصمت معناه ناكل جزء من صورتك بدون ما تدري.',
+  },
+  {
+    q: 'ليش الرقم يتحدث قبل ما أضغط الزر؟',
+    a: 'لأن الحساب كله على الأرقام مو على البكسلات، فما فيه سبب نخليك تضغط زر عشان تعرف إذا سألت السؤال الصح. تلقى الأبعاد النهائية معروضة مباشرة مع كل تغيير، وضمنها الحالة اللي غالبًا تفاجئ: "ما راح يتغير شي".',
+  },
+  {
+    q: 'هل التصغير يحافظ على صيغة الصورة؟',
+    a: 'إي، افتراضيًا. PNG يبقى PNG وإلا كانت الشفافية بتضيع بقرار ما طلبته منا. تقدر تغيّر الصيغة من القائمة إذا تبي، والصيغ اللي ما يكتبها المتصفح (مثل GIF و BMP) تنزل PNG لو فيها شفافية و JPEG لو ما فيها.',
+  },
+  {
+    q: 'وش يصير لبيانات EXIF واتجاه التصوير؟',
+    a: 'الاتجاه يُطبَّق على البكسلات قبل المعالجة، فصور الجوال ما تطلع مقلوبة على جنب مثل ما يصير بمواقع ثانية. أما بقية البيانات — GPS ونوع الكاميرا — فتنحذف مع إعادة الترميز.',
+  },
+  {
+    q: 'هل الصورة ترفع لسيرفر؟',
+    a: 'لا. كل شي يصير داخل متصفحك — الصورة ما تغادر جهازك أبدًا، وما فيه حد يومي للاستخدام.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع الصورة', text: 'اسحب الصورة لمنطقة الرفع أو اضغط "اختر صورة". بنعرض لك أبعادها الأصلية فورًا.' },
+  { name: 'اختر القيد اللي يهمك', text: 'أطول ضلع للويب، عرض أو ارتفاع محدد للقوالب، نسبة مئوية لما الأرقام ما تفرق.' },
+  { name: 'اقرأ الأبعاد النهائية قبل ما تضغط', text: 'الرقم يتحدث مع كل تغيير — بما فيه "ما راح يتغير شي" إذا كانت إعداداتك ما تسوي شي.' },
+  { name: 'اضغط "صغّر الصورة"', text: 'التناسب محفوظ إلا لو فككت القفل بنفسك، وما نكبّر أبدًا إلا لما تأذن.' },
+];
+
+const related = relatedImageTools(lang, 'resize-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="تصغير الصور"
+  description="غيّر أبعاد صورك بالبكسل أو بالنسبة المئوية مع الحفاظ على التناسب — مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="preview" class="image-preview" hidden>
+    <img id="preview-img" alt="" />
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="mode-select">طريقة التصغير</label>
+      <select id="mode-select">
+        <option value="longest">أطول ضلع لا يتجاوز</option>
+        <option value="width">عرض محدد</option>
+        <option value="height">ارتفاع محدد</option>
+        <option value="percent">نسبة مئوية</option>
+        <option value="exact">أبعاد محددة</option>
+      </select>
+    </div>
+
+    <div data-field="longest">
+      <label for="longest-input">أطول ضلع (بكسل)</label>
+      <input type="number" id="longest-input" min="1" step="1" value="1920" />
+      <p class="field-note">يشتغل مع الصور الطولية والعرضية بنفس الطريقة — يقيّد الضلع الأطول أيًا كان.</p>
+    </div>
+
+    <div data-field="width" hidden>
+      <label for="width-input">العرض (بكسل)</label>
+      <input type="number" id="width-input" min="1" step="1" />
+      <p class="field-note">الارتفاع يُحسب تلقائيًا من تناسب الصورة.</p>
+    </div>
+
+    <div data-field="height" hidden>
+      <label for="height-input">الارتفاع (بكسل)</label>
+      <input type="number" id="height-input" min="1" step="1" />
+      <p class="field-note">العرض يُحسب تلقائيًا من تناسب الصورة.</p>
+    </div>
+
+    <div data-field="percent" hidden>
+      <label for="percent-input">النسبة المئوية</label>
+      <input type="number" id="percent-input" min="1" step="1" value="50" />
+      <p class="field-note">50% يعني نص العرض ونص الارتفاع.</p>
+    </div>
+
+    <div data-field="exact" hidden>
+      <label for="exact-width">الأبعاد (عرض × ارتفاع)</label>
+      <div class="field-pair">
+        <input type="number" id="exact-width" min="1" step="1" aria-label="العرض بالبكسل" />
+        <input type="number" id="exact-height" min="1" step="1" aria-label="الارتفاع بالبكسل" />
+      </div>
+    </div>
+
+    <div data-field="lock" hidden>
+      <label class="tool-check" for="lock-check">
+        <input type="checkbox" id="lock-check" checked />
+        احفظ التناسب — الصورة تدخل داخل هذي الأبعاد بدون تمطيط
+      </label>
+      <p class="field-note">فك القفل ينفّذ الرقمين حرفيًا والصورة تنمط.</p>
+    </div>
+
+    <div>
+      <label class="tool-check" for="upscale-check">
+        <input type="checkbox" id="upscale-check" />
+        اسمح بتكبير الصورة
+      </label>
+      <p class="field-note warn" id="upscale-note" hidden>
+        إعداداتك الحالية بتكبّر الصورة. التكبير ما يضيف تفاصيل — يمدّ البكسلات الموجودة فتطلع ضبابية. فعّل الخيار لو كنت متأكد إنك تحتاج المقاس بالضبط.
+      </p>
+    </div>
+
+    <div>
+      <label for="format-select">صيغة الإخراج</label>
+      <select id="format-select">
+        <option value="keep">نفس صيغة الأصل</option>
+        <option value="webp">WebP</option>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+      </select>
+    </div>
+
+    <div id="quality-row">
+      <label for="quality-range">الجودة — <output id="quality-out">90%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.9" />
+    </div>
+
+    <p class="outcome" id="outcome" hidden></p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>صغّر الصورة</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountResizeTool } from '../../lib/image-resize-ui';
+
+  mountResizeTool({
+    processing: 'جاري التصغير...',
+    error: 'حدث خطأ، تأكد إن الملف صورة صالحة وحاول مرة ثانية',
+    tooLarge: 'الصورة كبيرة جدًا (الحد 50 ميجابايت). جرّب صورة ثانية.',
+    willBe: (width, height) => `الأبعاد النهائية: ${width}×${height} بكسل`,
+    willBeUnchanged: 'الإعدادات الحالية ما راح تغيّر أبعاد الصورة.',
+    upscaleNote: 'إعداداتك الحالية بتكبّر الصورة.',
+    download: 'تحميل الصورة',
+    originalLabel: 'الأصلي',
+    resultLabel: 'بعد التصغير',
+    smaller: (percent) => `الحجم نزل ${percent}%`,
+    larger: (percent) => `الحجم زاد ${percent}%`,
+    same: 'الحجم تقريبًا نفسه',
+    producedNote: (width, height) => `الأبعاد الجديدة: ${width}×${height} بكسل`,
+  });
+</script>

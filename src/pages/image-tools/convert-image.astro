@@ -1,0 +1,114 @@
+---
+import ImageToolLayout from '../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedImageTools } from '../../data/image-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'ليش الملف صار أكبر بعد التحويل؟',
+    a: 'لأن هذا هو الجواب الصحيح أحيانًا. PNG صيغة بدون فقدان، فتحويل صورة JPEG لـ PNG يطلعها أكبر بمرات — ما فيه شي غلط، هذي طبيعة الصيغتين. الأداة تنفّذ اللي طلبته وتقول لك الحجم زاد كم بالضبط، بدل ما ترجّع لك ملفك الأصلي وتتظاهر إنها حوّلته. إذا هدفك تصغير الحجم، أداة ضغط الصور هي اللي تبيها.',
+  },
+  {
+    q: 'وش يصير للخلفية الشفافة؟',
+    a: 'تنحفظ مع WebP و PNG لأن الاثنتين تدعمان الشفافية. JPEG ما يدعمها إطلاقًا، فلو اخترته لصورة فيها شفافية بننبهك قبل التحويل وبنعبّي الخلفية بالأبيض — لأن الأسود هو اللي يطلع لو تركنا الأمر للمتصفح، ويبان كأنه عطل مو خيار.',
+  },
+  {
+    q: 'أي صيغة أختار؟',
+    a: 'WebP لأي شي بينزل على الويب: تضغط أقوى من JPEG وتحتفظ بالشفافية، وكل المتصفحات الحديثة تعرضها. JPEG للصور الفوتوغرافية اللي بتنزلها في مكان قديم أو برنامج ما يقرأ WebP. PNG للشعارات والرسوم والصور اللي تحتاج شفافية بدون أي فقدان.',
+  },
+  {
+    q: 'هل أقدر أحوّل من HEIC أو AVIF؟',
+    a: 'تقدر إذا كان متصفحك يفك ترميزها — سفاري يفتح HEIC، والمتصفحات الحديثة تفتح AVIF. الأداة تستخدم قدرات متصفحك نفسه في فك الترميز، فأي صيغة يعرضها يقدر يحوّلها. أما الإخراج فمحصور في WebP و JPEG و PNG لأن هذي الصيغ الثلاث اللي يكتبها الـ canvas.',
+  },
+  {
+    q: 'هل التحويل يغيّر أبعاد الصورة؟',
+    a: 'لا أبدًا. الأبعاد تطلع مثل ما دخلت بالضبط. تغيير الأبعاد شغل أداة التصغير، وخلطها هنا معناه إن ملفك المحوّل يختلف عن أصله بطريقتين بدل وحدة.',
+  },
+  {
+    q: 'وش يصير لبيانات EXIF وموقع التصوير؟',
+    a: 'تنحذف. إعادة الترميز تشيل كل البيانات المرفقة بما فيها إحداثيات GPS ونوع الكاميرا. هذي ميزة إذا كنت بتنشر الصورة، بس انتبه لها إذا كنت تحتاج تحتفظ بالبيانات.',
+  },
+  {
+    q: 'هل الصورة ترفع لسيرفر؟',
+    a: 'لا. كل شي يصير داخل متصفحك — الصورة ما تغادر جهازك أبدًا، وما فيه حد يومي للاستخدام.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع الصورة', text: 'اسحب الصورة لمنطقة الرفع أو اضغط "اختر صورة". أي صيغة يفتحها متصفحك تشتغل.' },
+  { name: 'اختر الصيغة اللي تبيها', text: 'WebP للويب، JPEG للصور الفوتوغرافية، PNG للشفافية والرسوم.' },
+  { name: 'اضبط الجودة إذا كانت الصيغة WebP أو JPEG', text: 'PNG بدون فقدان فما لها شريط جودة أصلًا — عرضه عليك يوهم إن فيه مقايضة وهي مو موجودة.' },
+  { name: 'اضغط "حوّل الصورة"', text: 'نحوّل للصيغة اللي طلبتها بالضبط، ونقول لك الحجم راح وين — نزل ولا زاد.' },
+];
+
+const related = relatedImageTools(lang, 'convert-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="تحويل صيغة الصور"
+  description="حوّل صورك بين WebP و JPEG و PNG بضغطة وحدة — مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="preview" class="image-preview" hidden>
+    <img id="preview-img" alt="" />
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="format-select">حوّل إلى</label>
+      <select id="format-select">
+        <option value="webp">WebP — الأفضل للويب</option>
+        <option value="jpeg">JPEG — للصور الفوتوغرافية</option>
+        <option value="png">PNG — بدون فقدان، يحفظ الشفافية</option>
+      </select>
+      <p class="field-note warn" id="alpha-note" hidden>
+        هذي الصورة فيها خلفية شفافة، و JPEG ما يدعم الشفافية — بتنعبّى بالأبيض. اختر WebP أو PNG إذا تبي تحتفظ فيها.
+      </p>
+      <p class="field-note" id="same-note" hidden></p>
+    </div>
+
+    <div id="quality-row">
+      <label for="quality-range">الجودة — <output id="quality-out">90%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.9" />
+      <p class="field-note">90% مناسبة للتحويل: تحافظ على التفاصيل وما تضخّم الملف بلا داعي.</p>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>حوّل الصورة</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountConvertTool } from '../../lib/image-convert-ui';
+
+  mountConvertTool({
+    processing: 'جاري التحويل...',
+    error: 'حدث خطأ، تأكد إن الملف صورة صالحة وحاول مرة ثانية',
+    tooLarge: 'الصورة كبيرة جدًا (الحد 50 ميجابايت). صغّرها أول أو جرّب صورة ثانية.',
+    noFormat: 'متصفحك ما يقدر يكتب هذي الصيغة. اختر صيغة ثانية من القائمة.',
+    alphaWarning: 'هذي الصورة فيها شفافية و JPEG ما يدعمها.',
+    sameFormatNote: (format) => `صورتك أصلًا ${format}. التحويل لنفس الصيغة يعيد ترميزها من جديد — يعني جودة أقل شوي، وغالبًا حجم أكبر. مفيد بس إذا كنت تبي تنزّل الجودة عمدًا.`,
+    download: 'تحميل الصورة المحوّلة',
+    originalLabel: 'الأصلي',
+    resultLabel: 'بعد التحويل',
+    smaller: (percent) => `الحجم نزل ${percent}%`,
+    larger: (percent) => `الحجم زاد ${percent}% — طبيعي في هذي الصيغة`,
+    same: 'الحجم تقريبًا نفسه',
+    producedNote: (format, width, height) => `الناتج: ${format} بأبعاد ${width}×${height} بكسل`,
+    flattenedNote: 'الخلفية الشفافة انعبّت بالأبيض لأن JPEG ما يدعم الشفافية.',
+  });
+</script>

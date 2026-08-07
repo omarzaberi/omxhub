@@ -18,7 +18,7 @@
  * 3. **It rotates photos.** Phone cameras record orientation in EXIF and store
  *    the pixels unrotated. Drawing to a canvas drops EXIF, so a portrait photo
  *    comes back on its side. The fix belongs at decode time
- *    (`imageOrientation: 'from-image'`), and the page relies on it.
+ *    (`imageOrientation: 'from-image'`), and `image-io.ts` applies it.
  * 4. **It ignores resolution.** A 4000 px wide photo posted to a page that
  *    renders it at 800 px is carrying 25× the pixels anyone will see. Quality
  *    reduction nibbles at that; resampling removes it outright.
@@ -34,51 +34,23 @@
  * candidate is measured, and if none beats the original the original is handed
  * back untouched with a plain explanation. That is why `compressImage` returns a
  * `kept: true` result instead of throwing or quietly returning the biggest loser.
- */
-
-export interface Dimensions {
-  width: number;
-  height: number;
-}
-
-/** Formats a browser canvas can reliably encode to. */
-export type OutputFormat = 'jpeg' | 'webp' | 'png';
-
-export const MIME: Record<OutputFormat, string> = {
-  jpeg: 'image/jpeg',
-  webp: 'image/webp',
-  png: 'image/png',
-};
-
-/** Extension used for the download name. */
-export const EXTENSION: Record<OutputFormat, string> = {
-  jpeg: 'jpg',
-  webp: 'webp',
-  png: 'png',
-};
-
-/** Lossy formats are the only ones the quality slider means anything for. */
-export const LOSSY: ReadonlySet<OutputFormat> = new Set<OutputFormat>(['jpeg', 'webp']);
-
-/**
- * Scale `dim` so its longest edge is at most `maxEdge`, preserving aspect ratio.
  *
- * Never upscales: asking for a 4000 px limit on a 900 px image returns the 900 px
- * image. Enlarging cannot add detail, and it would violate the size promise for
- * no benefit. `maxEdge <= 0` means "leave the resolution alone".
+ * The promise is specific to Compress, and deliberately so: making the file
+ * smaller is the entire request here. Convert, Resize and Crop are asked for
+ * something else, so they inherit the honest half of the rule instead — the size
+ * change is always stated and growth is never hidden (`sizeVerdict` in
+ * `image-core.ts`).
  */
-export function fitWithin(dim: Dimensions, maxEdge: number): Dimensions {
-  const longest = Math.max(dim.width, dim.height);
-  if (!Number.isFinite(maxEdge) || maxEdge <= 0 || longest <= maxEdge) {
-    return { width: dim.width, height: dim.height };
-  }
-  const scale = maxEdge / longest;
-  return {
-    // A dimension must never round to zero, or the canvas throws.
-    width: Math.max(1, Math.round(dim.width * scale)),
-    height: Math.max(1, Math.round(dim.height * scale)),
-  };
-}
+import {
+  chooseBest,
+  fitWithin,
+  qualityFor,
+  savingPercent,
+  type Dimensions,
+  type EncodedImage,
+  type Encoder,
+  type OutputFormat,
+} from './image-core';
 
 export interface FormatChoiceInput {
   /** MIME type of the uploaded file, e.g. `image/png`. */
@@ -122,57 +94,6 @@ export function candidateFormats(input: FormatChoiceInput): OutputFormat[] {
   // transparent one it gets PNG. The list is never empty for a decodable image.
   return out;
 }
-
-export interface Attempt {
-  format: OutputFormat;
-  size: number;
-}
-
-/**
- * The smallest attempt that actually beats `originalSize`, or `null` for
- * "nothing here is an improvement, keep the user's file".
- *
- * Ties go to the earlier candidate, which is why `candidateFormats` returns its
- * list in preference order rather than sorted alphabetically.
- */
-export function chooseBest<T extends Attempt>(attempts: readonly T[], originalSize: number): T | null {
-  let best: T | null = null;
-  for (const attempt of attempts) {
-    if (attempt.size <= 0) continue; // a failed encode reports 0; never a winner
-    if (attempt.size >= originalSize) continue;
-    if (best === null || attempt.size < best.size) best = attempt;
-  }
-  return best;
-}
-
-/** Whole-percent reduction from `originalSize` to `newSize`. Never negative. */
-export function savingPercent(originalSize: number, newSize: number): number {
-  if (originalSize <= 0 || newSize >= originalSize) return 0;
-  return Math.round(((originalSize - newSize) / originalSize) * 100);
-}
-
-/**
- * Human byte size. Latin digits and units in both languages, because a file
- * size is read as a number and Arabic technical UI overwhelmingly uses KB/MB.
- */
-export function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return '—';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-/** Minimal structural stand-in for a `Blob`, so this module needs no DOM lib. */
-export interface EncodedImage {
-  size: number;
-  type: string;
-}
-
-export type Encoder<B extends EncodedImage = EncodedImage> = (
-  format: OutputFormat,
-  dim: Dimensions,
-  quality: number
-) => Promise<B | null>;
 
 export interface CompressInput {
   originalSize: number;
@@ -225,11 +146,10 @@ export async function compressImage<B extends EncodedImage>(
 
   const encoded = await Promise.all(
     formats.map(async (format) => {
-      // PNG ignores quality; passing the slider value through would imply the
-      // control does something on a lossless format, which it does not.
-      const quality = LOSSY.has(format) ? input.quality : 1;
       try {
-        const blob = await encode(format, dim, quality);
+        // PNG ignores quality; passing the slider value through would imply the
+        // control does something on a lossless format, which it does not.
+        const blob = await encode(format, dim, qualityFor(format, input.quality));
         return blob ? { format, size: blob.size, blob } : null;
       } catch {
         // One format failing (an encoder the browser advertised but cannot
@@ -239,7 +159,9 @@ export async function compressImage<B extends EncodedImage>(
     })
   );
 
-  const attempts = encoded.filter((a): a is { format: OutputFormat; size: number; blob: B } => a !== null);
+  const attempts = encoded.filter(
+    (a): a is { format: OutputFormat; size: number; blob: B } => a !== null
+  );
   const best = chooseBest(attempts, input.originalSize);
   if (!best) return { kept: true, reason: 'no-improvement' };
 
@@ -253,16 +175,4 @@ export async function compressImage<B extends EncodedImage>(
     savedPercent: savingPercent(input.originalSize, best.size),
     resized,
   };
-}
-
-/**
- * Download name: original stem, extension of whatever format actually won.
- *
- * The pattern is deliberately strict — letters and digits, at most five. A
- * looser "anything after the last dot" rule turns `Report v1.2 final.png` into
- * `Report v1`, silently eating half the name the user recognises their file by.
- */
-export function outputFileName(originalName: string, format: OutputFormat): string {
-  const stem = originalName.replace(/\.[A-Za-z0-9]{1,5}$/, '') || 'image';
-  return `${stem}-compressed.${EXTENSION[format]}`;
 }

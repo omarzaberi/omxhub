@@ -1,0 +1,172 @@
+---
+import ImageToolLayout from '../../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedImageTools } from '../../../data/image-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Why modes instead of just a width and a height box?',
+    a: 'Because two boxes look simpler and work worse. People arrive already knowing which constraint they care about: "no wider than 1920", "exactly 300 across", "half size". A bare width/height pair makes you compute the other number yourself, and a small error there breaks the aspect ratio. Naming the constraint makes the answer exact the first time.',
+  },
+  {
+    q: 'Why will it not enlarge my image by default?',
+    a: 'Because enlarging cannot add detail — it stretches the pixels you already have, and the result is soft. But it is not forbidden: sometimes you genuinely need "exactly 1000px wide" for a template or a marketplace, and a tool that quietly hands back 600px has ignored your request rather than protected you. So upscaling is a visible checkbox you turn on yourself, and we tell you when your current numbers would need it.',
+  },
+  {
+    q: 'What is the difference between exact dimensions with and without the aspect lock?',
+    a: 'With the lock, the whole image is fitted inside the box you specified without cropping anything, so it may end up smaller than one of your two numbers. Without it, both numbers are obeyed literally and the image is stretched. Cropping to fill the box exactly is the Crop tool\'s job — doing it silently here would mean eating part of your image without telling you.',
+  },
+  {
+    q: 'Why does the result update before I press the button?',
+    a: 'Because the arithmetic runs on numbers rather than pixels, so there is no reason to make you press a button to find out whether you asked the right question. The final dimensions are shown live as you change anything — including the case people are most often surprised by: "this will not change anything".',
+  },
+  {
+    q: 'Does resizing keep my image format?',
+    a: 'Yes, by default. A PNG stays a PNG, because otherwise its transparency would be lost to a decision you did not ask us to make. You can change the format from the list if you want, and formats a browser cannot write (GIF, BMP) come out as PNG when they have transparency and JPEG when they do not.',
+  },
+  {
+    q: 'What happens to EXIF data and photo orientation?',
+    a: 'Orientation is applied to the pixels before processing, so phone photos do not come back lying on their side the way they do on many other sites. The rest of the metadata — GPS, camera model — is removed by the re-encode.',
+  },
+  {
+    q: 'Is my image uploaded to a server?',
+    a: 'No. Everything happens inside your browser — the image never leaves your device, and there is no daily usage limit.',
+  },
+];
+
+const steps = [
+  { name: 'Upload an image', text: 'Drag it onto the drop zone or click "Choose image". Its real dimensions are shown straight away.' },
+  { name: 'Pick the constraint that matters to you', text: 'Longest edge for the web, an exact width or height for templates, a percentage when the absolute numbers do not matter.' },
+  { name: 'Read the final dimensions before you commit', text: 'The figure updates as you type — including "this will not change anything" when your settings are a no-op.' },
+  { name: 'Click "Resize Image"', text: 'The aspect ratio is kept unless you unlock it yourself, and nothing is ever enlarged without your permission.' },
+];
+
+const related = relatedImageTools(lang, 'resize-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="Resize Image"
+  description="Change image dimensions by pixels or percentage with the aspect ratio kept — free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="preview" class="image-preview" hidden>
+    <img id="preview-img" alt="" />
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="mode-select">Resize by</label>
+      <select id="mode-select">
+        <option value="longest">Longest edge at most</option>
+        <option value="width">Exact width</option>
+        <option value="height">Exact height</option>
+        <option value="percent">Percentage</option>
+        <option value="exact">Exact dimensions</option>
+      </select>
+    </div>
+
+    <div data-field="longest">
+      <label for="longest-input">Longest edge (px)</label>
+      <input type="number" id="longest-input" min="1" step="1" value="1920" />
+      <p class="field-note">Treats portrait and landscape images alike — it caps whichever edge is longer.</p>
+    </div>
+
+    <div data-field="width" hidden>
+      <label for="width-input">Width (px)</label>
+      <input type="number" id="width-input" min="1" step="1" />
+      <p class="field-note">The height follows from the image's aspect ratio.</p>
+    </div>
+
+    <div data-field="height" hidden>
+      <label for="height-input">Height (px)</label>
+      <input type="number" id="height-input" min="1" step="1" />
+      <p class="field-note">The width follows from the image's aspect ratio.</p>
+    </div>
+
+    <div data-field="percent" hidden>
+      <label for="percent-input">Percentage</label>
+      <input type="number" id="percent-input" min="1" step="1" value="50" />
+      <p class="field-note">50% means half the width and half the height.</p>
+    </div>
+
+    <div data-field="exact" hidden>
+      <label for="exact-width">Dimensions (width × height)</label>
+      <div class="field-pair">
+        <input type="number" id="exact-width" min="1" step="1" aria-label="Width in pixels" />
+        <input type="number" id="exact-height" min="1" step="1" aria-label="Height in pixels" />
+      </div>
+    </div>
+
+    <div data-field="lock" hidden>
+      <label class="tool-check" for="lock-check">
+        <input type="checkbox" id="lock-check" checked />
+        Keep the aspect ratio — fit the image inside these dimensions
+      </label>
+      <p class="field-note">Unlocking obeys both numbers literally and stretches the image.</p>
+    </div>
+
+    <div>
+      <label class="tool-check" for="upscale-check">
+        <input type="checkbox" id="upscale-check" />
+        Allow enlarging
+      </label>
+      <p class="field-note warn" id="upscale-note" hidden>
+        Your current settings would enlarge this image. Enlarging cannot add detail — it stretches the pixels you already have, and the result is soft. Turn this on if you really need the exact size.
+      </p>
+    </div>
+
+    <div>
+      <label for="format-select">Output format</label>
+      <select id="format-select">
+        <option value="keep">Same as the original</option>
+        <option value="webp">WebP</option>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+      </select>
+    </div>
+
+    <div id="quality-row">
+      <label for="quality-range">Quality — <output id="quality-out">90%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.9" />
+    </div>
+
+    <p class="outcome" id="outcome" hidden></p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Resize Image</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountResizeTool } from '../../../lib/image-resize-ui';
+
+  mountResizeTool({
+    processing: 'Resizing...',
+    error: 'Something went wrong — make sure the file is a valid image and try again',
+    tooLarge: 'That image is too large (50 MB limit). Try another one.',
+    willBe: (width, height) => `Final dimensions: ${width}×${height}px`,
+    willBeUnchanged: 'Your current settings will not change the dimensions.',
+    upscaleNote: 'Your current settings would enlarge this image.',
+    download: 'Download Image',
+    originalLabel: 'Original',
+    resultLabel: 'Resized',
+    smaller: (percent) => `${percent}% smaller`,
+    larger: (percent) => `${percent}% larger`,
+    same: 'Roughly the same size',
+    producedNote: (width, height) => `New dimensions: ${width}×${height}px`,
+  });
+</script>

@@ -13,8 +13,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "t": "node --import ./tests/ts-extension-hook.mjs",
-    "test:unit": "npm run t tests/pdf-geometry.test.mjs && npm run t tests/pdf-text.test.mjs && npm run t tests/pdf-placement.test.mjs && npm run t tests/pdf-crop-box.test.mjs && npm run t tests/pdf-compress.test.mjs && npm run t tests/pdf-encrypted.test.mjs && npm run t tests/image-compress.test.mjs",
-    "test": "npm run test:unit && npm run build && node tests/deferred-scripts.test.mjs && node scripts/verify-seo.mjs"
+    "test:unit": "npm run t tests/pdf-geometry.test.mjs && npm run t tests/pdf-text.test.mjs && npm run t tests/pdf-placement.test.mjs && npm run t tests/pdf-crop-box.test.mjs && npm run t tests/pdf-compress.test.mjs && npm run t tests/pdf-encrypted.test.mjs && npm run t tests/image-core.test.mjs && npm run t tests/image-compress.test.mjs && npm run t tests/image-convert.test.mjs && npm run t tests/image-resize.test.mjs && npm run t tests/image-crop.test.mjs",
+    "test": "npm run test:unit && npm run build && node tests/deferred-scripts.test.mjs && npm run t tests/image-tool-wiring.test.mjs && node scripts/verify-seo.mjs"
   },
   "devDependencies": {
     "jsdom": "^26.0.0"

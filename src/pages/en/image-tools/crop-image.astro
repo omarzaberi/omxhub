@@ -1,0 +1,156 @@
+---
+import ImageToolLayout from '../../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedImageTools } from '../../../data/image-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Can I crop with the keyboard instead of dragging?',
+    a: 'Yes, and it is not an extra — it is the primary accessible path. The four fields under the preview (position and size, in percent) are bound to the same state in both directions: drag the rectangle and the numbers follow, type a number and the rectangle follows. The corner handles are a pointer affordance on top, and they are hidden from screen readers because dragging is a gesture assistive technology cannot perform.',
+  },
+  {
+    q: 'Why do the preset ratios show unequal numbers for a square crop?',
+    a: 'Because the numbers are fractions of each axis, while the ratio is in real pixels. On an image twice as wide as it is tall, a square crop is 50% wide and 100% tall — making the two numbers equal would give you a wide rectangle instead. This is the classic bug in fraction-based croppers, and it has its own test here.',
+  },
+  {
+    q: 'Does cropping reduce the quality of what is left?',
+    a: 'No. The pixels inside the rectangle are kept at their original size with no resampling. The only thing that touches them is the re-encode itself, and choosing PNG or raising the quality makes even that negligible.',
+  },
+  {
+    q: 'Why is my file sometimes larger even though I cropped part of it away?',
+    a: 'That can happen if you change the format. Cropping part of a JPEG and saving it as PNG produces a bigger file than the original despite having fewer pixels, because PNG is lossless. The tool does what you asked and states which way the size went rather than hiding the growth.',
+  },
+  {
+    q: 'What happens to a transparent background?',
+    a: 'It survives in PNG and WebP. If you choose JPEG it is filled with white, because JPEG has no alpha channel and black is what you get if the browser is left to decide.',
+  },
+  {
+    q: 'Why is my photo not lying on its side?',
+    a: 'Because the EXIF orientation is applied to the pixels before the preview is drawn. Ignore it and you crop in one place and get a result from another — which is exactly what happens on many free crop tools.',
+  },
+  {
+    q: 'Is my image uploaded to a server?',
+    a: 'No. Everything happens inside your browser — the image never leaves your device, and there is no daily usage limit.',
+  },
+];
+
+const steps = [
+  { name: 'Upload an image', text: 'Drag it onto the drop zone or click "Choose image". It appears with a crop rectangle over it.' },
+  { name: 'Select the part you want', text: 'Drag the rectangle or its corners, or type the numbers directly if you need an exact selection.' },
+  { name: 'Pick a preset ratio if you need one', text: 'Square for avatars, 16:9 for thumbnails, 9:16 for stories — the ratio stays locked while you drag.' },
+  { name: 'Click "Crop Image"', text: 'The remaining pixels are kept at full size with no resampling, and you get the output dimensions and file size.' },
+];
+
+const related = relatedImageTools(lang, 'crop-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="Crop Image"
+  description="Crop any part of an image by dragging or by numbers, with ready-made ratio presets — free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="crop-stage" class="crop-stage" hidden>
+    <div class="stage" data-stage>
+      <img id="crop-img" alt="" />
+      <div class="crop-rect" data-rect>
+        <span data-handle="nw" aria-hidden="true"></span>
+        <span data-handle="ne" aria-hidden="true"></span>
+        <span data-handle="sw" aria-hidden="true"></span>
+        <span data-handle="se" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="crop-fields">
+      <div>
+        <label for="crop-x">From left %</label>
+        <input type="number" id="crop-x" data-crop="x" min="0" max="100" step="1" value="0" />
+      </div>
+      <div>
+        <label for="crop-y">From top %</label>
+        <input type="number" id="crop-y" data-crop="y" min="0" max="100" step="1" value="0" />
+      </div>
+      <div>
+        <label for="crop-w">Width %</label>
+        <input type="number" id="crop-w" data-crop="w" min="5" max="100" step="1" value="100" />
+      </div>
+      <div>
+        <label for="crop-h">Height %</label>
+        <input type="number" id="crop-h" data-crop="h" min="5" max="100" step="1" value="100" />
+      </div>
+    </div>
+    <p class="field-note" style="margin-top: 8px;">
+      Drag the rectangle or type the numbers — both drive the same crop.
+    </p>
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div class="inline-row">
+      <div>
+        <label for="ratio-select">Aspect ratio</label>
+        <select id="ratio-select">
+          <option value="free">Free</option>
+          <option value="square">Square 1:1</option>
+          <option value="wide">Widescreen 16:9</option>
+          <option value="photo">Photo 4:3</option>
+          <option value="portrait">Portrait 3:4</option>
+          <option value="story">Story 9:16</option>
+        </select>
+      </div>
+      <button type="button" id="reset-btn" class="action-btn secondary">Reset</button>
+    </div>
+
+    <div>
+      <label for="format-select">Output format</label>
+      <select id="format-select">
+        <option value="keep">Same as the original</option>
+        <option value="webp">WebP</option>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+      </select>
+    </div>
+
+    <div id="quality-row">
+      <label for="quality-range">Quality — <output id="quality-out">92%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.92" />
+      <p class="field-note">High by default: cropping does not resample, so there is no reason to lose detail in the part you chose to keep.</p>
+    </div>
+
+    <p class="outcome" id="outcome" hidden></p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Crop Image</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountCropTool } from '../../../lib/image-crop-ui';
+
+  mountCropTool({
+    processing: 'Cropping...',
+    error: 'Something went wrong — make sure the file is a valid image and try again',
+    tooLarge: 'That image is too large (50 MB limit). Try another one.',
+    willBe: (width, height) => `Selection: ${width}×${height}px`,
+    wholeImage: 'The rectangle still covers the whole image — drag it or change the numbers to crop.',
+    download: 'Download Cropped Image',
+    originalLabel: 'Original',
+    resultLabel: 'Cropped',
+    smaller: (percent) => `${percent}% smaller`,
+    larger: (percent) => `${percent}% larger`,
+    same: 'Roughly the same size',
+    producedNote: (width, height) => `Output dimensions: ${width}×${height}px`,
+  });
+</script>

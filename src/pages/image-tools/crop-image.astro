@@ -1,0 +1,156 @@
+---
+import ImageToolLayout from '../../layouts/ImageToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedImageTools } from '../../data/image-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'أقدر أقص بالكيبورد بدون سحب؟',
+    a: 'إي، وهذي مو ميزة إضافية — هذي الطريقة الأساسية للوصول. الأربع خانات تحت المعاينة (الموضع والمقاس بالنسبة المئوية) مربوطة بنفس الحالة في الاتجاهين: تسحب المستطيل تتغير الأرقام، تكتب رقم يتحرك المستطيل. المقابض في الزوايا مجرد إضافة للماوس واللمس، وهي مخفية عن قارئات الشاشة لأن السحب حركة ما تقدر تسويها أصلًا.',
+  },
+  {
+    q: 'ليش المقاسات الجاهزة تطلع مستطيلة مو مربعة في الأرقام؟',
+    a: 'لأن الأرقام نِسَب من كل محور، والنسبة المطلوبة بالبكسلات الحقيقية. على صورة عرضها ضعف ارتفاعها، القص المربع يكون عرضه 50% وارتفاعه 100% — لو خلينا الرقمين متساويين بيطلع لك مستطيل عريض. هذا أشهر خطأ في أدوات القص المبنية على النِسَب، وعندنا له اختبار مستقل.',
+  },
+  {
+    q: 'هل القص يقلل جودة الباقي؟',
+    a: 'لا. البكسلات اللي داخل المستطيل تنقص كما هي بدون إعادة تحجيم. الشي الوحيد اللي يأثر هو إعادة الترميز نفسها — واختيار PNG أو رفع الجودة يخليها بلا فرق يذكر.',
+  },
+  {
+    q: 'ليش الملف أحيانًا يكبر مع إني قصيت جزء منه؟',
+    a: 'ممكن يصير إذا غيّرت الصيغة — قص جزء من JPEG وحفظه PNG يطلع أكبر من الأصل رغم إن البكسلات أقل، لأن PNG بدون فقدان. الأداة تنفّذ اللي طلبته وتقول لك الحجم راح وين بدل ما تخفي الزيادة.',
+  },
+  {
+    q: 'وش يصير للخلفية الشفافة؟',
+    a: 'تنحفظ مع PNG و WebP. لو اخترت JPEG تنعبّى بالأبيض، لأن JPEG ما يدعم الشفافية والأسود هو اللي يطلع لو تركنا الأمر للمتصفح.',
+  },
+  {
+    q: 'ليش صورتي ما انقلبت على جنب؟',
+    a: 'لأن اتجاه التصوير يُطبَّق على البكسلات قبل ما نعرض المعاينة. لو تجاهلناه، بتقص من مكان وتطلع لك النتيجة من مكان ثاني — وهذا اللي يصير بكثير من أدوات القص المجانية.',
+  },
+  {
+    q: 'هل الصورة ترفع لسيرفر؟',
+    a: 'لا. كل شي يصير داخل متصفحك — الصورة ما تغادر جهازك أبدًا، وما فيه حد يومي للاستخدام.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع الصورة', text: 'اسحب الصورة لمنطقة الرفع أو اضغط "اختر صورة"، وبتظهر لك مع مستطيل القص فوقها.' },
+  { name: 'حدد الجزء اللي تبيه', text: 'اسحب المستطيل أو مقابضه، أو اكتب الأرقام مباشرة إذا كنت تبي مقاس محدد بالضبط.' },
+  { name: 'اختر نسبة جاهزة إذا كنت تحتاجها', text: 'مربع للصور الشخصية، 16:9 للمصغّرات، 9:16 للستوري — والنسبة تبقى مقفلة وأنت تسحب.' },
+  { name: 'اضغط "اقص الصورة"', text: 'البكسلات الباقية تنحفظ بحجمها الأصلي بدون إعادة تحجيم، ونقول لك أبعاد الناتج وحجمه.' },
+];
+
+const related = relatedImageTools(lang, 'crop-image');
+---
+<ImageToolLayout
+  lang={lang}
+  title="قص الصور"
+  description="اقص أي جزء من صورتك بالسحب أو بالأرقام مع مقاسات جاهزة — مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <p class="drop-text">{t('image.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('image.chooseFile')}</button>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="crop-stage" class="crop-stage" hidden>
+    <div class="stage" data-stage>
+      <img id="crop-img" alt="" />
+      <div class="crop-rect" data-rect>
+        <span data-handle="nw" aria-hidden="true"></span>
+        <span data-handle="ne" aria-hidden="true"></span>
+        <span data-handle="sw" aria-hidden="true"></span>
+        <span data-handle="se" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="crop-fields">
+      <div>
+        <label for="crop-x">من اليسار %</label>
+        <input type="number" id="crop-x" data-crop="x" min="0" max="100" step="1" value="0" />
+      </div>
+      <div>
+        <label for="crop-y">من الأعلى %</label>
+        <input type="number" id="crop-y" data-crop="y" min="0" max="100" step="1" value="0" />
+      </div>
+      <div>
+        <label for="crop-w">العرض %</label>
+        <input type="number" id="crop-w" data-crop="w" min="5" max="100" step="1" value="100" />
+      </div>
+      <div>
+        <label for="crop-h">الارتفاع %</label>
+        <input type="number" id="crop-h" data-crop="h" min="5" max="100" step="1" value="100" />
+      </div>
+    </div>
+    <p class="field-note" style="margin-top: 8px;">
+      تقدر تسحب المستطيل أو تكتب الأرقام — الاثنان يشتغلان على نفس القص.
+    </p>
+  </div>
+
+  <div id="options" class="tool-options" hidden>
+    <div class="inline-row">
+      <div>
+        <label for="ratio-select">نسبة الأبعاد</label>
+        <select id="ratio-select">
+          <option value="free">حرة</option>
+          <option value="square">مربع 1:1</option>
+          <option value="wide">عريض 16:9</option>
+          <option value="photo">صورة 4:3</option>
+          <option value="portrait">طولي 3:4</option>
+          <option value="story">ستوري 9:16</option>
+        </select>
+      </div>
+      <button type="button" id="reset-btn" class="action-btn secondary">إعادة تعيين</button>
+    </div>
+
+    <div>
+      <label for="format-select">صيغة الإخراج</label>
+      <select id="format-select">
+        <option value="keep">نفس صيغة الأصل</option>
+        <option value="webp">WebP</option>
+        <option value="jpeg">JPEG</option>
+        <option value="png">PNG</option>
+      </select>
+    </div>
+
+    <div id="quality-row">
+      <label for="quality-range">الجودة — <output id="quality-out">92%</output></label>
+      <input type="range" id="quality-range" min="0.1" max="1" step="0.05" value="0.92" />
+      <p class="field-note">مرتفعة افتراضيًا: القص ما يعيد التحجيم، فما فيه سبب نخسر تفاصيل الجزء اللي احتفظت فيه.</p>
+    </div>
+
+    <p class="outcome" id="outcome" hidden></p>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>اقص الصورة</button>
+  <div id="status" class="status-msg" hidden></div>
+</ImageToolLayout>
+
+<script>
+  import { mountCropTool } from '../../lib/image-crop-ui';
+
+  mountCropTool({
+    processing: 'جاري القص...',
+    error: 'حدث خطأ، تأكد إن الملف صورة صالحة وحاول مرة ثانية',
+    tooLarge: 'الصورة كبيرة جدًا (الحد 50 ميجابايت). جرّب صورة ثانية.',
+    willBe: (width, height) => `الجزء المحدد: ${width}×${height} بكسل`,
+    wholeImage: 'المستطيل يغطي الصورة كاملة — اسحبه أو غيّر الأرقام عشان تقص جزء منها.',
+    download: 'تحميل الصورة المقصوصة',
+    originalLabel: 'الأصلي',
+    resultLabel: 'بعد القص',
+    smaller: (percent) => `الحجم نزل ${percent}%`,
+    larger: (percent) => `الحجم زاد ${percent}%`,
+    same: 'الحجم تقريبًا نفسه',
+    producedNote: (width, height) => `أبعاد الناتج: ${width}×${height} بكسل`,
+  });
+</script>

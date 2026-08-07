@@ -92,7 +92,7 @@ What genuinely earns us a rich result: **`Organization`** (homepage),
 | ~~`comparisons`~~ — launched with real content | ✅ | 2026-08-06: `noindex` removed and dropped from the sitemap filter. 12 indexable pages (2 landing pages + 10 comparisons) |
 | Google Search Console connected | ✅ | Verified (TXT record confirmed live in DNS) + sitemap submitted. Guide: `docs/SEARCH-CONSOLE.md` |
 | Bing Webmaster Tools connected | 🟡 | Covered by the same guide (import from GSC) |
-| Broken-link check | ✅ | Now part of `scripts/verify-seo.mjs` — runs after every build. Last run: 166 pages, 0 broken links |
+| Broken-link check | ✅ | Now part of `scripts/verify-seo.mjs` — runs after every build. Last run: 176 pages, 0 broken links |
 | Custom 404 page | ✅ | Both languages, with live search and section links. `noindex` and excluded from the sitemap. The English version is served for any broken `/en/*` URL via a rule in `netlify.toml` — verified live after deployment |
 
 ## Phase 4 — Internal Linking Structure
@@ -152,7 +152,7 @@ penalty.
 | Lazy loading for images | ⬜ | |
 | Defer pdf-lib / pdf.js to their own pages only | ✅ | `src/lib/pdf-libs.ts`: dynamic import with a warm-up the moment a file is selected. The engines (pdf-lib 418 KB, pdf.js 322 KB, JSZip 94 KB) emit as separate chunks and never enter the early module graph of any page. This line was marked `⬜` in error and was corrected on 2026-08-07 |
 | Periodic Lighthouse audit | ⬜ | |
-| Automated SEO check after every build | ✅ | `scripts/verify-seo.mjs` — 166 pages, 2,891 assertions, 0 failures |
+| Automated SEO check after every build | ✅ | `scripts/verify-seo.mjs` — 176 pages, 3,129 assertions, 0 failures |
 
 ### Font distribution after optimisation
 
@@ -227,3 +227,8 @@ Important rules the split is built on:
 | 2026-08-07 | Post-build verification re-run with the new pages: **160 pages, 2,747 assertions, 0 failures**, 0 broken links, and the PDF related-link chain still closed and symmetric at 11 tools (exactly 3 inbound and 3 outbound each, no self-links) |
 | 2026-08-07 | The two new tool pages keep the PDF engines off the critical path like the rest: ~2.4 kB of eager JavaScript each, with pdf-lib (428 kB) and pdf.js (330 kB) still emitted as separate chunks fetched only once a file is chosen |
 | 2026-08-07 | Removed the "Choose an Amount" grid from `/support` in both languages — 5 links per page pointing at the same Ko-fi URL, i.e. 10 redundant outbound duplicates. The page keeps one Ko-fi CTA in the hero and one in the community section |
+| 2026-08-07 | **3 new image tools** in both languages (6 new indexable pages): convert (`/image-tools/convert-image`), resize (`/image-tools/resize-image`), crop (`/image-tools/crop-image`). Image tools: 1 → 4. Each with a unique title and description, 4 visible steps + `HowTo`, 7 FAQs + `FAQPage`, and visible breadcrumbs + `BreadcrumbList` |
+| 2026-08-07 | **The image related-link chain closes at 4 tools** — exactly 3 inbound and 3 outbound per tool, wrapping around `src/data/image-tools.ts` with no self-links, the same property the PDF chain has. The hub grids and the sitemap derive from the same array, so all three tools were picked up by a single catalogue edit |
+| 2026-08-07 | Post-build verification re-run: **176 pages, 3,129 assertions, 0 failures**, 0 broken links |
+| 2026-08-07 | **`tests/image-tool-wiring.test.mjs`** — a post-build check that every image tool page contains the element ids its client module looks up. This is the one failure the SEO assertions structurally cannot catch: the markup is valid, the page renders, the schema is correct, and nothing happens when the button is pressed. The ids are read out of the UI modules' source rather than from a checklist, so the check cannot go stale |
+| 2026-08-07 | The three new tool pages keep the section's zero-dependency profile: Canvas only, no new chunk, and the FAQ on each states plainly that re-encoding strips EXIF and GPS — the honest version of a privacy claim rather than a marketing one |

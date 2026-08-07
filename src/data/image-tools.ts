@@ -36,6 +36,38 @@ export const imageTools: readonly ImageTool[] = [
       en: 'Shrink your images without visibly losing quality, entirely in your browser',
     },
   },
+  // Convert sits next to Compress because they are the same decision from two
+  // directions — one picks the format for you, the other lets you pick it.
+  {
+    slug: 'convert-image',
+    icon: '🔄',
+    name: { ar: 'تحويل صيغة الصور', en: 'Convert Image' },
+    desc: {
+      ar: 'حوّل بين JPG و PNG و WebP بضغطة، والشفافية محفوظة إلا لو اخترت غير كذا',
+      en: 'Convert between JPG, PNG and WebP in one click, with transparency kept unless you choose otherwise',
+    },
+  },
+  // Resize and Crop are the two dimension tools and belong beside each other:
+  // someone who has just resized is far more likely to want a crop next than a
+  // format change.
+  {
+    slug: 'resize-image',
+    icon: '📐',
+    name: { ar: 'تصغير الصور', en: 'Resize Image' },
+    desc: {
+      ar: 'غيّر أبعاد صورتك بالبكسل أو بالنسبة المئوية مع الحفاظ على التناسب',
+      en: 'Change your image dimensions by pixels or percentage, aspect ratio kept',
+    },
+  },
+  {
+    slug: 'crop-image',
+    icon: '✂️',
+    name: { ar: 'قص الصور', en: 'Crop Image' },
+    desc: {
+      ar: 'قص أي جزء من الصورة بالسحب أو بالأرقام، ومقاسات جاهزة للمربع والعريض',
+      en: 'Crop any part of an image by dragging or by numbers, with ready square and widescreen presets',
+    },
+  },
 ];
 
 export function imageToolPath(slug: string): string {
@@ -51,10 +83,15 @@ export function getImageTool(slug: string): ImageTool {
 /**
  * The next `count` tools after `slug`, wrapping around the catalogue.
  *
- * While the section is small this legitimately returns fewer than `count` — with
- * one tool live it returns none, and the layout falls back to a link across to
- * the PDF section rather than rendering an empty band. That is why the count is
- * clamped here instead of the caller padding the list with repeats.
+ * With four tools live this returns the full three, so every image tool now has
+ * exactly 3 outbound and 3 inbound related links — a closed chain in which no
+ * tool can become orphaned as the set grows, the same property `relatedPdfTools`
+ * gives the PDF section.
+ *
+ * The clamp stays because it is what made the section survivable while it had
+ * one tool in it: rather than padding the list with repeats of the current page,
+ * it returned fewer links and the layout leaned on a cross-section link instead.
+ * A future section starting from scratch inherits that behaviour for free.
  */
 export function relatedImageTools(
   lang: Lang,

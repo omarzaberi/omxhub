@@ -1,0 +1,203 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Is the cropped-off area really deleted from the file?',
+    a: 'No — and this matters. Cropping a PDF sets a smaller visible area; the content outside it is hidden rather than removed, which is how PDF cropping works in every tool. Do not use crop to hide confidential information, because anyone can restore the full page. For that you need real redaction.',
+  },
+  {
+    q: 'Does the crop apply to every page or only the one I can see?',
+    a: 'Every page. You set it once on the preview and we apply the same proportional crop throughout — 5% off the top means 5% of each page, so a document with mixed page sizes crops evenly instead of losing more from the small pages.',
+  },
+  {
+    q: 'Can I crop without dragging?',
+    a: 'Yes. The four boxes below the preview take a percentage for each edge and are fully keyboard-operable. Typing moves the rectangle and dragging updates the numbers — they are two views of the same thing, so use whichever suits you.',
+  },
+  {
+    q: 'What if my pages are rotated?',
+    a: 'It still works. Each page carries its own rotation, and we translate your crop into that page\'s own coordinates, so "top" always means the top of what you were looking at.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". The first page is rendered as a preview inside your browser.' },
+  { name: 'Drag the crop rectangle', text: 'Pull any corner handle to resize, or drag from the middle to move the whole selection. The dimmed area is what will be trimmed away.' },
+  { name: 'Fine-tune with the numbers', text: 'The four fields hold the exact percentage taken off each edge, so you can type a precise, symmetrical margin instead of eyeballing it.' },
+  { name: 'Click "Crop PDF"', text: 'The crop is applied to every page and the file downloads immediately. Your original is left untouched.' },
+];
+
+const related = relatedPdfTools(lang, 'crop-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Crop PDF"
+  description="Trim the margins off every page of a PDF with a visual crop tool, free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="crop" class="crop-stage" hidden>
+    <div class="crop-preview">
+      <div class="crop-canvas" data-canvas></div>
+      <div class="crop-rect" data-rect>
+        <span class="crop-handle" data-handle="nw" aria-hidden="true"></span>
+        <span class="crop-handle" data-handle="ne" aria-hidden="true"></span>
+        <span class="crop-handle" data-handle="sw" aria-hidden="true"></span>
+        <span class="crop-handle" data-handle="se" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <p class="crop-hint">Drag the corners to crop, or type an exact percentage below.</p>
+
+    <div class="crop-fields">
+      <div>
+        <label for="crop-top">Top %</label>
+        <input type="number" id="crop-top" data-edge="top" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="crop-right">Right %</label>
+        <input type="number" id="crop-right" data-edge="right" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="crop-bottom">Bottom %</label>
+        <input type="number" id="crop-bottom" data-edge="bottom" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="crop-left">Left %</label>
+        <input type="number" id="crop-left" data-edge="left" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+    </div>
+
+    <div class="grid-toolbar">
+      <button type="button" id="reset-crop">Reset crop</button>
+      <span class="grid-count" id="crop-count"></span>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Crop PDF</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { guardEncrypted } from '../../../lib/pdf-encrypted';
+  import { createCropBox } from '../../../lib/pdf-crop-box';
+  import { normaliseRotation, displayToUserMargins } from '../../../lib/pdf-geometry';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const cropRoot = document.getElementById('crop')!;
+  const resetCropBtn = document.getElementById('reset-crop')!;
+  const countEl = document.getElementById('crop-count')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  const crop = createCropBox(cropRoot, () => {
+    const m = crop.getMargins();
+    const cropped = m.top + m.right + m.bottom + m.left > 0;
+    const pages = crop.pageCount();
+    countEl.textContent = pages
+      ? `Applies to all ${pages} page${pages === 1 ? '' : 's'}`
+      : '';
+    // Nothing selected means the output would be identical to the input, so the
+    // button stays off rather than handing back the same file as a "result".
+    actionBtn.disabled = !cropped;
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    // Choosing a file is a commitment to the action, so start fetching the
+    // writer now — the preview already pulls in the renderer.
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    statusEl.hidden = true;
+    actionBtn.disabled = true;
+    try {
+      if (guardEncrypted(await f.arrayBuffer())) return;
+      await crop.load(f);
+    } catch (err) {
+      console.error(err);
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Could not read that file — make sure it is a valid PDF and try again';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  resetCropBtn.addEventListener('click', () => crop.clear());
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    const m = crop.getMargins();
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Cropping...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
+      const doc = await PDFDocument.load(bytes);
+
+      doc.getPages().forEach((page) => {
+        // Each page carries its own rotation, so the margins are translated per
+        // page — the user's "top" stays the top of what they saw either way.
+        const rotation = normaliseRotation(page.getRotation().angle);
+        const u = displayToUserMargins(rotation, m);
+        // Crop relative to the current crop box, not the media box: that is the
+        // area the preview showed, so cropping twice behaves the way it looks.
+        const box = page.getCropBox();
+        page.setCropBox(
+          box.x + u.left * box.width,
+          box.y + u.bottom * box.height,
+          box.width * (1 - u.left - u.right),
+          box.height * (1 - u.top - u.bottom)
+        );
+      });
+
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="cropped.pdf">⬇ Download File</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong — make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

@@ -1,0 +1,215 @@
+---
+import PdfToolLayout from '../../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../../i18n/utils';
+import { relatedPdfTools } from '../../../data/pdf-tools';
+
+const lang = 'en' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'Can I start numbering from a number other than 1?',
+    a: 'Yes. Set "Start numbering at" to any value — useful when the document continues from an earlier volume, or when a printed cover is counted separately.',
+  },
+  {
+    q: 'How does "Skip the first page" interact with the starting number?',
+    a: 'The first page is left completely unmarked, and your starting number is placed on page 2. So with the default settings, a cover stays clean and the page after it is numbered 1.',
+  },
+  {
+    q: 'What happens on pages that are rotated or a different size?',
+    a: 'The number is placed correctly on each one. We read every page\'s own rotation and visible area, so a landscape scan in the middle of a portrait document still gets its number the right way up, in the corner you chose.',
+  },
+  {
+    q: 'Can I add page numbers in Arabic-Indic digits, or with an Arabic label?',
+    a: 'Not yet. The standard PDF fonts we use cover Latin characters and Western digits only, so we keep the output to 1, 2, 3. Adding Arabic text to a PDF correctly needs font embedding plus proper letter shaping, which we would rather build well than half-build.',
+  },
+];
+
+const steps = [
+  { name: 'Upload a PDF', text: 'Drag the file onto the drop zone or click "Choose file". It is read in your browser and never uploaded.' },
+  { name: 'Choose a position and format', text: 'Pick any of the six corners or centres, and whether you want a bare number, "3 / 12", or "Page 3 of 12".' },
+  { name: 'Set the starting number', text: 'Leave it at 1 for a normal document, or skip the first page so a cover stays unmarked.' },
+  { name: 'Click "Add Page Numbers"', text: 'Every page is stamped and the numbered PDF downloads straight away. Your original file is left untouched.' },
+];
+
+const related = relatedPdfTools(lang, 'page-numbers');
+---
+<PdfToolLayout
+  lang={lang}
+  title="Add Page Numbers to PDF"
+  description="Add page numbers to a PDF in any corner, with your own starting number, free and entirely in your browser"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="pos-select">Position on the page</label>
+      <select id="pos-select">
+        <option value="bottom-center" selected>Bottom — centre</option>
+        <option value="bottom-right">Bottom — right</option>
+        <option value="bottom-left">Bottom — left</option>
+        <option value="top-center">Top — centre</option>
+        <option value="top-right">Top — right</option>
+        <option value="top-left">Top — left</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="format-select">Format</label>
+      <select id="format-select">
+        <option value="plain" selected>3</option>
+        <option value="slash">3 / 12</option>
+        <option value="words">Page 3 of 12</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="start-input">Start numbering at</label>
+      <input type="number" id="start-input" value="1" min="0" max="99999" step="1" inputmode="numeric" />
+    </div>
+
+    <label class="tool-check">
+      <input type="checkbox" id="skip-first" />
+      <span>Skip the first page — leave a cover unmarked</span>
+    </label>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>Add Page Numbers</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../../lib/pdf-libs';
+  import { guardEncrypted } from '../../../lib/pdf-encrypted';
+  import {
+    normaliseRotation,
+    displaySize,
+    displayToUser,
+    uprightTextAngle,
+  } from '../../../lib/pdf-geometry';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const posSelect = document.getElementById('pos-select') as HTMLSelectElement;
+  const formatSelect = document.getElementById('format-select') as HTMLSelectElement;
+  const startInput = document.getElementById('start-input') as HTMLInputElement;
+  const skipFirst = document.getElementById('skip-first') as HTMLInputElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  /** Point size of the stamped number, and its inset from the visible page edge. */
+  const SIZE = 11;
+  const MARGIN = 28;
+
+  let currentFile: File | null = null;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    // Choosing a file is a commitment to the action, so start fetching the
+    // engine now. It is normally parsed and ready before the button is pressed.
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    optionsEl.hidden = false;
+    actionBtn.disabled = false;
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  function label(format: string, n: number, last: number): string {
+    if (format === 'slash') return `${n} / ${last}`;
+    if (format === 'words') return `Page ${n} of ${last}`;
+    return String(n);
+  }
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    const position = posSelect.value;
+    const format = formatSelect.value;
+    const start = Math.max(0, Math.trunc(Number(startInput.value) || 1));
+
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> Adding page numbers...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument, StandardFonts, rgb, degrees } = await loadPdfLib();
+      const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
+      const doc = await PDFDocument.load(bytes);
+      const font = await doc.embedFont(StandardFonts.Helvetica);
+      const pages = doc.getPages();
+
+      // Skipping is only meaningful when there is something left to number.
+      const firstStamped = skipFirst.checked && pages.length > 1 ? 1 : 0;
+      const last = start + (pages.length - firstStamped) - 1;
+
+      pages.forEach((page, i) => {
+        if (i < firstStamped) return;
+        const text = label(format, start + (i - firstStamped), last);
+
+        const rotation = normaliseRotation(page.getRotation().angle);
+        // The crop box, not the media box: it is what the reader actually sees,
+        // so a page already cropped — by our own Crop tool or anything else —
+        // gets its number inside the visible area rather than out in the trim.
+        const box = page.getCropBox();
+        const { width: dw, height: dh } = displaySize(rotation, box.width, box.height);
+        const textWidth = font.widthOfTextAtSize(text, SIZE);
+
+        const dx =
+          position.endsWith('left') ? MARGIN
+          : position.endsWith('right') ? dw - MARGIN - textWidth
+          : (dw - textWidth) / 2;
+        const dy = position.startsWith('bottom') ? MARGIN : dh - MARGIN - SIZE;
+
+        // Chosen in display space, written in user space — see pdf-geometry.ts.
+        const p = displayToUser(rotation, box.width, box.height, dx, dy);
+
+        page.drawText(text, {
+          x: box.x + p.x,
+          y: box.y + p.y,
+          size: SIZE,
+          font,
+          color: rgb(0.35, 0.35, 0.35),
+          rotate: degrees(uprightTextAngle(rotation)),
+        });
+      });
+
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="numbered.pdf">⬇ Download File</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Something went wrong — make sure the file is a valid PDF and try again';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

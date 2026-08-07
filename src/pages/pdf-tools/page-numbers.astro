@@ -1,0 +1,215 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'أقدر أبدأ الترقيم من رقم غير 1؟',
+    a: 'إي، حط أي رقم في خانة "ابدأ الترقيم من". مفيد لو الملف مكمّل جزء سابق، أو لو الغلاف محسوب لحاله.',
+  },
+  {
+    q: 'وش علاقة خيار "تجاهل الصفحة الأولى" برقم البداية؟',
+    a: 'الصفحة الأولى تنزل بدون أي رقم عليها، ورقم البداية ينحط على الصفحة الثانية. يعني بالإعدادات الافتراضية الغلاف يبقى نظيف والصفحة اللي بعده تاخذ رقم 1.',
+  },
+  {
+    q: 'وش يصير بالصفحات المدوّرة أو اللي مقاسها مختلف؟',
+    a: 'الرقم ينحط صح على كل وحدة منها. نقرأ دوران كل صفحة ومساحتها الظاهرة لحالها، فحتى لو فيه صفحة عرضية وسط ملف طولي بيجيها الرقم معتدل وبنفس الزاوية اللي اخترتها.',
+  },
+  {
+    q: 'أقدر أضيف الأرقام بالصيغة العربية (١، ٢، ٣) أو بكلمة "صفحة"؟',
+    a: 'لسه لا. خطوط PDF القياسية اللي نستخدمها تدعم الحروف اللاتينية والأرقام الإنجليزية بس، عشان كذا الناتج يطلع 1، 2، 3. كتابة نص عربي داخل ملف PDF بشكل صحيح تحتاج تضمين خط وتشكيل حروف سليم، ونفضّل نبنيها عدل بدال ما نبنيها نص بناء.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف". الملف يُقرأ داخل متصفحك وما يترفع لأي مكان.' },
+  { name: 'اختر المكان والصيغة', text: 'حدد أي زاوية من الست المتاحة، واختر إذا تبي رقم مجرد، أو "3 / 12"، أو "Page 3 of 12".' },
+  { name: 'حدد رقم البداية', text: 'خلّه 1 للملف العادي، أو فعّل تجاهل الصفحة الأولى عشان الغلاف يبقى بدون رقم.' },
+  { name: 'اضغط "أضف أرقام الصفحات"', text: 'كل الصفحات تنترقم والملف ينزل على طول. ملفك الأصلي يبقى كما هو بدون أي تعديل.' },
+];
+
+const related = relatedPdfTools(lang, 'page-numbers');
+---
+<PdfToolLayout
+  lang={lang}
+  title="إضافة أرقام الصفحات لملف PDF"
+  description="أضف أرقام الصفحات لملف PDF في أي زاوية وبرقم بداية من اختيارك، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="options" class="tool-options" hidden>
+    <div>
+      <label for="pos-select">مكان الرقم في الصفحة</label>
+      <select id="pos-select">
+        <option value="bottom-center" selected>أسفل — في النص</option>
+        <option value="bottom-right">أسفل — يمين</option>
+        <option value="bottom-left">أسفل — يسار</option>
+        <option value="top-center">أعلى — في النص</option>
+        <option value="top-right">أعلى — يمين</option>
+        <option value="top-left">أعلى — يسار</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="format-select">صيغة الرقم (هذا شكله بالضبط في الملف)</label>
+      <select id="format-select">
+        <option value="plain" selected>3</option>
+        <option value="slash">3 / 12</option>
+        <option value="words">Page 3 of 12</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="start-input">ابدأ الترقيم من</label>
+      <input type="number" id="start-input" value="1" min="0" max="99999" step="1" inputmode="numeric" />
+    </div>
+
+    <label class="tool-check">
+      <input type="checkbox" id="skip-first" />
+      <span>تجاهل الصفحة الأولى — خلّ الغلاف بدون رقم</span>
+    </label>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>أضف أرقام الصفحات</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../lib/pdf-libs';
+  import { guardEncrypted } from '../../lib/pdf-encrypted';
+  import {
+    normaliseRotation,
+    displaySize,
+    displayToUser,
+    uprightTextAngle,
+  } from '../../lib/pdf-geometry';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const optionsEl = document.getElementById('options')!;
+  const posSelect = document.getElementById('pos-select') as HTMLSelectElement;
+  const formatSelect = document.getElementById('format-select') as HTMLSelectElement;
+  const startInput = document.getElementById('start-input') as HTMLInputElement;
+  const skipFirst = document.getElementById('skip-first') as HTMLInputElement;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  /** حجم الرقم بالنقاط، والمسافة اللي يبعدها عن حافة الصفحة الظاهرة. */
+  const SIZE = 11;
+  const MARGIN = 28;
+
+  let currentFile: File | null = null;
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    // اختيار الملف يعني إن المستخدم ماضي بالعملية، فنبدأ تحميل المحرّك من الآن.
+    // عادةً يكون جاهز قبل ما يوصل لزر التنفيذ.
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    optionsEl.hidden = false;
+    actionBtn.disabled = false;
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  function label(format: string, n: number, last: number): string {
+    if (format === 'slash') return `${n} / ${last}`;
+    if (format === 'words') return `Page ${n} of ${last}`;
+    return String(n);
+  }
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    const position = posSelect.value;
+    const format = formatSelect.value;
+    const start = Math.max(0, Math.trunc(Number(startInput.value) || 1));
+
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري إضافة الأرقام...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument, StandardFonts, rgb, degrees } = await loadPdfLib();
+      const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
+      const doc = await PDFDocument.load(bytes);
+      const font = await doc.embedFont(StandardFonts.Helvetica);
+      const pages = doc.getPages();
+
+      // التجاهل له معنى بس لو بقي شي نرقّمه بعده.
+      const firstStamped = skipFirst.checked && pages.length > 1 ? 1 : 0;
+      const last = start + (pages.length - firstStamped) - 1;
+
+      pages.forEach((page, i) => {
+        if (i < firstStamped) return;
+        const text = label(format, start + (i - firstStamped), last);
+
+        const rotation = normaliseRotation(page.getRotation().angle);
+        // نعتمد على صندوق القص لا صندوق الوسائط: هو اللي يشوفه القارئ فعليًا،
+        // فالصفحة المقصوصة مسبقًا — بأداتنا أو بغيرها — يجيها الرقم داخل
+        // المساحة الظاهرة بدل ما يطيح بالهامش المقصوص.
+        const box = page.getCropBox();
+        const { width: dw, height: dh } = displaySize(rotation, box.width, box.height);
+        const textWidth = font.widthOfTextAtSize(text, SIZE);
+
+        const dx =
+          position.endsWith('left') ? MARGIN
+          : position.endsWith('right') ? dw - MARGIN - textWidth
+          : (dw - textWidth) / 2;
+        const dy = position.startsWith('bottom') ? MARGIN : dh - MARGIN - SIZE;
+
+        // الاختيار يتم بإحداثيات العرض، والكتابة بإحداثيات المستخدم — راجع pdf-geometry.ts.
+        const p = displayToUser(rotation, box.width, box.height, dx, dy);
+
+        page.drawText(text, {
+          x: box.x + p.x,
+          y: box.y + p.y,
+          size: SIZE,
+          font,
+          color: rgb(0.35, 0.35, 0.35),
+          rotate: degrees(uprightTextAngle(rotation)),
+        });
+      });
+
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="numbered.pdf">⬇ تحميل الملف</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

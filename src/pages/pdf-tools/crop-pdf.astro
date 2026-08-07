@@ -1,0 +1,201 @@
+---
+import PdfToolLayout from '../../layouts/PdfToolLayout.astro';
+import { useTranslations } from '../../i18n/utils';
+import { relatedPdfTools } from '../../data/pdf-tools';
+
+const lang = 'ar' as const;
+const t = useTranslations(lang);
+
+const faq = [
+  {
+    q: 'هل الجزء المقصوص ينحذف فعلًا من الملف؟',
+    a: 'لا، وهذي نقطة مهمة. قص ملف PDF يصغّر المساحة الظاهرة فقط، والمحتوى اللي برّاها ينخفي ما ينحذف — وهذا سلوك صيغة PDF نفسها في كل الأدوات. لا تستخدم القص لإخفاء معلومات سرية، لأن أي أحد يقدر يرجّع الصفحة كاملة. للحالات هذي تحتاج تنقيح (redaction) حقيقي.',
+  },
+  {
+    q: 'القص ينطبق على كل الصفحات وإلا على اللي أشوفها بس؟',
+    a: 'على كل الصفحات. تضبطه مرة وحدة على المعاينة ونطبّق نفس النسبة على الملف كامل — 5% من الأعلى يعني 5% من كل صفحة، فالملف اللي فيه مقاسات مختلفة ينقص بالتساوي بدل ما الصفحات الصغيرة تخسر أكثر.',
+  },
+  {
+    q: 'أقدر أقص بدون سحب بالماوس؟',
+    a: 'إي. الخانات الأربع تحت المعاينة تاخذ نسبة مئوية لكل حافة وتشتغل بالكيبورد بالكامل. الكتابة تحرّك المستطيل، والسحب يحدّث الأرقام — الاثنين واجهتين لنفس الشي، استخدم اللي يريحك.',
+  },
+  {
+    q: 'وش يصير لو صفحاتي مدوّرة؟',
+    a: 'يشتغل عادي. كل صفحة لها دورانها الخاص، ونحوّل القص لإحداثيات تلك الصفحة نفسها، عشان "الأعلى" يظل هو أعلى الشي اللي كنت تشوفه.',
+  },
+];
+
+const steps = [
+  { name: 'ارفع ملف PDF', text: 'اسحب الملف لمنطقة الرفع أو اضغط "اختر ملف". أول صفحة تنعرض كمعاينة داخل متصفحك.' },
+  { name: 'اسحب مستطيل القص', text: 'اسحب أي زاوية عشان تكبّر أو تصغّر، أو اسحب من النص عشان تحرّك التحديد كامل. المنطقة المعتمة هي اللي بتنقص.' },
+  { name: 'اضبط الأرقام بدقة', text: 'الخانات الأربع تحدد النسبة المقصوصة من كل حافة بالضبط، فتقدر تكتب هامش متساوي ودقيق بدل التقدير بالنظر.' },
+  { name: 'اضغط "اقصص الملف"', text: 'القص ينطبق على كل الصفحات والملف ينزل على طول. ملفك الأصلي يبقى كما هو.' },
+];
+
+const related = relatedPdfTools(lang, 'crop-pdf');
+---
+<PdfToolLayout
+  lang={lang}
+  title="قص ملف PDF"
+  description="قص هوامش كل صفحات ملف PDF بأداة مرئية سهلة، مجانًا وبالكامل داخل متصفحك"
+  steps={steps}
+  faq={faq}
+  related={related}
+>
+  <div id="drop-zone" class="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p class="drop-text">{t('pdf.dropHereSingle')}</p>
+    <button type="button" class="choose-btn" id="choose-btn">{t('pdf.chooseFile')}</button>
+    <input type="file" id="file-input" accept="application/pdf" />
+  </div>
+
+  <div id="file-list" class="file-list"></div>
+
+  <div id="crop" class="crop-stage" hidden>
+    <div class="crop-preview">
+      <div class="crop-canvas" data-canvas></div>
+      <div class="crop-rect" data-rect>
+        <span class="crop-handle" data-handle="nw" aria-hidden="true"></span>
+        <span class="crop-handle" data-handle="ne" aria-hidden="true"></span>
+        <span class="crop-handle" data-handle="sw" aria-hidden="true"></span>
+        <span class="crop-handle" data-handle="se" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <p class="crop-hint">اسحب الزوايا عشان تقص، أو اكتب النسبة بالضبط تحت.</p>
+
+    <div class="crop-fields">
+      <div>
+        <label for="crop-top">من الأعلى %</label>
+        <input type="number" id="crop-top" data-edge="top" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="crop-right">من اليمين %</label>
+        <input type="number" id="crop-right" data-edge="right" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="crop-bottom">من الأسفل %</label>
+        <input type="number" id="crop-bottom" data-edge="bottom" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+      <div>
+        <label for="crop-left">من اليسار %</label>
+        <input type="number" id="crop-left" data-edge="left" value="0" min="0" max="90" step="1" inputmode="numeric" />
+      </div>
+    </div>
+
+    <div class="grid-toolbar">
+      <button type="button" id="reset-crop">إلغاء القص</button>
+      <span class="grid-count" id="crop-count"></span>
+    </div>
+  </div>
+
+  <button type="button" id="action-btn" class="action-btn" disabled>اقصص الملف</button>
+  <div id="status" class="status-msg" hidden></div>
+</PdfToolLayout>
+
+<script>
+  import { loadPdfLib } from '../../lib/pdf-libs';
+  import { guardEncrypted } from '../../lib/pdf-encrypted';
+  import { createCropBox } from '../../lib/pdf-crop-box';
+  import { normaliseRotation, displayToUserMargins } from '../../lib/pdf-geometry';
+
+  const dropZone = document.getElementById('drop-zone')!;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const chooseBtn = document.getElementById('choose-btn')!;
+  const fileListEl = document.getElementById('file-list')!;
+  const cropRoot = document.getElementById('crop')!;
+  const resetCropBtn = document.getElementById('reset-crop')!;
+  const countEl = document.getElementById('crop-count')!;
+  const actionBtn = document.getElementById('action-btn') as HTMLButtonElement;
+  const statusEl = document.getElementById('status')!;
+
+  let currentFile: File | null = null;
+
+  const crop = createCropBox(cropRoot, () => {
+    const m = crop.getMargins();
+    const cropped = m.top + m.right + m.bottom + m.left > 0;
+    const pages = crop.pageCount();
+    countEl.textContent = pages ? `ينطبق على كل الصفحات (${pages})` : '';
+    // ما فيه تحديد يعني الناتج نفس المدخل بالضبط، فنخلي الزر مقفل بدل ما
+    // نرجّع للمستخدم نفس ملفه على إنه "نتيجة".
+    actionBtn.disabled = !cropped;
+  });
+
+  async function loadFile(f: File) {
+    currentFile = f;
+    // اختيار الملف يعني إن المستخدم ماضي بالعملية، فنبدأ تحميل محرّك الكتابة
+    // من الآن — المعاينة أصلًا تسحب محرّك العرض.
+    void loadPdfLib();
+    fileListEl.innerHTML = `<div class="file-item"><span class="file-name">📄 ${f.name}</span></div>`;
+    statusEl.hidden = true;
+    actionBtn.disabled = true;
+    try {
+      if (guardEncrypted(await f.arrayBuffer())) return;
+      await crop.load(f);
+    } catch (err) {
+      console.error(err);
+      statusEl.hidden = false;
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'ما قدرنا نقرأ الملف، تأكد إنه PDF صالح وحاول مرة ثانية';
+    }
+  }
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === dropZone || (e.target as HTMLElement).tagName !== 'BUTTON') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => fileInput.files?.[0] && loadFile(fileInput.files[0]));
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type === 'application/pdf') loadFile(f);
+  });
+
+  resetCropBtn.addEventListener('click', () => crop.clear());
+
+  actionBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    const m = crop.getMargins();
+    statusEl.hidden = false;
+    statusEl.className = 'status-msg';
+    statusEl.innerHTML = '<span class="spinner"></span> جاري القص...';
+    actionBtn.disabled = true;
+
+    try {
+      const { PDFDocument } = await loadPdfLib();
+      const bytes = await currentFile.arrayBuffer();
+      if (guardEncrypted(bytes)) return;
+      const doc = await PDFDocument.load(bytes);
+
+      doc.getPages().forEach((page) => {
+        // كل صفحة لها دورانها الخاص، فنترجم الهوامش لكل صفحة على حدة — عشان
+        // "الأعلى" عند المستخدم يظل هو أعلى الشي اللي شافه.
+        const rotation = normaliseRotation(page.getRotation().angle);
+        const u = displayToUserMargins(rotation, m);
+        // نقص نسبة إلى صندوق القص الحالي لا صندوق الوسائط: هو اللي عرضته
+        // المعاينة، فالقص مرتين يتصرف بنفس الشكل اللي يبيّن للمستخدم.
+        const box = page.getCropBox();
+        page.setCropBox(
+          box.x + u.left * box.width,
+          box.y + u.bottom * box.height,
+          box.width * (1 - u.left - u.right),
+          box.height * (1 - u.top - u.bottom)
+        );
+      });
+
+      const outBytes = await doc.save();
+      const blob = new Blob([outBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      statusEl.innerHTML = `<a class="action-btn" href="${url}" download="cropped.pdf">⬇ تحميل الملف</a>`;
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'حدث خطأ، تأكد إن الملف PDF صالح وحاول مرة ثانية';
+    } finally {
+      actionBtn.disabled = false;
+    }
+  });
+</script>

@@ -215,9 +215,13 @@ and should not be re-litigated per tool — each is a way this category silently
 
 ## SEO
 
-- ⬜ **Add visible breadcrumbs to the pages that emit `BreadcrumbList` without one** — About,
-  Contact, the prompt pages, and `/pdf-tools`. As it stands these break our own rule of marking
-  up only what is visible on the page.
+- 🟡 **Add visible breadcrumbs to the pages that emit `BreadcrumbList` without one.** Done for
+  About and the Privacy Policy, via the shared `ProsePage` chrome. **Still owed: Contact, the
+  prompt pages, and `/pdf-tools`** — as they stand these break our own rule of marking up only
+  what is visible on the page.
+- ⬜ **Give Contact the same treatment as About and Privacy.** It is the third page in that
+  group and the only one still on its original markup; moving it onto `ProsePage` would settle
+  its breadcrumb and its typography in one change.
 - 🟡 **Bing Webmaster Tools** — importable from Search Console, covered by
   `docs/SEARCH-CONSOLE.md`.
 - ⬜ **`Article` schema for the blog**, once the blog launches.
@@ -227,6 +231,21 @@ and should not be re-litigated per tool — each is a way this category silently
 - ⬜ **Keyword pushes** in the four areas the SEO plan identifies as the real opportunity:
   Arabic searches for AI tools, action-intent PDF queries, comparisons, and prompts.
 - ⬜ **Thousands of indexable pages** — the standing goal, one page per feature.
+
+## Homepage & search — follow-ups
+
+- ⬜ **Fuzzy and typo-tolerant search.** Matching is a plain substring check across title,
+  description and category, so "chatgtp" finds nothing and an Arabic query with a different
+  hamza form misses. A small ranking pass (title matches above description matches) and
+  Arabic normalisation would both be cheap and are the next real improvement.
+- ⬜ **Highlight the matched substring in results**, now that they are built as DOM nodes and
+  it can be done without concatenating HTML.
+- ⬜ **Make `⌘K` work site-wide**, via a header button opening a dialog. Deliberately not done
+  in this pass: it would put JavaScript on the critical path of all 176 pages to serve a
+  shortcut, which is the wrong trade against the Lighthouse 95+ target. Worth revisiting if
+  the homepage data shows people reaching for it.
+- ⬜ **Recent searches**, stored locally. Only worth it once search sees enough use to have a
+  history worth showing.
 
 ## Performance
 

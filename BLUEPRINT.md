@@ -311,7 +311,37 @@ platform one polished feature at a time.
   keep only the few lines of pdf-lib that genuinely differ. Reordering never depends on
   drag-and-drop alone — every page also has explicit move buttons, so the tool works by
   keyboard and on touch.
-- ✅ Live site search (real-time filtering across tools + prompts)
+- ✅ **Homepage rebuilt around what is distinctive, not around volume.** It used to
+  render the same thirty tools eleven times — popular, latest, free, then seven
+  auto-generated per-category grids — which read as length rather than substance and
+  buried the sections that make the site worth visiting. One tabbed grid replaced all
+  eleven, and image tools, tutorials and prompts appear on the homepage for the first
+  time. The hero is centred on the search rather than split with five decorative
+  floating cards, and the animated stats band is gone: with real counts in the hero,
+  the same four numbers again further down was repetition in a different coat.
+  - **Every panel of the tabbed grid is in the HTML**, toggled only with `hidden`, so
+    nothing depends on JavaScript to be crawled — the same principle as the
+    comparisons and tutorials filters.
+  - **Trust indicators are counted, never typed.** A hardcoded number on a page whose
+    job is to be believed is a claim that goes stale in silence.
+- ✅ **Site search behaves like a product**: `⌘K` / `Ctrl+K` that genuinely works (with
+  the modifier label corrected at runtime, since one static build serves both
+  platforms), arrow-key navigation with wrap-around, a real ARIA `combobox` with a
+  polite result-count announcement, a spinner covering exactly the one fetch that can
+  stall, and suggestion chips — because an empty search box is a blank-page problem for
+  anyone who does not already know what the site holds. The hint renders only where a
+  keyboard exists; a shortcut badge that does nothing is a promise broken on first try.
+  - **The 18 PDF and image tools are now in the index.** The pages the site builds
+    itself were the only ones search could not find.
+- ✅ **About and Privacy are the trust surface, and are written as such.** About states
+  the six sections, the six axes every review is judged on, why the scores are labelled
+  editorial, the mission, and the funding along with what it does not buy. The Privacy
+  Policy is twelve sections describing what this site actually does — including that
+  there is no contact form at all, which is itself the privacy decision. Counts on both
+  pages derive from the catalogues, and both now render the breadcrumb their
+  `BreadcrumbList` had been claiming without showing.
+- ✅ Live site search (real-time filtering across tools, prompts, comparisons,
+  tutorials and our own browser tools)
 - ✅ About, Contact, Privacy Policy (AdSense-ready) pages
 - ✅ Google AdSense script installed
 - ✅ Support/Ko-fi page (`/support`, both languages) — hero with a single Ko-fi CTA,

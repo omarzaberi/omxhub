@@ -1,0 +1,234 @@
+---
+/**
+ * Chrome for the site's long-form prose pages — About and the Privacy Policy.
+ *
+ * ## Why a component and not two more standalone pages
+ *
+ * About and Privacy exist once per language, so there are four files and they
+ * had already begun to disagree: the two Privacy pages carried different heading
+ * counts, and neither About page had the visible breadcrumb its own
+ * `BreadcrumbList` claimed. Copy has to be written natively in each language —
+ * passing thirty paragraphs through props would produce translated-sounding
+ * Arabic, which is the one thing this site is built not to be — but *structure*
+ * has no business differing between locales. So the structure lives here and the
+ * words stay in the page.
+ *
+ * That is the same split `ToolLayout` makes: chrome shared, copy passed in.
+ *
+ * ## The breadcrumb is visible now, on purpose
+ *
+ * Both pages emitted `BreadcrumbList` without rendering a breadcrumb anyone
+ * could see. That passed our own verification only because the final crumb
+ * happened to repeat the `h1`, and it broke the rule we hold ourselves to in
+ * `schema.ts`: **only mark up what is actually on the page.** Rendering it fixes
+ * the markup and gives the reader a way back up, which is what a breadcrumb is
+ * for.
+ */
+import Layout from '../layouts/Layout.astro';
+import { localizedPath } from '../i18n/utils';
+import { HOME_LABEL } from '../lib/schema';
+import type { Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  /** `<h1>`, and the page title unless `metaTitle` overrides it. */
+  title: string;
+  /** Meta description. Also the page's opening summary if no lede is given. */
+  description: string;
+  /** Overrides the `<title>` when the h1 is too short to rank on its own. */
+  metaTitle?: string;
+  /** Final breadcrumb label — usually the nav/footer name for this page. */
+  crumb: string;
+  /** JSON-LD `@graph`, built by the page so it can add `Organization` etc. */
+  schema?: unknown;
+  /** Rendered under the h1 in larger type. The paragraph that earns the scroll. */
+  lede?: string;
+  /** ISO date of the last substantive edit. Rendered as a `<time>`. */
+  updated?: string;
+  /** Localised rendering of `updated`, e.g. "أغسطس 2026". */
+  updatedLabel?: string;
+}
+
+const {
+  lang,
+  title,
+  description,
+  metaTitle,
+  crumb,
+  schema,
+  lede,
+  updated,
+  updatedLabel,
+} = Astro.props;
+
+const updatedPrefix = lang === 'ar' ? 'آخر تحديث:' : 'Last updated:';
+---
+<Layout title={metaTitle ?? title} description={description} schema={schema}>
+  <div class="wrap prose-page">
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a href={localizedPath(lang, '/')}>{HOME_LABEL[lang]}</a>
+      <span aria-hidden="true">/</span>
+      <span class="current">{crumb}</span>
+    </nav>
+
+    <header class="prose-head">
+      <h1>{title}</h1>
+      {lede && <p class="lede">{lede}</p>}
+      {updated && (
+        <p class="updated">
+          {updatedPrefix} <time datetime={updated}>{updatedLabel ?? updated}</time>
+        </p>
+      )}
+    </header>
+
+    <div class="prose">
+      <slot />
+    </div>
+  </div>
+</Layout>
+
+<style is:global>
+  .prose-page { padding: 32px 0 80px; max-width: 760px; }
+
+  .prose-page .breadcrumb {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .prose-page .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .prose-page .breadcrumb a:hover { color: var(--accent); }
+  .prose-page .breadcrumb .current { color: var(--text); }
+
+  .prose-head { margin-bottom: 40px; }
+  .prose-page h1 {
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin: 0 0 14px;
+  }
+  /* The lede is the paragraph that has to earn the rest of the page, so it is
+     set noticeably larger than the body rather than merely first. */
+  .prose-head .lede {
+    font-size: 1.08rem;
+    line-height: 1.75;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .prose-head .updated {
+    margin: 18px 0 0;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+
+  /* ---------- BODY ---------- */
+  /* Sections carry their own spacing so the pages cannot drift apart on rhythm,
+     and so a new `h2` never has to remember what margin to use. */
+  .prose h2 {
+    font-size: 1.28rem;
+    letter-spacing: -0.01em;
+    margin: 46px 0 14px;
+    scroll-margin-top: 90px;
+  }
+  .prose h3 {
+    font-size: 1.02rem;
+    margin: 28px 0 10px;
+  }
+  .prose > :first-child { margin-top: 0; }
+  .prose p {
+    margin: 0 0 16px;
+    color: var(--text-dim);
+    line-height: 1.85;
+  }
+  .prose a { color: var(--accent-2); }
+  .prose a:hover { text-decoration: underline; }
+  .prose strong { color: var(--text); font-weight: 700; }
+
+  .prose ul { margin: 0 0 18px; padding-inline-start: 22px; }
+  .prose li {
+    color: var(--text-dim);
+    line-height: 1.8;
+    margin-bottom: 9px;
+  }
+  .prose li::marker { color: var(--accent); }
+
+  /* A pulled-out statement — a mission line, or the one sentence on a policy
+     page that a reader skimming for it should not be able to miss. */
+  .prose .callout {
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 26px 0;
+  }
+  .prose .callout p:last-child { margin-bottom: 0; }
+  .prose .callout p { color: var(--text); }
+
+  /* Cards for the "what's on the platform" grid. Each is a real internal link,
+     which is also how this page carries weight to the six sections. */
+  .prose .pillars {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
+    gap: 14px;
+    margin: 8px 0 24px;
+  }
+  .prose .pillar {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    text-decoration: none;
+    transition: transform 0.16s, border-color 0.16s;
+  }
+  .prose .pillar:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+  .prose .pillar .pillar-icon { display: block; font-size: 1.4rem; margin-bottom: 10px; }
+  .prose .pillar b {
+    display: block;
+    color: var(--text);
+    font-size: 0.98rem;
+    margin-bottom: 5px;
+  }
+  .prose .pillar span:not(.pillar-icon) {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Definition-style rows for "what we collect / why". Reads better than a
+     table on a phone, which is where most of this page is read. */
+  .prose .facts {
+    display: grid;
+    gap: 12px;
+    margin: 8px 0 22px;
+  }
+  .prose .fact {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .prose .fact b { display: block; margin-bottom: 5px; font-size: 0.95rem; }
+  .prose .fact span {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 1.75;
+  }
+
+  @media (max-width: 560px) {
+    .prose-page { padding: 24px 0 60px; }
+    .prose-head { margin-bottom: 30px; }
+    .prose h2 { margin-top: 36px; font-size: 1.18rem; }
+    .prose .pillars { grid-template-columns: 1fr; }
+  }
+</style>

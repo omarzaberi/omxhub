@@ -1,6 +1,12 @@
+/**
+ * English half of the search index. See `src/pages/search-index.json.ts` for why
+ * the PDF and image tools are included, and why they come last.
+ */
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { categories } from '../../data/categories';
+import { pdfTools, pdfToolPath } from '../../data/pdf-tools';
+import { imageTools, imageToolPath } from '../../data/image-tools';
 
 export const GET: APIRoute = async () => {
   const lang = 'en' as const;
@@ -46,8 +52,33 @@ export const GET: APIRoute = async () => {
     url: `/en/tutorials/${t.id.split('/')[1]}`,
   }));
 
+  const pdfItems = pdfTools.map((tool) => ({
+    type: 'utility',
+    typeLabel: 'PDF tool',
+    title: tool.name[lang],
+    description: tool.desc[lang],
+    category: 'PDF Tools',
+    url: `/en${pdfToolPath(tool.slug)}`,
+  }));
+
+  const imageItems = imageTools.map((tool) => ({
+    type: 'utility',
+    typeLabel: 'Image tool',
+    title: tool.name[lang],
+    description: tool.desc[lang],
+    category: 'Image Tools',
+    url: `/en${imageToolPath(tool.slug)}`,
+  }));
+
   return new Response(
-    JSON.stringify([...toolItems, ...comparisonItems, ...tutorialItems, ...promptItems]),
+    JSON.stringify([
+      ...toolItems,
+      ...comparisonItems,
+      ...tutorialItems,
+      ...promptItems,
+      ...pdfItems,
+      ...imageItems,
+    ]),
     {
       headers: { 'Content-Type': 'application/json' },
     }

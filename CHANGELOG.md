@@ -11,7 +11,64 @@ All notable changes to OMXHub are documented in this file.
 
 ## 2026-08-07
 
+### Changed
+- **The homepage rendered the same thirty tools eleven times.** A "popular" grid,
+  a "latest" grid, a "free" grid, then seven auto-generated per-category grids —
+  all identical in shape. It read as length rather than substance, and it buried
+  the parts of the site that are actually distinctive. The eleven grids are now
+  **one tabbed section** (Featured / Newest / Free), and the space that freed up
+  went to sections the homepage never had.
+  - All three tab panels are rendered into the HTML and only toggled with the
+    `hidden` attribute, so every card is present on first paint — crawlable, and
+    intact with JavaScript unavailable. Tabs follow the WAI-ARIA pattern with
+    arrow-key navigation, and the arrows are **swapped under RTL**, since the
+    visually next tab in Arabic is the one to the left.
+  - **No tool page lost its only inbound link.** The seven category grids were
+    duplicating what `/ai-tools` and the category landing pages already do
+    better; the categories row still links every landing page.
+- **Image tools, tutorials and prompts are on the homepage for the first time.**
+  Three sections that existed on the site but not on the page that is supposed to
+  introduce it. The free-tools section now covers all 18 browser tools rather
+  than the 14 PDF ones.
+- **The hero is centred on the search instead of split with decoration.** The old
+  layout gave half its width to five animated floating cards — `aria-hidden`,
+  three of five hidden on mobile — and squeezed the one element a visitor is most
+  likely to use into what was left. Display-scale type, a wider lede measure, and
+  three trust indicators counted from the catalogues rather than typed in.
+- **The animated stats band was removed.** With real counts in the hero, the same
+  four numbers again 900 px down was repetition in a different coat. Its counter
+  script went with it — JavaScript the critical path no longer pays for.
+- **New homepage title, headline and meta description.** The `<title>` and the
+  visible headline are now written separately and deliberately: a headline is
+  read in one glance, a title tag has to win a click from a results page, and the
+  same sentence rarely does both.
+
 ### Added
+- **Site search is a search experience rather than a text field.** It was the
+  most prominent element on the homepage and behaved like a form input.
+  - **`⌘K` / `Ctrl+K` focuses it, and actually works** — the modifier label is
+    corrected at runtime, because one static build serves both platforms. The
+    hint renders only where a keyboard exists (`any-hover` + `any-pointer:
+    fine`); a visible shortcut badge that does nothing is a small promise broken
+    on first try.
+  - **Arrow keys, Enter and Escape** move through results, open one, and back
+    out — with wrap-around, as every command palette behaves.
+  - **A real `combobox`**: `aria-expanded`, `aria-activedescendant`, a `listbox`
+    of `option`s, and a polite live region announcing the result count.
+  - **It says when it is working.** The index is fetched on the first keystroke,
+    which is a silent pause on a slow connection. A spinner now covers exactly
+    that fetch and never the instant queries after it.
+  - **Suggestion chips**, because an empty search box is a blank-page problem:
+    someone who does not yet know what the site holds has nothing to type. Each
+    chip is a query verified to return results across more than one content type.
+  - Results are built as DOM nodes instead of interpolated into `innerHTML`. The
+    index is our own data so this was not a security hole, but a tool named
+    `C & C` would have rendered as broken markup.
+- **The 18 PDF and image tools are in the search index.** The pages the site
+  builds itself — and the only ones a visitor can use without leaving — were the
+  only pages search could not find. Typing "ضغط" returned nothing while two
+  compression tools sat one click away. They rank last on purpose: "صور" should
+  surface the AI image generators before our own resize utility.
 - **Three more image tools, in both languages** — Convert (`/image-tools/convert-image`),
   Resize (`/image-tools/resize-image`) and Crop (`/image-tools/crop-image`). Image tools:
   **1 → 4**. Six new indexable pages with the usual anatomy: unique title and description,
@@ -84,6 +141,42 @@ All notable changes to OMXHub are documented in this file.
 - Verified after build: **176 pages, 3129 SEO assertions, 0 failures**; 356 unit assertions
   across eleven files (171 of them the five image modules), plus 41 wiring assertions over
   the eight built image-tool pages.
+
+### Added
+- **About and the Privacy Policy rewritten from scratch, in both languages.**
+  Both had fallen behind the site: About described a directory that had since
+  grown five more sections, and the policy was four short headings that did not
+  mention analytics, browser-based processing, or what happens when you email us.
+  - **About** now covers all six sections of the platform, the six axes every
+    review is judged on (real testing, features, pricing, strengths, weaknesses,
+    best use cases), why editorial scores are labelled as editorial, the mission
+    statement, and the funding — stated in full, along with what it does not buy.
+  - **Every count on both pages is derived from the catalogues and collections.**
+    A hardcoded "30 tools" is wrong the day after it is written, and About is the
+    page where being wrong costs the most.
+  - **The Privacy Policy is twelve sections** and describes what this site
+    actually does rather than a template: GA4 and what it collects, how AdSense
+    uses cookies, the single `omxhub-theme` local key that is *not* a cookie, the
+    affiliate disclosure, the fact that **there is no contact form** — the contact
+    page is a `mailto:` link, which is itself a privacy decision worth stating —
+    a dedicated section on why documents opened in the PDF and image tools never
+    reach a server, data storage, every third-party service, user rights under
+    GDPR and Saudi PDPL, and how changes are announced.
+  - It also records something true and easy to miss: **Google's scripts are
+    deferred until first interaction or idle**, so a quick visit executes no
+    third-party script at all. That was a performance decision; it is a privacy
+    fact too.
+- **`ProsePage.astro`** — shared chrome for both prose pages. Copy stays in each
+  locale's file, because passing thirty paragraphs through props produces
+  translated-sounding Arabic, which is the one thing this site is built not to
+  be. Structure has no business differing between locales, so it lives here.
+
+### Fixed
+- **About and Privacy emitted `BreadcrumbList` without a breadcrumb anyone could
+  see.** That passed our own verification only because the final crumb happened
+  to repeat the `h1`, and it broke the rule stated in `schema.ts`: mark up only
+  what is on the page. Both now render the trail they claim. Contact, the prompt
+  pages and `/pdf-tools` still owe the same fix and remain in `IDEAS.md`.
 
 ### Added
 - **The Image Tools section, opened with Compress** — `/image-tools/compress-image` and its

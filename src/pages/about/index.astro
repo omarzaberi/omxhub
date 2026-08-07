@@ -1,51 +1,178 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { useTranslations } from '../../i18n/utils';
-import { breadcrumbs, graph, organization } from '../../lib/schema';
+import ProsePage from '../../components/ProsePage.astro';
+import { useTranslations, localizedPath } from '../../i18n/utils';
+import { breadcrumbs, graph, organization, HOME_LABEL } from '../../lib/schema';
+import { pdfTools } from '../../data/pdf-tools';
+import { imageTools } from '../../data/image-tools';
+import { categories } from '../../data/categories';
+import { getCollection } from 'astro:content';
 
 const lang = 'ar' as const;
 const t = useTranslations(lang);
 
-const description = 'تعرف على فريق ورؤية OMXHub';
+// Counts come from the catalogues and the content collections, never from a
+// number typed into the prose. A hardcoded "30 أداة" is wrong the day after it
+// is written, and this is the page where being wrong costs the most.
+const toolCount = (await getCollection('tools')).filter((e) => e.data.lang === lang).length;
+const comparisonCount = (await getCollection('comparisons')).filter((e) => e.data.lang === lang).length;
+const tutorialCount = (await getCollection('tutorials')).filter((e) => e.data.lang === lang).length;
+const promptCount = (await getCollection('prompts')).filter((e) => e.data.lang === lang).length;
+const browserToolCount = pdfTools.length + imageTools.length;
+const categoryCount = Object.keys(categories).length;
+
+const title = 'عن OMXHub';
+const description =
+  'OMXHub منصة عربية وإنجليزية لأدوات الذكاء الاصطناعي والإنتاجية: دليل أدوات مُراجَع يدويًا، مقارنات، شروحات، مكتبة برومبت، وأدوات PDF وصور مجانية تعمل بالكامل داخل المتصفح.';
+
+const pillars = [
+  {
+    icon: '🧠',
+    href: '/ai-tools',
+    name: 'دليل أدوات الذكاء الاصطناعي',
+    body: `${toolCount} أداة مُراجَعة عبر ${categoryCount} تصنيفات، لكل واحدة صفحة كاملة.`,
+  },
+  {
+    icon: '⚖️',
+    href: '/comparisons',
+    name: 'المقارنات',
+    body: `${comparisonCount} مقارنات مباشرة تنتهي بتوصية صريحة، لا بسرد مميزات.`,
+  },
+  {
+    icon: '📚',
+    href: '/tutorials',
+    name: 'الشروحات',
+    body: `${tutorialCount} شروحات تطبيقية بخطوات مرقّمة وأخطاء شائعة.`,
+  },
+  {
+    icon: '✨',
+    href: '/prompts',
+    name: 'مكتبة البرومبت',
+    body: `${promptCount} برومبتات جاهزة للنسخ، مصنّفة حسب الأداة والمجال.`,
+  },
+  {
+    icon: '📄',
+    href: '/pdf-tools',
+    name: 'أدوات PDF',
+    body: `${pdfTools.length} أداة تعمل داخل متصفحك: دمج، تقسيم، ضغط، حماية وغيرها.`,
+  },
+  {
+    icon: '🖼️',
+    href: '/image-tools',
+    name: 'أدوات الصور',
+    body: `${imageTools.length} أدوات للضغط والتحويل والتصغير والقص، بنفس المبدأ.`,
+  },
+];
 
 // The About page is where the publisher identity is stated in prose, so it is
 // the natural second home for the Organization node.
 const schema = graph(
   organization(lang),
-  breadcrumbs(lang, [
-    { name: 'الرئيسية', path: '/' },
-    { name: 'من نحن' },
-  ])
+  breadcrumbs(lang, [{ name: HOME_LABEL[lang], path: '/' }, { name: t('footer.about') }])
 );
 ---
-<Layout title={t('footer.about')} description={description} schema={schema}>
-  <section class="wrap section">
-    <h1>من نحن</h1>
-    <p>
-      OMXHub دليل عربي متخصص بأدوات الذكاء الاصطناعي، أنشأناه لمساعدة المستخدمين
-      العرب يكتشفون، يقارنون، ويفهمون أفضل أدوات AI المتوفرة اليوم — بشرح واضح
-      ومباشر بدون تعقيد تقني غير ضروري.
-    </p>
-    <p>
-      الموقع مشروع مستقل يديره عمر زبيري، وبدأ بهدف بسيط: توفير مصدر عربي
-      موثوق يغطي كل أداة ذكاء اصطناعي بشكل تفصيلي — المميزات، العيوب، الأسعار،
-      وطريقة الاستخدام — بدل ما يضطر القارئ يبحث بمصادر إنجليزية متفرقة.
-    </p>
-    <p>
-      نراجع كل أداة بأنفسنا ونحدّث المحتوى بشكل دوري لمواكبة التطور السريع
-      بمجال الذكاء الاصطناعي. لو عندك اقتراح أو أداة تبي نضيفها، تقدر تتواصل
-      معنا من <a href="/contact">صفحة التواصل</a>.
-    </p>
-    <p>
-      OMXHub مستقل بالكامل وبدون استثمار خارجي. لو استفدت من الموقع وتبي
-      تساعدنا نكمل نطوره ونخليه مجاني للجميع، تقدر <a href="/support">تدعمنا هنا ❤️</a>.
-    </p>
-  </section>
-</Layout>
+<ProsePage
+  lang={lang}
+  title={title}
+  metaTitle="عن OMXHub — منصة أدوات الذكاء الاصطناعي والإنتاجية"
+  description={description}
+  crumb={t('footer.about')}
+  schema={schema}
+  lede="OMXHub منصة مستقلة تجمع أدوات الذكاء الاصطناعي والإنتاجية في مكان واحد، بالعربية والإنجليزية معًا. نراجع الأدوات بأنفسنا، ونقارن بينها بصراحة، ونبني أدوات مجانية تعمل داخل متصفحك مباشرة — بدون تسجيل، وبدون أن يغادر أي ملف جهازك."
+>
+  <p>
+    بدأ المشروع من ملاحظة بسيطة: المحتوى العربي عن أدوات الذكاء الاصطناعي إمّا
+    ترجمة آلية لمقالات إنجليزية، أو قوائم سطحية تُنسخ من موقع لآخر ولا يُحدّث
+    أيٌّ منها. القارئ العربي يستحق مصدرًا يُكتب من الصفر، ويُجرَّب فيه ما يُكتب
+    عنه، ويقول ما لا يعجب حين يستحق الأمر ذلك.
+  </p>
+  <p>
+    وOMXHub ليس دليلًا فقط. نصف المنصة أدوات فعلية تستخدمها الآن — أدوات PDF
+    والصور — لأن المبدأ الذي نبني عليه أن كل صفحة يجب أن تساعدك على إنجاز شيء،
+    لا على القراءة عنه فحسب.
+  </p>
 
-<style>
-  .section { padding: 60px 0; max-width: 700px; }
-  h1 { margin-bottom: 20px; }
-  p { margin-bottom: 16px; color: var(--text-dim); }
-  p a { color: var(--accent); }
-</style>
+  <h2>ماذا تضم المنصة</h2>
+  <p>
+    ستة أقسام، كل منها كامل بذاته ومترابط مع البقية: مراجعة أداة تحيل إلى
+    مقارنتها، والمقارنة تحيل إلى الشرح، والشرح يحيل إلى الأداة المجانية التي
+    تنفّذ به الخطوة الأخيرة.
+  </p>
+  <div class="pillars">
+    {pillars.map((pillar) => (
+      <a class="pillar" href={localizedPath(lang, pillar.href)}>
+        <span class="pillar-icon" aria-hidden="true">{pillar.icon}</span>
+        <b>{pillar.name}</b>
+        <span>{pillar.body}</span>
+      </a>
+    ))}
+  </div>
+
+  <h2>كيف نراجع الأدوات</h2>
+  <p>
+    كل مراجعة على هذا الموقع مكتوبة يدويًا ومُحدَّثة بشكل دوري. لا نولّد
+    المراجعات آليًا، ولا ننشر صفحة عن أداة لم نفتحها. ومجال الذكاء الاصطناعي
+    يتحرك بسرعة تجعل الأسعار والخطط تتغير خلال أسابيع، لذلك المراجعة عندنا
+    التزام مستمر لا حدث لمرة واحدة.
+  </p>
+  <p>نقيّم كل أداة على ستة محاور ثابتة:</p>
+  <ul>
+    <li><strong>تجربة فعلية</strong> — نستخدم الأداة على مهمة حقيقية قبل الكتابة عنها.</li>
+    <li><strong>المميزات</strong> — ما تفعله الأداة فعلًا، لا ما تَعِد به صفحتها التسويقية.</li>
+    <li><strong>الأسعار</strong> — الخطط والحدود وما يتغير عند الترقية.</li>
+    <li><strong>نقاط القوة</strong> — أين تتفوق على بدائلها المباشرة.</li>
+    <li><strong>نقاط الضعف</strong> — نكتب العيوب بنفس وضوح المميزات.</li>
+    <li><strong>أفضل استخدام</strong> — لمن تصلح هذه الأداة تحديدًا، ولمن لا تصلح.</li>
+  </ul>
+  <p>
+    والتقييمات التي تراها تحريرية — رأينا نحن، لا تصويت زوار. ولهذا لا ننشر
+    متوسط تقييمات ولا نُظهر نجومًا تُوحي بمشاركة جمهور غير موجود. اليوم الذي
+    نتيح فيه تقييمًا حقيقيًا من الزوار، سيظهر باسمه الصحيح.
+  </p>
+
+  <h2>الخصوصية ليست ميزة إضافية</h2>
+  <p>
+    أدوات PDF وأدوات الصور على OMXHub تعمل بالكامل داخل متصفحك كلما كان ذلك
+    ممكنًا. ملفك لا يُرفع إلى خوادمنا، ولا يمر بخدمة طرف ثالث، ولا يُخزَّن في أي
+    مكان — المعالجة تحدث على جهازك، ويُنتَج الملف عندك ثم تُنزّله.
+  </p>
+  <div class="callout">
+    <p>
+      هذا قرار معماري لا وعد تسويقي: لا يوجد خادم رفع في هذا المشروع أصلًا، ولا
+      حساب مستخدم، ولا حد يومي. الأدوات كلها مبنية على قدرات موجودة في متصفحك،
+      ولهذا لا نستطيع رؤية ملفاتك حتى لو أردنا.
+    </p>
+  </div>
+  <p>
+    وحين لا يكون شيء ممكنًا داخل المتصفح، نقولها صراحةً بدل أن نبني حلًا يرفع
+    ملفاتك بصمت. تفاصيل ما نجمعه فعلًا — وما لا نجمعه — في
+    <a href={localizedPath(lang, '/privacy-policy')}>سياسة الخصوصية</a>.
+  </p>
+
+  <h2>رسالتنا</h2>
+  <div class="callout">
+    <p>
+      مساعدة المستخدمين العرب على اكتشاف أدوات الذكاء الاصطناعي ومقارنتها
+      واستخدامها، عبر محتوى تحريري جدير بالثقة.
+    </p>
+  </div>
+  <p>
+    كل قرار في هذا المشروع يُقاس بهذه الجملة. ولهذا نكتب النسختين العربية
+    والإنجليزية من الصفر بدل الترجمة الآلية، ونرفض الروابط المدفوعة التي تغيّر
+    ترتيب أداة، ونفضّل أداة واحدة متقنة على عشر أدوات ناقصة.
+  </p>
+
+  <h2>من يقف خلف المشروع</h2>
+  <p>
+    OMXHub مشروع مستقل، أنشأه ويديره <strong>عمر زبيري</strong> — بدون استثمار
+    خارجي وبدون جهة راعية توجّه المحتوى. مصادر تمويله معلنة بالكامل: إعلانات
+    Google AdSense، وروابط تسويق بالعمولة في بعض الصفحات، ودعم اختياري من
+    القرّاء. ولا يشتري أيٌّ من هذه المصادر مكانًا في قائمة، ولا يغيّر تقييمًا،
+    ولا يمنع نشر عيب.
+  </p>
+  <p>
+    إن لاحظت خطأً في مراجعة، أو سعرًا تغيّر، أو أداة تستحق الإضافة، فأخبرنا عبر
+    <a href={localizedPath(lang, '/contact')}>صفحة التواصل</a>. وإن نفعك الموقع
+    وأحببت أن يبقى مجانيًا ومستمرًا، يمكنك
+    <a href={localizedPath(lang, '/support')}>دعم المشروع</a>.
+  </p>
+</ProsePage>

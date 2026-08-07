@@ -1,6 +1,20 @@
+/**
+ * The index behind the site-wide search box.
+ *
+ * The PDF and image tools were missing from it until now, which meant the 18
+ * pages the site *builds itself* — and the only ones a visitor can use without
+ * leaving — were the only pages search could not find. Someone typing "ضغط" got
+ * nothing while two compression tools sat one click away.
+ *
+ * They are appended last on purpose: a query like "صور" should surface the AI
+ * image generators before our own resize utility, because the directory is what
+ * that query is usually asking about.
+ */
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { categories } from '../data/categories';
+import { pdfTools, pdfToolPath } from '../data/pdf-tools';
+import { imageTools, imageToolPath } from '../data/image-tools';
 
 export const GET: APIRoute = async () => {
   const lang = 'ar' as const;
@@ -46,8 +60,33 @@ export const GET: APIRoute = async () => {
     url: `/tutorials/${t.id.split('/')[1]}`,
   }));
 
+  const pdfItems = pdfTools.map((tool) => ({
+    type: 'utility',
+    typeLabel: 'أداة PDF',
+    title: tool.name[lang],
+    description: tool.desc[lang],
+    category: 'أدوات PDF',
+    url: pdfToolPath(tool.slug),
+  }));
+
+  const imageItems = imageTools.map((tool) => ({
+    type: 'utility',
+    typeLabel: 'أداة صور',
+    title: tool.name[lang],
+    description: tool.desc[lang],
+    category: 'أدوات الصور',
+    url: imageToolPath(tool.slug),
+  }));
+
   return new Response(
-    JSON.stringify([...toolItems, ...comparisonItems, ...tutorialItems, ...promptItems]),
+    JSON.stringify([
+      ...toolItems,
+      ...comparisonItems,
+      ...tutorialItems,
+      ...promptItems,
+      ...pdfItems,
+      ...imageItems,
+    ]),
     {
       headers: { 'Content-Type': 'application/json' },
     }

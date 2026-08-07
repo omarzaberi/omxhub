@@ -1,11 +1,58 @@
 ---
+/**
+ * The homepage, for both locales.
+ *
+ * ## What this rebuild changed, and why
+ *
+ * The previous version rendered the same thirty tools **eleven times**: a
+ * "popular" grid, a "latest" grid, a "free" grid, and then one auto-generated
+ * grid per category — seven more, all identical in shape. It was not a design
+ * problem so much as an information problem: a visitor scrolling past the fourth
+ * indistinguishable grid of cards learns nothing new and stops reading, and the
+ * page's real assets — the free browser tools, the comparisons, the tutorials —
+ * were buried under the repetition or missing from the page entirely.
+ *
+ * So the tool grids collapse into **one** tabbed section, and the space that
+ * frees up goes to the sections that were never here: image tools, tutorials and
+ * prompts. Every section now answers a different question.
+ *
+ * ## The ordering is deliberate
+ *
+ * Free tools come before the directory. The directory is what the site is
+ * *about*, but the browser tools are what a first-time visitor can use in ten
+ * seconds without trusting us about anything — and they are the part no
+ * competitor can copy by writing more listicles. Leading with the thing that
+ * works immediately is the same instinct behind putting a live editor at the top
+ * of a developer-tool homepage.
+ *
+ * ## What was removed
+ *
+ * - **The seven per-category grids.** `/ai-tools` and the category landing pages
+ *   cover that job properly; the homepage was competing with them using worse
+ *   copy. No tool is orphaned — the categories row still links every landing
+ *   page, and the directory link sits under the grid.
+ * - **The animated stats band.** With real counts now in the hero, a second set
+ *   of the same numbers 900 px further down was repetition wearing a different
+ *   coat. Its counter script went with it, which is JavaScript the critical path
+ *   no longer pays for.
+ * - **The five floating hero cards.** Decorative (`aria-hidden`), three of five
+ *   hidden on mobile anyway, and they crowded the one element in the hero that
+ *   should dominate it. The hero is centred on the search now.
+ */
 import ToolCard from './ToolCard.astro';
-import ToolLogo from './ToolLogo.astro';
 import ComparisonCard from './ComparisonCard.astro';
+import TutorialCard from './TutorialCard.astro';
+import PromptCard from './PromptCard.astro';
 import SiteSearch from './SiteSearch.astro';
 import { byPopularity, comparisonPath, inLang } from '../lib/comparisons';
+import {
+  byPopularity as tutorialsByPopularity,
+  inLang as tutorialsInLang,
+  tutorialPath,
+} from '../lib/tutorials';
 import { categories, type CategoryKey } from '../data/categories';
 import { pdfTools, pdfToolPath } from '../data/pdf-tools';
+import { imageTools, imageToolPath } from '../data/image-tools';
 import { useTranslations, localizedPath } from '../i18n/utils';
 import type { Lang } from '../i18n/ui';
 import { getCollection } from 'astro:content';
@@ -15,6 +62,7 @@ interface Props {
 }
 const { lang } = Astro.props;
 const t = useTranslations(lang);
+const arrow = lang === 'ar' ? '←' : '→';
 
 const allTools = (await getCollection('tools')).filter((tool) => tool.data.lang === lang);
 const allPrompts = (await getCollection('prompts')).filter((p) => p.data.lang === lang);
@@ -25,25 +73,41 @@ const topComparisons = inLang(await getCollection('comparisons'), lang)
   .sort(byPopularity)
   .slice(0, 3);
 
-const latest = [...allTools]
-  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
-  .slice(0, 6);
-const featured = allTools.filter((tool) => tool.data.featured).slice(0, 6);
-const freeTools = allTools.filter((tool) => tool.data.pricingType !== 'paid').slice(0, 6);
-const topRated = [...allTools]
-  .filter((tool) => typeof tool.data.rating === 'number')
-  .sort((a, b) => (b.data.rating ?? 0) - (a.data.rating ?? 0))
+const topTutorials = tutorialsInLang(await getCollection('tutorials'), lang)
+  .sort(tutorialsByPopularity)
   .slice(0, 3);
 
-// Auto-generate a section per category that actually has tools —
-// new tools/categories show up here automatically, no manual edits needed.
-const categorySections = Object.entries(categories)
-  .map(([slug, cat]) => ({
-    slug,
-    cat,
-    tools: allTools.filter((tool) => tool.data.category === slug).slice(0, 6),
-  }))
-  .filter((section) => section.tools.length > 0);
+const topPrompts = allPrompts.slice(0, 3);
+
+const slugOf = (entry: { id: string }) => entry.id.split('/')[1];
+
+/**
+ * The three tabs of the single tool grid.
+ *
+ * All three sets are rendered into the HTML and only hidden with the `hidden`
+ * attribute, so every card is in the document on first paint: crawlable, and
+ * present for anyone whose JavaScript never runs. The tabs only decide which
+ * panel is shown.
+ */
+const toolTabs = [
+  {
+    id: 'featured',
+    label: t('home.tools.tabFeatured'),
+    tools: allTools.filter((tool) => tool.data.featured).slice(0, 6),
+  },
+  {
+    id: 'new',
+    label: t('home.tools.tabNew'),
+    tools: [...allTools]
+      .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
+      .slice(0, 6),
+  },
+  {
+    id: 'free',
+    label: t('home.tools.tabFree'),
+    tools: allTools.filter((tool) => tool.data.pricingType !== 'paid').slice(0, 6),
+  },
+].filter((tab) => tab.tools.length > 0);
 
 // Only surface categories that have a real landing page behind them — a pill
 // pointing at an empty category would be a dead link.
@@ -51,48 +115,63 @@ const availableCategories = (Object.keys(categories) as CategoryKey[]).filter((k
   allTools.some((tool) => tool.data.category === key)
 );
 
-// PDF quick actions — derived from the catalogue so the homepage can never
-// drift out of sync with /pdf-tools. Every tool is linked, which also means the
-// homepage alone guarantees no PDF tool page is ever orphaned.
-const pdfQuick = pdfTools.map((tool) => ({
-  icon: tool.icon,
-  name: tool.name[lang],
-  href: pdfToolPath(tool.slug),
-}));
-
-// Floating hero cards — built from real data, never placeholders.
-// Tool cards show the brand logo (falling back to initials via ToolLogo);
-// the two PDF cards keep their emoji badge, since PDF tools are ours, not brands.
-const floatCards = [
-  ...topRated.map((tool) => ({
-    logo: { name: tool.data.name, slug: tool.id.split('/')[1] },
-    badge: null,
-    color: '#9b8cfb',
-    title: tool.data.name,
-    meta: `${categories[tool.data.category].icon} ${categories[tool.data.category][lang]} · ★ ${tool.data.rating?.toFixed(1)}`,
-  })),
+// Free-tool groups, derived from the catalogues so the homepage can never drift
+// out of sync with the hubs. Every tool is linked, which also means the homepage
+// alone guarantees no PDF or image tool page is ever orphaned.
+const freeGroups = [
   {
-    logo: null,
-    badge: '🔗',
-    color: '#9b8cfb',
-    title: pdfQuick[0].name,
-    meta: t('home.hero.floatPdfMeta'),
+    title: t('home.free.pdfGroup'),
+    all: '/pdf-tools',
+    tools: pdfTools.map((tool) => ({
+      icon: tool.icon,
+      name: tool.name[lang],
+      href: pdfToolPath(tool.slug),
+    })),
   },
   {
-    logo: null,
-    badge: '✂️',
-    color: '#4fd1c5',
-    title: pdfQuick[1].name,
-    meta: t('home.hero.floatPdfMeta'),
+    title: t('home.free.imageGroup'),
+    all: '/image-tools',
+    tools: imageTools.map((tool) => ({
+      icon: tool.icon,
+      name: tool.name[lang],
+      href: imageToolPath(tool.slug),
+    })),
   },
 ];
 
-const stats = [
-  { num: allTools.length, label: t('home.stats.tools') },
-  { num: pdfQuick.length, label: t('home.stats.pdf') },
-  { num: allPrompts.length, label: t('home.stats.prompts') },
-  { num: Object.keys(categories).length, label: t('home.stats.categories') },
+const freeToolCount = pdfTools.length + imageTools.length;
+
+// Trust indicators. Counted from the catalogues, never typed in — a hardcoded
+// number here is a claim that goes stale silently, which is the opposite of what
+// a trust indicator is for.
+const trust = [
+  { icon: '🔒', text: t('home.hero.trustFree').replace('{free}', String(freeToolCount)) },
+  { icon: '✍️', text: t('home.hero.trustTools').replace('{tools}', String(allTools.length)) },
+  { icon: '⚡', text: t('home.hero.trustNoAuth') },
 ];
+
+/**
+ * Search starting points.
+ *
+ * An empty search box is a blank-page problem: someone who does not already know
+ * what this site holds has nothing to type. Each chip is a query that returns
+ * real results across more than one content type, which is also the quickest way
+ * to show that search covers tools, comparisons *and* our own utilities.
+ */
+const searchChips =
+  lang === 'ar'
+    ? [
+        { label: 'ChatGPT', query: 'ChatGPT' },
+        { label: 'توليد صور', query: 'صور' },
+        { label: 'ضغط ملف', query: 'ضغط' },
+        { label: 'برمجة', query: 'برمجة' },
+      ]
+    : [
+        { label: 'ChatGPT', query: 'ChatGPT' },
+        { label: 'Image generation', query: 'image' },
+        { label: 'Compress a file', query: 'compress' },
+        { label: 'Coding', query: 'coding' },
+      ];
 
 const why = [
   { icon: '🈯', title: t('home.why.1.title'), body: t('home.why.1.body') },
@@ -110,73 +189,143 @@ const why = [
   </div>
 
   <div class="wrap hero-inner">
-    <div class="hero-copy">
-      <span class="eyebrow">
-        <span class="pulse"></span>
-        {t('home.hero.eyebrow').replace('{tools}', String(allTools.length)).replace('{pdf}', String(pdfQuick.length))}
-      </span>
+    <span class="eyebrow">
+      <span class="pulse" aria-hidden="true"></span>
+      {t('home.hero.eyebrow')}
+    </span>
 
-      <h1>
-        {t('home.hero.h1a')}<br />
-        <span class="grad">{t('home.hero.h1b')}</span>
-      </h1>
+    <h1>
+      {t('home.hero.h1a')}<br />
+      <span class="grad">{t('home.hero.h1b')}</span>
+    </h1>
 
-      <p class="lede">{t('home.hero.lede')}</p>
+    <p class="lede">{t('home.hero.lede')}</p>
 
-      <div class="hero-search">
-        <SiteSearch
-          lang={lang}
-          placeholder={t('home.hero.searchPlaceholder')}
-          noResultsText={t('search.noResults')}
-        />
-      </div>
-
-      <div class="cta-row">
-        <a href={localizedPath(lang, '/ai-tools')} class="btn btn-primary">{t('home.hero.ctaTools')}</a>
-        <a href={localizedPath(lang, '/pdf-tools')} class="btn btn-ghost">{t('home.hero.ctaPdf')}</a>
-      </div>
+    <div class="hero-search">
+      <SiteSearch
+        lang={lang}
+        variant="hero"
+        shortcut
+        placeholder={t('home.hero.searchPlaceholder')}
+        noResultsText={t('search.noResults')}
+        label={t('home.search.label')}
+        searchingText={t('home.search.searching')}
+        countTemplate={t('home.search.count')}
+        chips={searchChips}
+        chipsLabel={t('home.search.chipsLabel')}
+      />
     </div>
 
-    <div class="float-stage" aria-hidden="true">
-      {floatCards.map((card, i) => (
-        <div class={`fcard f${i + 1}`}>
-          {card.logo
-            ? <ToolLogo name={card.logo.name} slug={card.logo.slug} size={36} radius={10} />
-            : <span class="fbadge" style={`background:${card.color}22; color:${card.color}`}>{card.badge}</span>}
-          <span class="ftext">
-            <b>{card.title}</b>
-            <small>{card.meta}</small>
-          </span>
-        </div>
+    <div class="cta-row">
+      <a href={localizedPath(lang, '/ai-tools')} class="btn btn-primary">{t('home.hero.ctaTools')}</a>
+      <a href="#free-tools" class="btn btn-ghost">{t('home.hero.ctaPdf')}</a>
+    </div>
+
+    <ul class="trust-row">
+      {trust.map((item) => (
+        <li>
+          <span aria-hidden="true">{item.icon}</span>
+          {item.text}
+        </li>
       ))}
-    </div>
+    </ul>
   </div>
 </section>
 
-<!-- ============ PDF QUICK ACTIONS ============ -->
-<section class="wrap section reveal">
+<!-- ============ FREE TOOLS ============ -->
+<section class="wrap section reveal" id="free-tools">
   <div class="sec-head">
-    <span class="sec-label">{t('home.pdf.label')}</span>
-    <h2>{t('home.pdf.title')}</h2>
-    <p>{t('home.pdf.body')}</p>
+    <div class="sec-head-text">
+      <span class="sec-label">{t('home.free.label')}</span>
+      <h2>{t('home.free.title')}</h2>
+      <p>{t('home.free.body')}</p>
+    </div>
   </div>
-  <div class="quick-grid">
-    {pdfQuick.map((tool) => (
-      <a href={localizedPath(lang, tool.href)} class="qcard">
-        <span class="qicon">{tool.icon}</span>
-        <b>{tool.name}</b>
-      </a>
-    ))}
-  </div>
+
+  {freeGroups.map((group) => (
+    <div class="tool-group">
+      <div class="group-head">
+        <h3>{group.title}</h3>
+        <a href={localizedPath(lang, group.all)} class="sec-more">
+          {group.title} {arrow}
+        </a>
+      </div>
+      <div class="quick-grid">
+        {group.tools.map((tool) => (
+          <a href={localizedPath(lang, tool.href)} class="qcard">
+            <span class="qicon" aria-hidden="true">{tool.icon}</span>
+            <b>{tool.name}</b>
+          </a>
+        ))}
+      </div>
+    </div>
+  ))}
 </section>
+
+<!-- ============ AI DIRECTORY (one grid, three tabs) ============ -->
+{toolTabs.length > 0 && (
+  <section class="wrap section reveal">
+    <div class="sec-head">
+      <div class="sec-head-text">
+        <span class="sec-label">{t('home.tools.label')}</span>
+        <h2>{t('home.tools.title')}</h2>
+        <p>{t('home.tools.body')}</p>
+      </div>
+      <div class="tablist" role="tablist" aria-label={t('home.tools.title')}>
+        {toolTabs.map((tab, index) => (
+          <button
+            type="button"
+            role="tab"
+            id={`tooltab-${tab.id}`}
+            class="tab"
+            aria-controls={`toolpanel-${tab.id}`}
+            aria-selected={index === 0 ? 'true' : 'false'}
+            tabindex={index === 0 ? 0 : -1}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {toolTabs.map((tab, index) => (
+      <div
+        role="tabpanel"
+        id={`toolpanel-${tab.id}`}
+        aria-labelledby={`tooltab-${tab.id}`}
+        tabindex="0"
+        hidden={index !== 0}
+      >
+        <div class="grid">
+          {tab.tools.map((tool) => (
+            <ToolCard
+              href={localizedPath(lang, `/ai-tools/${slugOf(tool)}`)}
+              name={tool.data.name}
+              slug={slugOf(tool)}
+              tagline={tool.data.tagline}
+              category={tool.data.category}
+              pricingType={tool.data.pricingType}
+              rating={tool.data.rating}
+              lang={lang}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+
+    <a href={localizedPath(lang, '/ai-tools')} class="sec-more">{t('home.tools.all')} {arrow}</a>
+  </section>
+)}
 
 <!-- ============ COMPARISONS ============ -->
 {topComparisons.length > 0 && (
   <section class="wrap section reveal">
     <div class="sec-head">
-      <span class="sec-label">{t('cmp.index.featuredLabel')}</span>
-      <h2>{t('cmp.index.title')}</h2>
-      <p>{t('cmp.index.lede')}</p>
+      <div class="sec-head-text">
+        <span class="sec-label">{t('cmp.index.featuredLabel')}</span>
+        <h2>{t('cmp.index.title')}</h2>
+        <p>{t('cmp.index.lede')}</p>
+      </div>
     </div>
     <div class="grid">
       {topComparisons.map((entry) => (
@@ -195,115 +344,77 @@ const why = [
         />
       ))}
     </div>
-    <a href={localizedPath(lang, '/comparisons')} class="sec-more">
-      {t('cmp.breadcrumb')} {lang === 'ar' ? '←' : '→'}
-    </a>
+    <a href={localizedPath(lang, '/comparisons')} class="sec-more">{t('cmp.breadcrumb')} {arrow}</a>
   </section>
 )}
 
-<!-- ============ POPULAR ============ -->
-{featured.length > 0 && (
+<!-- ============ TUTORIALS ============ -->
+{topTutorials.length > 0 && (
   <section class="wrap section reveal">
     <div class="sec-head">
-      <span class="sec-label">{t('home.label.discover')}</span>
-      <h2>{t('home.popular')}</h2>
+      <div class="sec-head-text">
+        <span class="sec-label">{t('home.tutorials.label')}</span>
+        <h2>{t('home.tutorials.title')}</h2>
+        <p>{t('home.tutorials.body')}</p>
+      </div>
     </div>
     <div class="grid">
-      {featured.map((tool) => (
-        <ToolCard
-          href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
-          name={tool.data.name}
-          slug={tool.id.split("/")[1]}
-          tagline={tool.data.tagline}
-          category={tool.data.category}
-          pricingType={tool.data.pricingType}
-          rating={tool.data.rating}
+      {topTutorials.map((entry) => (
+        <TutorialCard
+          href={localizedPath(lang, tutorialPath(entry))}
+          title={entry.data.title}
+          subtitle={entry.data.subtitle}
+          category={entry.data.category}
+          level={entry.data.level}
+          readingTime={entry.data.readingTime}
+          search={`${entry.data.title} ${entry.data.subtitle}`.toLowerCase()}
           lang={lang}
         />
       ))}
     </div>
+    <a href={localizedPath(lang, '/tutorials')} class="sec-more">{t('home.tutorials.all')} {arrow}</a>
   </section>
 )}
 
-<!-- ============ LATEST ============ -->
-<section class="wrap section reveal">
-  <div class="sec-head">
-    <span class="sec-label">{t('home.label.new')}</span>
-    <h2>{t('home.latest')}</h2>
-  </div>
-  <div class="grid">
-    {latest.map((tool) => (
-      <ToolCard
-        href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
-        name={tool.data.name}
-        slug={tool.id.split("/")[1]}
-        tagline={tool.data.tagline}
-        category={tool.data.category}
-        pricingType={tool.data.pricingType}
-        rating={tool.data.rating}
-        lang={lang}
-      />
-    ))}
-  </div>
-</section>
-
-<!-- ============ FREE ============ -->
-{freeTools.length > 0 && (
+<!-- ============ PROMPTS ============ -->
+{topPrompts.length > 0 && (
   <section class="wrap section reveal">
     <div class="sec-head">
-      <span class="sec-label">{t('home.label.free')}</span>
-      <h2>{t('home.freeTools')}</h2>
+      <div class="sec-head-text">
+        <span class="sec-label">{t('home.prompts.label')}</span>
+        <h2>{t('home.prompts.title')}</h2>
+        <p>{t('home.prompts.body')}</p>
+      </div>
     </div>
     <div class="grid">
-      {freeTools.map((tool) => (
-        <ToolCard
-          href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
-          name={tool.data.name}
-          slug={tool.id.split("/")[1]}
-          tagline={tool.data.tagline}
-          category={tool.data.category}
-          pricingType={tool.data.pricingType}
-          rating={tool.data.rating}
+      {topPrompts.map((entry) => (
+        <PromptCard
+          href={localizedPath(lang, `/prompts/${slugOf(entry)}`)}
+          title={entry.data.title}
+          description={entry.data.description}
+          category={entry.data.category}
+          tool={entry.data.tool}
+          difficulty={entry.data.difficulty}
           lang={lang}
         />
       ))}
     </div>
+    <a href={localizedPath(lang, '/prompts')} class="sec-more">{t('home.prompts.all')} {arrow}</a>
   </section>
 )}
-
-<!-- ============ PER-CATEGORY (auto) ============ -->
-{categorySections.map((section) => (
-  <section class="wrap section reveal">
-    <div class="sec-head">
-      <h2>{section.cat.icon} {section.cat[lang]}</h2>
-    </div>
-    <div class="grid">
-      {section.tools.map((tool) => (
-        <ToolCard
-          href={localizedPath(lang, `/ai-tools/${tool.id.split('/')[1]}`)}
-          name={tool.data.name}
-          slug={tool.id.split("/")[1]}
-          tagline={tool.data.tagline}
-          category={tool.data.category}
-          pricingType={tool.data.pricingType}
-          rating={tool.data.rating}
-          lang={lang}
-        />
-      ))}
-    </div>
-  </section>
-))}
 
 <!-- ============ CATEGORIES ============ -->
 <section class="wrap section reveal">
   <div class="sec-head">
-    <span class="sec-label">{t('home.label.browse')}</span>
-    <h2>{t('home.categories')}</h2>
+    <div class="sec-head-text">
+      <span class="sec-label">{t('home.label.browse')}</span>
+      <h2>{t('home.categories')}</h2>
+    </div>
   </div>
   <div class="cat-grid">
     {availableCategories.map((slug) => (
       <a href={localizedPath(lang, `/ai-tools/category/${slug}`)} class="cat-pill">
-        <span>{categories[slug].icon}</span> {categories[slug][lang]}
+        <span aria-hidden="true">{categories[slug].icon}</span> {categories[slug][lang]}
       </a>
     ))}
   </div>
@@ -312,27 +423,17 @@ const why = [
 <!-- ============ WHY OMXHUB ============ -->
 <section class="wrap section reveal">
   <div class="sec-head">
-    <span class="sec-label">{t('home.why.label')}</span>
-    <h2>{t('home.why.title')}</h2>
+    <div class="sec-head-text">
+      <span class="sec-label">{t('home.why.label')}</span>
+      <h2>{t('home.why.title')}</h2>
+    </div>
   </div>
   <div class="why-grid">
     {why.map((item) => (
       <div class="wcard">
-        <span class="wicon">{item.icon}</span>
+        <span class="wicon" aria-hidden="true">{item.icon}</span>
         <b>{item.title}</b>
         <p>{item.body}</p>
-      </div>
-    ))}
-  </div>
-</section>
-
-<!-- ============ STATS ============ -->
-<section class="wrap section reveal">
-  <div class="stats-band">
-    {stats.map((stat) => (
-      <div class="stat">
-        <div class="stat-num" data-count={stat.num} style={`min-width:${String(stat.num).length}ch`}>0</div>
-        <div class="stat-label">{stat.label}</div>
       </div>
     ))}
   </div>
@@ -367,42 +468,57 @@ const why = [
     revealEls.forEach((el) => el.classList.add('is-visible'));
   }
 
-  // Animated counters
-  const counters = document.querySelectorAll<HTMLElement>('[data-count]');
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduceMotion || !('IntersectionObserver' in window)) {
-    counters.forEach((el) => (el.textContent = el.dataset.count ?? '0'));
-  } else {
-    const cio = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target as HTMLElement;
-          const target = Number(el.dataset.count ?? 0);
-          const step = Math.max(1, Math.round(target / 24));
-          let current = 0;
-          const timer = setInterval(() => {
-            current += step;
-            if (current >= target) {
-              current = target;
-              clearInterval(timer);
-            }
-            el.textContent = String(current);
-          }, 40);
-          cio.unobserve(el);
-        });
-      },
-      { threshold: 0.4 }
-    );
-    counters.forEach((el) => cio.observe(el));
+  /**
+   * Tool grid tabs, to the WAI-ARIA tabs pattern.
+   *
+   * Every panel is in the HTML already and only the `hidden` attribute moves, so
+   * with JavaScript unavailable the first panel is shown and the rest are still
+   * in the document for a crawler. Arrow keys move between tabs and wrap, and
+   * only the selected tab is in the tab order — pressing Tab from the tablist
+   * should land in the panel, not walk through two more buttons.
+   */
+  const tablist = document.querySelector<HTMLElement>('.tablist');
+  if (tablist) {
+    const tabs = [...tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+
+    const select = (index: number, focus = true) => {
+      tabs.forEach((tab, i) => {
+        const on = i === index;
+        tab.setAttribute('aria-selected', on ? 'true' : 'false');
+        tab.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById(tab.getAttribute('aria-controls') ?? '');
+        if (panel) panel.hidden = !on;
+      });
+      if (focus) tabs[index].focus();
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(index, false));
+      tab.addEventListener('keydown', (e) => {
+        const isRtl = document.documentElement.dir === 'rtl';
+        // In RTL the visual "next" tab is the one to the left, so the arrow keys
+        // have to be swapped or they move the highlight the wrong way.
+        let delta = 0;
+        if (e.key === 'ArrowRight') delta = isRtl ? -1 : 1;
+        else if (e.key === 'ArrowLeft') delta = isRtl ? 1 : -1;
+        else if (e.key === 'Home') return select(0);
+        else if (e.key === 'End') return select(tabs.length - 1);
+        if (!delta) return;
+        e.preventDefault();
+        select((index + delta + tabs.length) % tabs.length);
+      });
+    });
   }
 </script>
 
 <style>
   /* ---------- HERO ---------- */
+  /* Centred rather than split. The old two-column layout gave half the hero to
+     five decorative floating cards and squeezed the search — the one element a
+     visitor is most likely to use — into the remainder. */
   .hero {
     position: relative;
-    padding: 72px 0 84px;
+    padding: 96px 0 88px;
     border-bottom: 1px solid var(--line);
     overflow: hidden;
   }
@@ -418,29 +534,29 @@ const why = [
       linear-gradient(var(--line) 1px, transparent 1px),
       linear-gradient(90deg, var(--line) 1px, transparent 1px);
     background-size: 62px 62px;
-    -webkit-mask-image: radial-gradient(ellipse 78% 62% at 50% 0%, #000 38%, transparent 100%);
-    mask-image: radial-gradient(ellipse 78% 62% at 50% 0%, #000 38%, transparent 100%);
-    opacity: 0.55;
+    -webkit-mask-image: radial-gradient(ellipse 70% 58% at 50% 0%, #000 30%, transparent 100%);
+    mask-image: radial-gradient(ellipse 70% 58% at 50% 0%, #000 30%, transparent 100%);
+    opacity: 0.5;
   }
   .hero-glow {
     position: absolute;
-    top: -300px;
+    top: -320px;
     left: 50%;
     transform: translateX(-50%);
-    width: 1000px;
-    max-width: 140%;
-    height: 620px;
+    width: 1100px;
+    max-width: 150%;
+    height: 660px;
     background:
-      radial-gradient(circle at 38% 52%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
-      radial-gradient(circle at 66% 42%, color-mix(in srgb, var(--accent-2) 15%, transparent), transparent 62%);
-    filter: blur(16px);
+      radial-gradient(circle at 38% 52%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 62%),
+      radial-gradient(circle at 66% 42%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 62%);
+    filter: blur(18px);
   }
   .hero-inner {
     position: relative;
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 52px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    text-align: center;
   }
 
   .eyebrow {
@@ -448,13 +564,13 @@ const why = [
     align-items: center;
     gap: 8px;
     font-size: 0.78rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
-    padding: 6px 14px;
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+    padding: 6px 15px;
     border-radius: 100px;
-    margin-bottom: 20px;
+    margin-bottom: 26px;
   }
   .pulse {
     width: 7px;
@@ -469,45 +585,52 @@ const why = [
     50% { box-shadow: 0 0 0 6px transparent; }
   }
 
+  /* Larger and tighter than before. A hero headline is the one place on the site
+     where display-scale type is correct, and the previous 3.2rem ceiling read as
+     a section heading that happened to be at the top of the page. */
   .hero h1 {
-    font-size: clamp(1.9rem, 4.8vw, 3.2rem);
-    line-height: 1.25;
-    letter-spacing: -0.02em;
-    margin: 0 0 16px;
+    font-size: clamp(2rem, 5.4vw, 3.75rem);
+    line-height: 1.18;
+    letter-spacing: -0.035em;
+    margin: 0 0 20px;
+    max-width: 16ch;
   }
   .grad {
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    background: linear-gradient(92deg, var(--accent), var(--accent-2));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .lede {
     color: var(--text-dim);
-    max-width: 520px;
-    margin: 0 0 26px;
-    font-size: 1.02rem;
+    max-width: 62ch;
+    margin: 0 0 34px;
+    font-size: 1.05rem;
+    line-height: 1.75;
   }
-  .hero-search :global(.site-search) {
-    margin-inline: 0;
-    max-width: 540px;
-  }
+
+  .hero-search { width: 100%; }
+  .hero-search :global(.site-search) { margin-inline: auto; }
+  /* The chips sit under a centred box, so they centre too. */
+  .hero-search :global(.search-chips) { justify-content: center; }
 
   .cta-row {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
-    margin-top: 22px;
+    justify-content: center;
+    margin-top: 30px;
   }
   .btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
+    padding: 13px 26px;
     border-radius: 12px;
     font-weight: 700;
     font-size: 0.95rem;
     text-decoration: none;
-    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s, color 0.18s;
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s, color 0.18s, background 0.18s;
   }
   .btn-primary {
     background: var(--accent);
@@ -529,51 +652,38 @@ const why = [
     background: color-mix(in srgb, var(--accent-2) 16%, var(--surface));
   }
 
-  /* floating cards */
-  .float-stage {
-    position: relative;
-    height: 350px;
-  }
-  .fcard {
-    position: absolute;
+  /* Trust row: quiet by design. These are facts a reader checks, not a banner —
+     the moment they are styled like a feature band they read as marketing and
+     stop doing the job they are there for. */
+  .trust-row {
     display: flex;
-    align-items: center;
-    gap: 11px;
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 12px 16px;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
-    animation: float 7s ease-in-out infinite;
-    white-space: nowrap;
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
-  }
-  .fbadge {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     justify-content: center;
-    font-weight: 700;
-    font-size: 0.82rem;
-    flex-shrink: 0;
+    gap: 10px 26px;
+    list-style: none;
+    margin: 36px 0 0;
+    padding: 0;
   }
-  .ftext b { display: block; font-size: 0.9rem; line-height: 1.4; }
-  .ftext small { display: block; font-size: 0.72rem; color: var(--text-dim); }
-  .f1 { top: 6px; inset-inline-end: 26px; animation-delay: 0s; }
-  .f2 { top: 92px; inset-inline-end: 132px; animation-delay: 0.9s; }
-  .f3 { top: 178px; inset-inline-end: 4px; animation-delay: 1.8s; }
-  .f4 { top: 262px; inset-inline-end: 110px; animation-delay: 2.6s; }
-  .f5 { top: 100px; inset-inline-start: 0; animation-delay: 1.3s; }
+  .trust-row li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    color: var(--text-dim);
+  }
+  .trust-row li span { font-size: 0.95rem; }
 
   /* ---------- SECTIONS ---------- */
-  .section { padding: 56px 0; }
-  .sec-head { margin-bottom: 26px; }
+  .section { padding: 72px 0; }
+  .sec-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .sec-head-text { max-width: 62ch; }
   .sec-label {
     display: block;
     font-size: 0.74rem;
@@ -581,22 +691,24 @@ const why = [
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 8px;
+    margin-bottom: 9px;
   }
   .sec-head h2 {
-    font-size: clamp(1.35rem, 2.6vw, 1.85rem);
-    letter-spacing: -0.015em;
+    font-size: clamp(1.4rem, 2.8vw, 2rem);
+    letter-spacing: -0.022em;
+    line-height: 1.3;
     margin: 0;
   }
   .sec-head p {
     color: var(--text-dim);
-    margin: 8px 0 0;
+    margin: 10px 0 0;
     font-size: 0.95rem;
+    line-height: 1.7;
   }
   /* "See all" link under a section grid. */
   .sec-more {
     display: inline-block;
-    margin-top: 18px;
+    margin-top: 20px;
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--accent);
@@ -610,27 +722,84 @@ const why = [
     gap: 18px;
   }
 
-  /* quick actions */
+  /* ---------- TABS ---------- */
+  .tablist {
+    display: inline-flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .tab {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: color 0.16s, background 0.16s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected='true'] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* The panel takes focus when tabbing out of the tablist; a visible ring there
+     is correct, but it must not draw a box around the whole grid on click. */
+  [role='tabpanel']:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 8px; }
+
+  /* ---------- FREE TOOL GROUPS ---------- */
+  .tool-group + .tool-group { margin-top: 34px; }
+  .group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .group-head h3 {
+    font-size: 1rem;
+    margin: 0;
+    color: var(--text);
+  }
+  .group-head .sec-more { margin-top: 0; }
+
   .quick-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
   }
   .qcard {
+    display: flex;
+    align-items: center;
+    gap: 11px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 20px 10px;
-    text-align: center;
+    border-radius: 12px;
+    padding: 14px 16px;
     text-decoration: none;
     color: var(--text);
-    transition: transform 0.18s, border-color 0.18s;
+    transition: transform 0.16s, border-color 0.16s, background 0.16s;
   }
-  .qcard:hover { transform: translateY(-4px); border-color: var(--accent); }
-  .qicon { display: block; font-size: 1.5rem; margin-bottom: 8px; }
-  .qcard b { font-size: 0.86rem; }
+  .qcard:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  }
+  .qicon { font-size: 1.15rem; flex-shrink: 0; }
+  .qcard b {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
 
-  /* categories */
+  /* ---------- CATEGORIES ---------- */
   .cat-grid { display: flex; flex-wrap: wrap; gap: 12px; }
   .cat-pill {
     display: flex;
@@ -647,7 +816,7 @@ const why = [
   }
   .cat-pill:hover { border-color: var(--accent-2); color: var(--accent-2); transform: translateY(-2px); }
 
-  /* why */
+  /* ---------- WHY ---------- */
   .why-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -661,61 +830,23 @@ const why = [
   }
   .wicon { display: block; font-size: 1.6rem; margin-bottom: 12px; }
   .wcard b { display: block; font-size: 1rem; margin-bottom: 6px; }
-  .wcard p { margin: 0; font-size: 0.87rem; color: var(--text-dim); }
+  .wcard p { margin: 0; font-size: 0.87rem; color: var(--text-dim); line-height: 1.7; }
 
-  /* stats */
-  .stats-band {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    background: var(--surface);
-    padding: 40px 22px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    text-align: center;
-  }
-  .stats-band::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(620px circle at 50% 120%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 68%);
-  }
-  .stat { position: relative; }
-  .stat-num {
-    font-size: clamp(1.9rem, 4vw, 2.5rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    direction: ltr;
-    color: var(--accent);
-    line-height: 1.2;
-    /* The counter animates 0 -> N, so the glyph box grows as digits are added.
-       Tabular figures make every digit the same advance width, and the inline
-       `min-width` (set per stat, in `ch`) reserves the final width up front, so
-       the number never reflows mid-count. Without both, each new digit is a
-       layout shift that CLS charges us for. */
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-  }
-  .stat-label { font-size: 0.85rem; color: var(--text-dim); }
-
-  /* support */
+  /* ---------- SUPPORT ---------- */
   .support-box {
     border: 1px solid color-mix(in srgb, var(--accent-2) 28%, transparent);
     border-radius: 20px;
     background: linear-gradient(160deg, color-mix(in srgb, var(--accent-2) 9%, transparent), var(--surface));
-    padding: 48px 32px;
+    padding: 52px 32px;
     text-align: center;
   }
   .support-box h2 { margin: 0 0 12px; font-size: clamp(1.35rem, 2.6vw, 1.85rem); }
   .support-box p {
     color: var(--text-dim);
     max-width: 520px;
-    margin: 0 auto 24px;
+    margin: 0 auto 26px;
     font-size: 0.95rem;
+    line-height: 1.7;
   }
   .btn-kofi { background: var(--accent-2); color: #0a0d12; }
   .btn-kofi:hover {
@@ -733,33 +864,33 @@ const why = [
 
   /* ---------- RESPONSIVE ---------- */
   @media (max-width: 900px) {
-    .hero { padding: 48px 0 60px; }
-    .hero-inner { grid-template-columns: 1fr; gap: 34px; }
-    .float-stage { height: 300px; transform: scale(0.9); transform-origin: top center; }
-    .quick-grid { grid-template-columns: repeat(3, 1fr); }
-    .why-grid, .stats-band { grid-template-columns: 1fr 1fr; }
+    .hero { padding: 64px 0 68px; }
+    .section { padding: 56px 0; }
+    .why-grid { grid-template-columns: 1fr 1fr; }
+    /* The tablist drops under the heading rather than squeezing it. */
+    .sec-head { align-items: flex-start; }
   }
   @media (max-width: 560px) {
-    .section { padding: 42px 0; }
-    .sec-head { margin-bottom: 20px; }
-    .quick-grid { grid-template-columns: 1fr 1fr; }
-    .qcard { padding: 16px 8px; }
+    .hero { padding: 48px 0 56px; }
+    .hero h1 { letter-spacing: -0.025em; }
+    .lede { font-size: 0.97rem; margin-bottom: 26px; }
+    .section { padding: 44px 0; }
+    .sec-head { margin-bottom: 22px; }
+    .cta-row { width: 100%; }
     .cta-row .btn { flex: 1; justify-content: center; }
-    .lede { font-size: 0.96rem; margin-bottom: 22px; }
-    .support-box { padding: 34px 20px; }
-    .stats-band { padding: 30px 16px; gap: 14px; }
-
-    /* Two floating cards read as an accent; five read as clutter
-       and risk overflowing a narrow screen. */
-    .float-stage { height: 190px; transform: none; }
-    .fcard { padding: 10px 13px; }
-    .f1 { top: 0; inset-inline-end: auto; inset-inline-start: 0; }
-    .f2 { top: 86px; inset-inline-end: 0; inset-inline-start: auto; }
-    .f3, .f4, .f5 { display: none; }
+    .trust-row { gap: 10px 18px; }
+    .trust-row li { font-size: 0.82rem; }
+    .quick-grid { grid-template-columns: 1fr 1fr; }
+    .qcard { padding: 12px 13px; gap: 9px; }
+    .why-grid { grid-template-columns: 1fr; }
+    .support-box { padding: 36px 20px; }
+    /* A three-up tablist at this width would wrap mid-word; let it scroll. */
+    .tablist { width: 100%; overflow-x: auto; justify-content: flex-start; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
-    .fcard, .pulse { animation: none; }
+    .pulse { animation: none; }
+    .btn:hover, .qcard:hover, .cat-pill:hover { transform: none; }
   }
 </style>

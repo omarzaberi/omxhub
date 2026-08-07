@@ -1,55 +1,189 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
-import { useTranslations } from '../../../i18n/utils';
-import { breadcrumbs, graph, organization } from '../../../lib/schema';
+import ProsePage from '../../../components/ProsePage.astro';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { breadcrumbs, graph, organization, HOME_LABEL } from '../../../lib/schema';
+import { pdfTools } from '../../../data/pdf-tools';
+import { imageTools } from '../../../data/image-tools';
+import { categories } from '../../../data/categories';
+import { getCollection } from 'astro:content';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
 
-const description = 'Learn about the team and vision behind OMXHub';
+// Counts come from the catalogues and the content collections, never from a
+// number typed into the prose. A hardcoded "30 tools" is wrong the day after it
+// is written, and this is the page where being wrong costs the most.
+const toolCount = (await getCollection('tools')).filter((e) => e.data.lang === lang).length;
+const comparisonCount = (await getCollection('comparisons')).filter((e) => e.data.lang === lang).length;
+const tutorialCount = (await getCollection('tutorials')).filter((e) => e.data.lang === lang).length;
+const promptCount = (await getCollection('prompts')).filter((e) => e.data.lang === lang).length;
+const categoryCount = Object.keys(categories).length;
+
+const title = 'About OMXHub';
+const description =
+  'OMXHub is a bilingual Arabic and English platform for AI and productivity: a hand-reviewed tools directory, head-to-head comparisons, tutorials, a prompt library, and free PDF and image tools that run entirely in your browser.';
+
+const pillars = [
+  {
+    icon: '🧠',
+    href: '/ai-tools',
+    name: 'AI Tools Directory',
+    body: `${toolCount} reviewed tools across ${categoryCount} categories, each with a full page.`,
+  },
+  {
+    icon: '⚖️',
+    href: '/comparisons',
+    name: 'Comparisons',
+    body: `${comparisonCount} head-to-head comparisons that end in a clear recommendation.`,
+  },
+  {
+    icon: '📚',
+    href: '/tutorials',
+    name: 'Tutorials',
+    body: `${tutorialCount} practical guides with numbered steps and common mistakes.`,
+  },
+  {
+    icon: '✨',
+    href: '/prompts',
+    name: 'Prompt Library',
+    body: `${promptCount} copy-ready prompts, organised by tool and by field.`,
+  },
+  {
+    icon: '📄',
+    href: '/pdf-tools',
+    name: 'PDF Tools',
+    body: `${pdfTools.length} tools that run in your browser: merge, split, compress, lock and more.`,
+  },
+  {
+    icon: '🖼️',
+    href: '/image-tools',
+    name: 'Image Tools',
+    body: `${imageTools.length} tools for compressing, converting, resizing and cropping, same principle.`,
+  },
+];
 
 // The About page is where the publisher identity is stated in prose, so it is
 // the natural second home for the Organization node.
 const schema = graph(
   organization(lang),
-  breadcrumbs(lang, [
-    { name: 'Home', path: '/' },
-    { name: 'About' },
-  ])
+  breadcrumbs(lang, [{ name: HOME_LABEL[lang], path: '/' }, { name: t('footer.about') }])
 );
 ---
-<Layout title={t('footer.about')} description={description} schema={schema}>
-  <section class="wrap section">
-    <h1>About OMXHub</h1>
-    <p>
-      OMXHub is an Arabic-first directory dedicated to AI tools, built to help
-      Arabic-speaking users discover, compare, and understand the best AI tools
-      available today — with clear, direct explanations and no unnecessary
-      technical complexity.
-    </p>
-    <p>
-      The site is an independent project run by Omar Zaberi, started with a
-      simple goal: provide a trustworthy Arabic-language resource that covers
-      every AI tool in depth — features, drawbacks, pricing, and how to use it —
-      instead of forcing readers to piece things together from scattered
-      English sources.
-    </p>
-    <p>
-      We review every tool ourselves and update content regularly to keep up
-      with the fast pace of AI. If you have a suggestion or a tool you'd like
-      added, feel free to reach out via the <a href="/en/contact">contact page</a>.
-    </p>
-    <p>
-      OMXHub is fully independent with no outside investment. If you've found
-      the site useful and want to help us keep building and keep it free for
-      everyone, you can <a href="/en/support">support us here ❤️</a>.
-    </p>
-  </section>
-</Layout>
+<ProsePage
+  lang={lang}
+  title={title}
+  metaTitle="About OMXHub — AI Tools & Productivity Platform"
+  description={description}
+  crumb={t('footer.about')}
+  schema={schema}
+  lede="OMXHub is an independent platform that brings AI and productivity tools together in one place, in Arabic and English alike. We review tools ourselves, compare them honestly, and build free utilities that run inside your browser — no sign-up, and no file ever leaves your device."
+>
+  <p>
+    The project started from a simple observation: Arabic-language coverage of AI
+    tools is either machine-translated from English articles or thin listicles
+    copied from one site to the next, with none of them ever updated. Arabic
+    readers deserve a source written from scratch, where what gets written about
+    has actually been used, and where the unflattering parts get said when they
+    need saying.
+  </p>
+  <p>
+    OMXHub is not only a directory, either. Half the platform is tools you
+    actually use — the PDF and image utilities — because the principle we build
+    on is that every page should help you finish something, not just read about
+    it.
+  </p>
 
-<style>
-  .section { padding: 60px 0; max-width: 700px; }
-  h1 { margin-bottom: 20px; }
-  p { margin-bottom: 16px; color: var(--text-dim); }
-  p a { color: var(--accent); }
-</style>
+  <h2>What the platform covers</h2>
+  <p>
+    Six sections, each complete on its own and linked to the rest: a tool review
+    points at its comparison, the comparison points at the tutorial, and the
+    tutorial points at the free tool that performs the final step.
+  </p>
+  <div class="pillars">
+    {pillars.map((pillar) => (
+      <a class="pillar" href={localizedPath(lang, pillar.href)}>
+        <span class="pillar-icon" aria-hidden="true">{pillar.icon}</span>
+        <b>{pillar.name}</b>
+        <span>{pillar.body}</span>
+      </a>
+    ))}
+  </div>
+
+  <h2>How we review tools</h2>
+  <p>
+    Every review on this site is written by hand and updated regularly. We do not
+    generate reviews automatically, and we do not publish a page about a tool we
+    have not opened. AI moves fast enough that pricing and plans change within
+    weeks, which makes reviewing an ongoing commitment here rather than a
+    one-time event.
+  </p>
+  <p>We assess every tool on six fixed axes:</p>
+  <ul>
+    <li><strong>Real testing</strong> — we use the tool on an actual task before writing about it.</li>
+    <li><strong>Features</strong> — what the tool genuinely does, not what its marketing page promises.</li>
+    <li><strong>Pricing</strong> — the plans, the limits, and what changes when you upgrade.</li>
+    <li><strong>Strengths</strong> — where it beats its direct alternatives.</li>
+    <li><strong>Weaknesses</strong> — we write the drawbacks as plainly as the benefits.</li>
+    <li><strong>Best use cases</strong> — who this tool is specifically right for, and who it is not.</li>
+  </ul>
+  <p>
+    The scores you see are editorial — our own judgement, not visitor votes. That
+    is why we publish no aggregate rating and show no stars implying a crowd that
+    does not exist. The day we offer real visitor ratings, they will appear under
+    their correct name.
+  </p>
+
+  <h2>Privacy is not an add-on</h2>
+  <p>
+    The PDF and image tools on OMXHub run entirely inside your browser wherever
+    that is possible. Your file is not uploaded to our servers, does not pass
+    through a third-party service, and is not stored anywhere — the processing
+    happens on your machine, and the result is produced there for you to
+    download.
+  </p>
+  <div class="callout">
+    <p>
+      This is an architectural decision rather than a marketing promise: there is
+      no upload server in this project at all, no user account, and no daily
+      limit. Every tool is built on capabilities already in your browser, which
+      is why we could not see your files even if we wanted to.
+    </p>
+  </div>
+  <p>
+    And where something genuinely cannot be done in the browser, we say so rather
+    than quietly building a version that uploads your files. What we actually
+    collect — and what we do not — is set out in our
+    <a href={localizedPath(lang, '/privacy-policy')}>privacy policy</a>.
+  </p>
+
+  <h2>Our mission</h2>
+  <div class="callout">
+    <p>
+      Helping Arabic users discover, compare, and use AI tools with trustworthy
+      editorial content.
+    </p>
+  </div>
+  <p>
+    Every decision in this project is measured against that sentence. It is why
+    we write the Arabic and English versions from scratch instead of translating
+    one into the other, why we refuse paid placements that would reorder a list,
+    and why we would rather ship one finished tool than ten unfinished ones.
+  </p>
+
+  <h2>Who is behind it</h2>
+  <p>
+    OMXHub is an independent project created and maintained by
+    <strong>Omar Zaberi</strong> — with no outside investment and no sponsor
+    steering the content. Its funding is stated in full: Google AdSense
+    advertising, affiliate links on some pages, and optional reader support. None
+    of those buys a place in a list, changes a score, or keeps a drawback from
+    being published.
+  </p>
+  <p>
+    If you spot an error in a review, a price that has changed, or a tool worth
+    adding, tell us via the
+    <a href={localizedPath(lang, '/contact')}>contact page</a>. And if the site
+    has been useful and you would like it to stay free, you can
+    <a href={localizedPath(lang, '/support')}>support the project</a>.
+  </p>
+</ProsePage>

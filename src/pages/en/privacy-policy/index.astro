@@ -1,63 +1,288 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
-import { trail } from '../../../lib/schema';
-import { useTranslations } from '../../../i18n/utils';
+import ProsePage from '../../../components/ProsePage.astro';
+import { useTranslations, localizedPath } from '../../../i18n/utils';
+import { breadcrumbs, graph, HOME_LABEL } from '../../../lib/schema';
+import { pdfTools } from '../../../data/pdf-tools';
+import { imageTools } from '../../../data/image-tools';
 
 const lang = 'en' as const;
 const t = useTranslations(lang);
 
-const schema = trail(lang, [{ name: t('footer.privacy') }]);
+const browserToolCount = pdfTools.length + imageTools.length;
+
+const description =
+  'How OMXHub handles your data: anonymous Google Analytics 4 statistics, AdSense advertising and cookies, affiliate disclosure, and why files opened in our PDF and image tools never leave your device.';
+
+const schema = graph(
+  breadcrumbs(lang, [{ name: HOME_LABEL[lang], path: '/' }, { name: t('footer.privacy') }])
+);
 ---
-<Layout title={t('footer.privacy')} description="OMXHub privacy policy: how we handle your data, cookies, Google AdSense advertising, and affiliate links." schema={schema}>
-  <section class="wrap section">
-    <h1>Privacy Policy</h1>
-
-    <h2>Introduction</h2>
+<ProsePage
+  lang={lang}
+  title="Privacy Policy"
+  metaTitle="Privacy Policy — OMXHub"
+  description={description}
+  crumb={t('footer.privacy')}
+  schema={schema}
+  updated="2026-08-07"
+  updatedLabel="7 August 2026"
+  lede="This page explains what is collected while you browse OMXHub, who collects it, and why. It was written for this site specifically and describes what it actually does — not a generic template."
+>
+  <h2>Introduction</h2>
+  <p>
+    OMXHub is a content and free-tools site. It does not ask you to create an
+    account or sign in. We do not collect your name, your email, or any
+    identifying information unless you write to us yourself, and we do not sell
+    data to anyone.
+  </p>
+  <p>
+    Two things genuinely happen: an analytics service measures how the site is
+    used, anonymously, and an ad network serves the advertising that keeps the
+    content free. Both are Google services, and both are set out in detail below.
+    This policy covers the <strong>omxhub.com</strong> domain in both its Arabic
+    and English versions.
+  </p>
+  <div class="callout">
     <p>
-      At OMXHub, we respect our visitors' privacy. This policy explains what
-      information we collect and how we use it.
+      One important note before anything else: the PDF and image tools —
+      {browserToolCount} of them — process your files inside your browser, and
+      the documents you open in them are not uploaded to OMXHub servers. There is
+      a dedicated section on this below.
     </p>
+  </div>
 
-    <h2>Advertising and Cookies</h2>
+  <h2>Usage analytics (Google Analytics 4)</h2>
+  <p>
+    We use Google Analytics 4 to see which pages are actually read and which find
+    no readers, which is what decides what we write and build next. What reaches
+    us is aggregated and anonymised: we cannot see who you are, and we cannot tie
+    a visit to a specific person.
+  </p>
+  <p>What is collected in this context typically includes:</p>
+  <ul>
+    <li>The pages you visited and how long you stayed on them.</li>
+    <li>Device type, browser, and operating system.</li>
+    <li>Country or city at an approximate level — not a precise location.</li>
+    <li>How you arrived: a search engine, an external link, or directly.</li>
+  </ul>
+  <p>
+    Google Analytics 4 does not store your IP address as part of the retained
+    data; it uses the IP only to estimate approximate location and then discards
+    it. You can opt out of measurement entirely with the
+    <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics opt-out browser add-on</a>.
+  </p>
+
+  <h2>Advertising (Google AdSense)</h2>
+  <p>
+    The site displays advertising through Google AdSense. It is the main way the
+    hosting and development costs are covered, which is what keeps the tools free
+    with no daily limit.
+  </p>
+  <p>
+    As a third-party vendor, Google uses cookies to serve ads based on your prior
+    visits to this site or to other sites on the internet. Google and its
+    partners may also use an advertising identifier to personalise what you are
+    shown, measure its performance, and avoid repeating the same ad to you.
+  </p>
+  <p>
+    We do not control the content of those ads or the data Google collects
+    through them, and we see no personal data by way of them. To control or turn
+    off personalised advertising:
+  </p>
+  <ul>
+    <li><a href="https://adssettings.google.com" target="_blank" rel="noopener">Google Ads Settings</a> — turn off personalisation on your account.</li>
+    <li><a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">How Google uses cookies in advertising</a>.</li>
+    <li><a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a> — opt out across several ad networks at once.</li>
+  </ul>
+
+  <h2>Cookies</h2>
+  <p>
+    A cookie is a small text file your browser stores so something can be
+    remembered between visits. On OMXHub they come from exactly two sources:
+  </p>
+  <div class="facts">
+    <div class="fact">
+      <b>Google cookies (third party)</b>
+      <span>
+        Set by Analytics and AdSense to measure usage and serve advertising. We
+        neither own nor read them, and they are governed by Google's policy
+        rather than ours.
+      </span>
+    </div>
+    <div class="fact">
+      <b>One local key of our own</b>
+      <span>
+        A key named <code>omxhub-theme</code> remembers whether you chose dark or
+        light mode. It stays on your device, is never sent to any server, is not
+        a cookie, and tracks nothing.
+      </span>
+    </div>
+  </div>
+  <p>
+    You can delete cookies or disable them entirely from your browser settings —
+    Chrome, Firefox, Safari and Edge all offer this under privacy settings.
+    Disabling them does not stop you using the site: the content and the tools
+    work exactly as before, and the advertising simply becomes less relevant to
+    you.
+  </p>
+  <p>
+    Worth knowing: Google's scripts are not loaded with the initial page. They
+    are deferred until your first interaction, or until the page goes idle — a
+    decision originally made for loading speed, with the side effect that a quick
+    visit executes no third-party script at all.
+  </p>
+
+  <h2>Affiliate links</h2>
+  <p>
+    Some links pointing to tool websites are affiliate links, and we may earn a
+    commission if you subscribe through them — at no extra cost to you, and with
+    no change to the price you pay.
+  </p>
+  <div class="callout">
     <p>
-      This site uses Google AdSense to display ads. Google and its partners
-      use cookies to serve ads based on your visits to this site and other
-      sites. You can control the personalized ads you see, or opt out, via
-      <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google Ads Settings</a>.
+      A commission does not buy a score. The order of tools, their ratings, and
+      what we write about their drawbacks are unaffected by whether an affiliate
+      link exists, and we publish the weaknesses of tools we have an affiliate
+      arrangement with just as plainly. Once you follow such a link, the
+      destination site's privacy policy applies, not ours.
     </p>
+  </div>
+
+  <h2>Contacting us</h2>
+  <p>
+    There is no contact form on OMXHub and no input fields that submit to a
+    server. The <a href={localizedPath(lang, '/contact')}>contact page</a> holds
+    a direct email address and nothing else, and that is deliberate: a form means
+    an intermediary receives your message, while direct email means it reaches
+    only us.
+  </p>
+  <p>
+    If you do write to us, we see what you send: your email address, the text of
+    your message, and any attachment. We use it to reply and for nothing else. We
+    do not add you to a mailing list and do not share your message. Our mail is
+    handled by Google, so messages are subject to Google's privacy policy while
+    passing through its servers.
+  </p>
+
+  <h2>Browser-based PDF and image tools</h2>
+  <p>
+    This is the most important section in the policy, because it contradicts what
+    most people reasonably assume about free online tools.
+  </p>
+  <div class="callout">
     <p>
-      As a third party, Google uses cookies to serve ads on this site based
-      on your prior visits to this site or other sites on the internet.
+      Every PDF and image tool on OMXHub processes your files locally, inside
+      your browser, wherever that is possible.
+      <strong>Documents you open in these tools are not sent to OMXHub
+      servers</strong>, nor to any third-party service. They are not stored, not
+      indexed, and not seen by anyone.
     </p>
+  </div>
+  <p>
+    In practice: when you choose a file, the browser reads it from your disk and
+    processes it in your device's memory using capabilities already built into
+    it, then produces the new file on your machine for you to download. There is
+    no upload step in that sequence, and no upload server exists in this project
+    at all. Closing the tab clears everything from memory.
+  </p>
+  <p>That has practical consequences worth stating plainly:</p>
+  <ul>
+    <li>No daily file limit, because there is nothing counting them.</li>
+    <li>The tools work offline once the page has loaded, since all processing is local.</li>
+    <li>File size is limited by your device's memory, not by a server quota.</li>
+    <li>Re-encoding an image strips EXIF metadata including GPS coordinates — helpful when publishing, but worth noting if you need that data.</li>
+  </ul>
+  <p>
+    And if a tool ever genuinely cannot run in the browser, we will say so on its
+    page before you use it, rather than quietly shipping a version that uploads
+    your files.
+  </p>
 
-    <h2>Affiliate Links</h2>
-    <p>
-      Some links on this site may be affiliate links, and we may earn a
-      commission when you purchase through them at no extra cost to you.
-      This does not affect the independence of our tool reviews.
-    </p>
+  <h2>Data storage</h2>
+  <p>
+    OMXHub is a static site hosted on Netlify. There is no database behind it, no
+    account system, and no user storage. We keep no files, no content logs, and
+    no personal records — simply because we have nowhere to put them.
+  </p>
+  <p>
+    What is stored on your device: your dark or light mode preference, and the
+    cookies Google sets. What is stored at Google: the anonymised statistics,
+    under its own retention periods. Netlify, like any host, keeps temporary
+    technical server logs including IP addresses for operational and
+    abuse-prevention purposes; we do not access those for analytics.
+  </p>
 
-    <h2>Data We Collect</h2>
-    <p>
-      We may collect general, non-personal analytics data (such as visitor
-      counts and page views) to improve the user experience on the site.
-    </p>
+  <h2>Third-party services</h2>
+  <p>These are all the external parties your visit touches, and there are no others:</p>
+  <div class="facts">
+    <div class="fact">
+      <b>Google Analytics 4</b>
+      <span>
+        Anonymous usage statistics —
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>.
+      </span>
+    </div>
+    <div class="fact">
+      <b>Google AdSense</b>
+      <span>
+        Advertising —
+        <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses data on partner sites</a>.
+      </span>
+    </div>
+    <div class="fact">
+      <b>Netlify</b>
+      <span>Site hosting and content delivery, with technical server logs only.</span>
+    </div>
+    <div class="fact">
+      <b>Ko-fi</b>
+      <span>
+        Optional support platform. You interact with it only if you press the
+        support button yourself, and any payment happens entirely on their side —
+        we never see your card details.
+      </span>
+    </div>
+  </div>
+  <p>
+    We use no social-network tracking pixels, no heatmaps, no session recording,
+    and no cross-site visitor identification tools.
+  </p>
 
-    <h2>Contact About Privacy</h2>
-    <p>
-      For any questions about this policy, reach out via our
-      <a href="/en/contact">contact page</a>.
-    </p>
+  <h2>Your rights</h2>
+  <p>
+    Since we hold no account for you and no personal data, most of the rights
+    granted by data-protection law — including the EU's GDPR and Saudi Arabia's
+    Personal Data Protection Law — are exercised here directly, with no
+    intermediary:
+  </p>
+  <ul>
+    <li><strong>Access and erasure:</strong> there is nothing of yours for us to produce or delete. If you have written to us, you can ask us to delete that correspondence.</li>
+    <li><strong>Objecting to tracking:</strong> through your browser settings, the Analytics opt-out add-on, or Google Ads Settings.</li>
+    <li><strong>Withdrawing consent:</strong> by deleting or disabling cookies at any time.</li>
+    <li><strong>Data held by Google:</strong> managed directly from <a href="https://myaccount.google.com/data-and-privacy" target="_blank" rel="noopener">your Google account</a>.</li>
+  </ul>
+  <p>For any privacy request or question, write to us and we will reply.</p>
 
-    <p class="updated">Last updated: August 2026</p>
-  </section>
-</Layout>
+  <h2>Changes to this policy</h2>
+  <p>
+    We may update this page when a new section is added to the site or a service
+    we rely on changes. The last-updated date at the top is revised with every
+    substantive change, so it is the reference for whether the version you read
+    is the one in force.
+  </p>
+  <p>
+    And if a change ever widens what is collected about you rather than narrowing
+    it, we will not simply move the date — we will say so explicitly on this page.
+  </p>
 
-<style>
-  .section { padding: 60px 0; max-width: 720px; }
-  h1 { margin-bottom: 20px; }
-  h2 { font-size: 1.1rem; margin-top: 28px; margin-bottom: 10px; }
-  p { margin-bottom: 14px; color: var(--text-dim); }
-  p a { color: var(--accent); }
-  .updated { margin-top: 30px; font-size: 0.85rem; color: var(--text-dim); }
-</style>
+  <h2>Contact information</h2>
+  <p>
+    The party responsible for this site is <strong>Omar Zaberi</strong>, owner and
+    editor of OMXHub. For any question about this policy or about your data, get
+    in touch at <a href="mailto:omar.zaberi@gmail.com">omar.zaberi@gmail.com</a>
+    or via the <a href={localizedPath(lang, '/contact')}>contact page</a>.
+  </p>
+  <p>
+    To read more about the project and its review methodology, see the
+    <a href={localizedPath(lang, '/about')}>about page</a>.
+  </p>
+</ProsePage>

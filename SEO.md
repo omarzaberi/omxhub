@@ -48,7 +48,7 @@ content that is actually visible on the page.**
 | `WebSite` + `SearchAction` | Homepage | ✅ | The search genuinely accepts `?q=` — the URL declared in the schema works, it is not decorative |
 | `Organization` | Homepage + About | ✅ | With `logo.png` (512×512), founder, and contact email. `sameAs` is deferred until official accounts exist |
 | `SoftwareApplication` | AI tool pages (`/ai-tools/[slug]`) | ✅ | Plus an editorial `Review` bylined OMXHub (not `aggregateRating` — we have no user ratings) plus an `Offer` priced at 0, for free and freemium tools only |
-| `HowTo` | PDF tool pages (usage steps) | ✅ | A visible "how to use it" section with 4 steps per tool in both languages — 18 pages (9 tools × 2 languages) — and the schema mirrors it literally |
+| `HowTo` | PDF tool pages (usage steps) | ✅ | A visible "how to use it" section with 4 steps per tool in both languages — 28 pages (14 tools × 2 languages) — and the schema mirrors it literally |
 | `FAQPage` | Tool pages that carry FAQs | ✅ | AI tools and PDF tools. The newer PDF tools (extract / delete / organize) carry 4 questions per page |
 | `BreadcrumbList` | All internal pages | ✅ | Visible breadcrumbs on tool, category and PDF tool pages. **Open issue:** pages such as About, Contact, the prompts, and `/pdf-tools` emit `BreadcrumbList` with no visible trail on the page — a breach of our "only mark up what is visible" rule. The fix is to give them visible breadcrumbs (tracked as a separate task) |
 | `CollectionPage` | Category pages + the comparisons landing page | ✅ | The comparisons page embeds an `ItemList` inside the `CollectionPage` |
@@ -92,7 +92,7 @@ What genuinely earns us a rich result: **`Organization`** (homepage),
 | ~~`comparisons`~~ — launched with real content | ✅ | 2026-08-06: `noindex` removed and dropped from the sitemap filter. 12 indexable pages (2 landing pages + 10 comparisons) |
 | Google Search Console connected | ✅ | Verified (TXT record confirmed live in DNS) + sitemap submitted. Guide: `docs/SEARCH-CONSOLE.md` |
 | Bing Webmaster Tools connected | 🟡 | Covered by the same guide (import from GSC) |
-| Broken-link check | ✅ | Now part of `scripts/verify-seo.mjs` — runs after every build. Last run: 156 pages, 0 broken links |
+| Broken-link check | ✅ | Now part of `scripts/verify-seo.mjs` — runs after every build. Last run: 166 pages, 0 broken links |
 | Custom 404 page | ✅ | Both languages, with live search and section links. `noindex` and excluded from the sitemap. The English version is served for any broken `/en/*` URL via a rule in `netlify.toml` — verified live after deployment |
 
 ## Phase 4 — Internal Linking Structure
@@ -152,7 +152,7 @@ penalty.
 | Lazy loading for images | ⬜ | |
 | Defer pdf-lib / pdf.js to their own pages only | ✅ | `src/lib/pdf-libs.ts`: dynamic import with a warm-up the moment a file is selected. The engines (pdf-lib 418 KB, pdf.js 322 KB, JSZip 94 KB) emit as separate chunks and never enter the early module graph of any page. This line was marked `⬜` in error and was corrected on 2026-08-07 |
 | Periodic Lighthouse audit | ⬜ | |
-| Automated SEO check after every build | ✅ | `scripts/verify-seo.mjs` — 156 pages, 2,649 assertions, 0 failures |
+| Automated SEO check after every build | ✅ | `scripts/verify-seo.mjs` — 166 pages, 2,891 assertions, 0 failures |
 
 ### Font distribution after optimisation
 
@@ -220,3 +220,10 @@ Important rules the split is built on:
 | 2026-08-07 | **Unified PDF tool catalogue** (`src/data/pdf-tools.ts`) — the same list had been duplicated in four places. The internal link chain is now derived from it: 3 outbound and 3 inbound per tool, closed and symmetric, with no manual maintenance |
 | 2026-08-07 | **`scripts/verify-seo.mjs`**: an automated check of the generated HTML covering one valid `@graph` per page, a self-referencing canonical, ar/en/x-default hreflang, one `h1`, sitemap/`noindex` agreement, 0 broken links, and that every marked-up step / question / breadcrumb genuinely appears in the visible text. Result: 156 pages, 2,649 assertions, 0 failures |
 | 2026-08-07 | Corrected three documentation lines that had fallen behind reality: the Support page was built but described as "not started", `tutorials` was indexed but described as `noindex`, and the deferral of the PDF engines was implemented but marked `⬜` |
+| 2026-08-07 | **3 new PDF tools** in both languages (6 new indexable pages): compress (`/pdf-tools/compress-pdf`), lock (`/pdf-tools/lock-pdf`), unlock (`/pdf-tools/unlock-pdf`). PDF tools: 11 → 14, leaving only Add Text. Each with a unique title and description, 4 visible steps + `HowTo`, 4 FAQs + `FAQPage`, and visible breadcrumbs + `BreadcrumbList` |
+| 2026-08-07 | Post-build verification re-run: **166 pages, 2,891 assertions, 0 failures**, 0 broken links, and the PDF related-link chain still closed and symmetric at 14 tools |
+| 2026-08-07 | The encryption engine (`@cantoo/pdf-lib`, 488 kB emitted) is confined to the Lock and Unlock pages by a dynamic import. Verified against the built HTML: every tool page ships 5–9 kB of eager JavaScript, with no `modulepreload` and no heavy chunk on any critical path |
+| 2026-08-07 | **2 new PDF tools** in both languages (4 new indexable pages): crop (`/pdf-tools/crop-pdf`), page numbers (`/pdf-tools/page-numbers`). Each with a unique title and description, 4 visible steps + `HowTo`, 4 FAQs + `FAQPage`, and visible breadcrumbs + `BreadcrumbList`. PDF tools: 9 → 11, and both were picked up by the hub grids, the homepage quick actions and the related-link chain from the single catalogue edit |
+| 2026-08-07 | Post-build verification re-run with the new pages: **160 pages, 2,747 assertions, 0 failures**, 0 broken links, and the PDF related-link chain still closed and symmetric at 11 tools (exactly 3 inbound and 3 outbound each, no self-links) |
+| 2026-08-07 | The two new tool pages keep the PDF engines off the critical path like the rest: ~2.4 kB of eager JavaScript each, with pdf-lib (428 kB) and pdf.js (330 kB) still emitted as separate chunks fetched only once a file is chosen |
+| 2026-08-07 | Removed the "Choose an Amount" grid from `/support` in both languages — 5 links per page pointing at the same Ko-fi URL, i.e. 10 redundant outbound duplicates. The page keeps one Ko-fi CTA in the hero and one in the community section |

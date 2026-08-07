@@ -158,7 +158,9 @@ Instant results, filters, categories, tags.
 ## ❤️ Support OMXHub (`/support`)
 Goal: let users voluntarily support the project so tools stay free forever.
 - **Platform:** Ko-fi → ko-fi.com/omxhub (payments via PayPal/Ko-fi-supported methods)
-- Suggested amounts: ☕ $2 / $5 / $10 · 🚀 $20 · ❤️ Custom
+- **No suggested-amount tiers.** The amount is chosen on Ko-fi, not here — a preset grid on
+  our page only adds a redundant step and reads as a price list on a page that is a thank-you,
+  not a checkout.
 - Sections: Hero, "Why Support" (Development / Infrastructure / New Features / Security),
   Public Roadmap (Completed / In Progress / Upcoming), Community CTA, Footer thank-you
 
@@ -216,22 +218,52 @@ platform one polished feature at a time.
   Semrush, Surfer SEO, NotebookLM. All 7 categories are populated, so every category
   landing page is live.
 - ✅ Prompt Library: 10 prompts live
-- ✅ PDF Tools (Phase 1, partial): **9 of 15 live** — Merge, Split, Extract Pages,
-  Delete Pages, Organize Pages, Rotate, Watermark, Images→PDF, PDF→Images — all working
-  entirely client-side. **Not yet built:** Compress, Add Text, Lock PDF, Unlock PDF,
-  Crop, Page Numbers.
-  - **Known constraints on what's left**, so they get planned rather than discovered:
-    *Compress* can only be done in-browser by rasterising pages through pdf.js, which
-    destroys selectable text and can grow text-only PDFs — it needs a decision on that
-    trade-off before it ships. *Lock* and *Unlock* are impossible with pdf-lib, which has
-    no encryption support; they need a new (still free, still client-side) dependency such
-    as `@cantoo/pdf-lib`. The other three are plain pdf-lib draw/box operations.
+- ✅ PDF Tools (Phase 1, nearly complete): **14 of 15 live** — Merge, Split, Extract Pages,
+  Delete Pages, Organize Pages, Rotate, Crop, Compress, Watermark, Page Numbers, Lock,
+  Unlock, Images→PDF, PDF→Images — all working entirely client-side. **Not yet built:**
+  Add Text, and only that.
+  - **Compress does not take the trade-off the plan assumed.** It was filed as "rasterise
+    pages through pdf.js, destroying selectable text and possibly growing text-only PDFs".
+    Measuring first showed a third way: almost all the bytes in a large PDF are in its
+    images, and those can be recompressed individually — **−70.6% on a scan with the text
+    left fully selectable**, against 0.0% for a pdf-lib re-save. The tool also refuses to
+    return a file larger than it was given, and says up front when a document has nothing
+    worth compressing.
+  - **Lock and Unlock use a second engine, loaded only where it is needed.** pdf-lib has no
+    encryption support, so those two pages use `@cantoo/pdf-lib`. It is a superset and could
+    have replaced pdf-lib everywhere — which is exactly why it was worth *not* doing: the
+    fork is 272 kB gzipped against 206 kB, so a site-wide swap would tax twelve tools to
+    serve two. Two documented limits, both pinned by tests: encryption is **AES-128**, not
+    AES-256; and unlocking rebuilds the document, so bookmarks, form fields and metadata do
+    not survive.
+  - **Add Text is a font decision, not a drawing task** — which is why it is the one left.
+    pdf-lib's standard fonts are WinAnsi-encoded and cannot represent Arabic at all, and
+    embedding a font does not fix it: pdf-lib performs no shaping or bidi, so Arabic would
+    render as disconnected letters in reverse order. Doing it properly costs roughly
+    600 kB–1 MB on that page (fontkit alone is 328 kB gzipped — larger than pdf-lib — plus
+    an Arabic TTF, a reshaper and a bidi pass). On a site that holds Lighthouse at 95+, that
+    is a deliberate call to make, not a detail to slip in while finishing a set.
+- ✅ **Page rotation is handled, not ignored** (`src/lib/pdf-geometry.ts`). A page's
+  `/Rotate` entry turns the content for the viewer without moving it, so pdf-lib writes
+  into one coordinate system while the user picks coordinates in another. Both placement
+  tools translate between the two through one module and work purely in the coordinates
+  the reader sees — which is why a page number lands under a rotated scan rather than
+  sideways along its edge, and a crop taken off the visual top comes off the top.
+  The mappings are pinned by tests that check the real pdf-lib output against an
+  independently derived rotation matrix.
 - ✅ **PDF tool catalogue is a single source of truth** (`src/data/pdf-tools.ts`). The tool
   list used to be maintained by hand in four places — both `/pdf-tools` hub pages, the
   homepage quick-actions grid, and a bespoke `related` array on every tool page. All four
   now derive from the catalogue, so adding a tool is a one-file change. `relatedPdfTools()`
   walks the catalogue and wraps around, giving every tool exactly 3 outbound and 3 inbound
   related links — a closed chain in which no PDF tool can become orphaned as the set grows.
+- ✅ **Crop shares one interaction module too** (`src/lib/pdf-crop-box.ts`): a pdf.js
+  preview with a draggable, resizable rectangle. As with reordering, dragging is never the
+  only way in — four percentage fields are bound to the same state in both directions and
+  are the keyboard-accessible mechanism, while the corner handles are `aria-hidden`
+  because assistive technology cannot perform that gesture. The crop is stored as
+  *fractions* of each page, so "apply to every page" stays correct on a document whose
+  pages are not all the same size.
 - ✅ **Page-management tools share one interaction module** (`src/lib/pdf-page-grid.ts`):
   pdf.js thumbnails, selection, and drag-or-button reordering. Extract / Delete / Organize
   keep only the few lines of pdf-lib that genuinely differ. Reordering never depends on
@@ -240,9 +272,9 @@ platform one polished feature at a time.
 - ✅ Live site search (real-time filtering across tools + prompts)
 - ✅ About, Contact, Privacy Policy (AdSense-ready) pages
 - ✅ Google AdSense script installed
-- ✅ Support/Ko-fi page (`/support`, both languages) — hero, suggested amounts linking to
-  ko-fi.com/omxhub, "why support" cards, public roadmap, and a community CTA. Follows the
-  blueprint's UX rule: no popups, and the Ko-fi link appears only under each PDF tool,
+- ✅ Support/Ko-fi page (`/support`, both languages) — hero with a single Ko-fi CTA,
+  "why support" cards, public roadmap, and a community CTA. Follows the blueprint's
+  UX rule: no popups, and the Ko-fi link appears only under each PDF tool,
   in the footer, and on this page
 - ✅ **Comparisons section live** (`/comparisons`) — the highest-intent SEO surface on the site:
   - Landing page: hero, in-page search, featured / latest / popular rails, category filters,
@@ -291,4 +323,11 @@ platform one polished feature at a time.
   every built page for one valid `@graph`, a self-referencing canonical, ar/en/x-default
   hreflang, exactly one `h1`, sitemap/`noindex` agreement, zero broken internal links, and
   that every marked-up step, FAQ question and breadcrumb really appears in the visible text.
-  Currently 156 pages, 2,649 assertions, 0 failures.
+  Currently 166 pages, 2,891 assertions, 0 failures. Six unit-test files (185 assertions) run
+  *before* the build so they fail fast: the rotation geometry, the text-encoding guard, the
+  crop state machine, the compression surgery, the encryption round trip, and an end-to-end
+  check that reads what the tools actually wrote into a PDF back out of its content stream.
+- ✅ **A password-protected PDF gets a true error message.** pdf-lib cannot read encrypted
+  files and does not fail cleanly on one — it fails mid-parse, so every tool used to report
+  that the document was invalid. It was not; it was locked. Every tool now detects this and
+  points at the Unlock tool instead.

@@ -12,6 +12,83 @@ All notable changes to OMXHub are documented in this file.
 ## 2026-08-07
 
 ### Added
+- **Three more Phase 1 PDF tools**, in both languages — Compress (`/pdf-tools/compress-pdf`),
+  Lock (`/pdf-tools/lock-pdf`) and Unlock (`/pdf-tools/unlock-pdf`). PDF tools: **11 → 14**,
+  leaving only Add Text unbuilt. Six new indexable pages with the usual anatomy: unique title
+  and description, four visible steps plus `HowTo`, four FAQs plus `FAQPage`, and visible
+  breadcrumbs plus `BreadcrumbList`.
+- **Compress works by recompressing images, not by rasterising pages** — which means
+  **text stays selectable**. The plan of record assumed the opposite, so the three candidate
+  strategies were measured before anything was built:
+
+  | approach | text-heavy file | image-heavy file | text |
+  |---|---|---|---|
+  | pdf-lib re-save with object streams | 0.0% | 0.0% | kept |
+  | rasterise every page through pdf.js | *grows it* | shrinks | **destroyed** |
+  | **recompress image XObjects** | nothing to do | **−70.6%** | **kept** |
+
+  The documented trade-off — "destroys selectable text and can grow text-only PDFs" — turned
+  out never to be necessary. Almost all the bytes in a large PDF are in its images, and those
+  can be replaced individually. `src/lib/pdf-compress.ts` finds `/DCTDecode` image streams,
+  re-encodes each through a canvas, and swaps the bytes with `/Length` kept in agreement.
+  Other encodings and anything carrying an `/SMask` are skipped rather than guessed at,
+  because a mangled image is a worse outcome than an unshrunk one. **The tool never returns a
+  larger file than it was given.** It also inspects the document *before* the user commits and
+  says plainly when there is nothing to compress.
+- **Lock and Unlock**, via `@cantoo/pdf-lib` — a maintained fork of pdf-lib with encryption
+  support, which upstream has never had. Loaded from `pdf-libs.ts` **only on those two pages**:
+  the fork is 272 kB gzipped against pdf-lib's 206 kB, so swapping it in site-wide would have
+  put 66 kB on twelve other tools to serve two. Verified after build: every tool page ships
+  5–9 kB of eager JavaScript, with no `modulepreload` and no heavy chunk on any critical path.
+- **Two limitations shipped as documentation rather than hidden**, both asserted in tests so
+  they cannot go quietly stale:
+  - Encryption is **AES-128** (`AESV2`/V4/R4), not AES-256. `keyBits: 256`, `version: 5` and
+    `pdfVersion: '2.0'` were all tried and silently returned V4/R4. The Lock FAQ says so, and
+    says when a PDF password is the wrong tool for the job.
+  - Unlocking **rebuilds the document**, so bookmarks, form fields, attachments and metadata
+    are lost. Decrypting and re-saving is not enough — the security handler survives, and the
+    output stays encrypted. Copying pages into a fresh document is the only approach that
+    works. The test pins both halves so nobody "simplifies" it back into a bug.
+- The Unlock page states plainly that it **cannot open a file whose password you do not know**,
+  and why anything advertising otherwise is guessing passwords or uploading your document.
+- **Two more unit test files** (`pdf-compress`, `pdf-encrypted`), taking the suite to
+  **185 assertions across six files**, all running before the build so they fail fast.
+- **Two more Phase 1 PDF tools**, in both languages — Crop PDF (`/pdf-tools/crop-pdf`)
+  and Add Page Numbers (`/pdf-tools/page-numbers`). PDF tools: **9 → 11**. Four new
+  indexable pages, each with a unique title and description, four visible steps plus
+  `HowTo`, four FAQs plus `FAQPage`, and visible breadcrumbs plus `BreadcrumbList`.
+  - **Crop** works off a live pdf.js preview of page one: drag the corners, or type an
+    exact percentage into any of the four edge fields. The crop is expressed as
+    *fractions* rather than points, so applying it to every page is correct even when
+    the pages are not all the same size — a mixed scan crops evenly instead of taking
+    more off the small pages.
+  - **Page Numbers** offers six positions, three formats, a custom starting number, and
+    an option to leave a cover page unmarked.
+- **A shared crop-rectangle module** (`src/lib/pdf-crop-box.ts`), following the same split
+  as `pdf-page-grid.ts`: the module owns the interaction, the tool page keeps only the few
+  lines of pdf-lib that differ. As with page reordering, dragging is never the only way in
+  — the four percentage fields are bound to the same state in both directions and are the
+  keyboard-accessible mechanism, while the corner handles are `aria-hidden` because
+  assistive technology cannot perform that gesture.
+- **`src/lib/pdf-geometry.ts` — page-rotation handling, in one place.** A page's `/Rotate`
+  entry tells a viewer to turn the content before showing it, but does **not** move the
+  content: pdf-lib writes into the unrotated coordinate system while the user picks
+  coordinates off the rotated one. Ignoring the difference fails silently and specifically
+  — a page number lands sideways along the edge of a rotated scan, a crop taken off the
+  visual bottom comes off the left — so both new tools translate through this module and
+  work purely in the coordinates the reader sees.
+- **`src/lib/pdf-text.ts` — a WinAnsi encoding guard** for the tools that draw text.
+- **Three unit test files, wired into `npm test` ahead of the build** so they fail fast:
+  - `tests/pdf-geometry.test.mjs` — 48 assertions pinning the corner behaviour each
+    rotation mapping was derived from, plus bijectivity and round-trip properties.
+  - `tests/pdf-text.test.mjs` — 19 assertions on what the encoding guard accepts and
+    rejects, in both directions.
+  - `tests/pdf-placement.test.mjs` — 54 assertions that run the real tool code through
+    pdf-lib, then read the drawn text back out of the saved file's content stream and
+    check it against a **reference transform derived independently** from a rotation
+    matrix. If the library's case-based mapping and that matrix ever disagree, the build
+    fails. Also covers crop-then-number, where a page number must land inside the
+    already-cropped area.
 - **Three PDF page-management tools**, in both languages — Extract Pages (`/pdf-tools/extract-pages`),
   Delete Pages (`/pdf-tools/delete-pages`), Organize Pages (`/pdf-tools/organize-pdf`).
   PDF tools: **6 → 9**. Six new indexable pages, each with a unique title and description,
@@ -30,7 +107,8 @@ All notable changes to OMXHub are documented in this file.
   It inspects every built page for one valid `@graph`, a self-referencing canonical,
   ar/en/x-default hreflang, exactly one `h1`, sitemap/`noindex` agreement, zero broken internal
   links, and that every marked-up step, FAQ question and breadcrumb really appears in the
-  visible text. Result: **156 pages, 2,649 assertions, 0 failures.**
+  visible text. Latest run, with the two new tools included: **160 pages, 2,747 assertions,
+  0 failures.**
 
 ### Changed
 - **Internal linking for PDF tools is now derived, not hand-maintained.** `relatedPdfTools()`
@@ -42,11 +120,33 @@ All notable changes to OMXHub are documented in this file.
   related list all derive from the catalogue, so adding a tool is now a one-file change.
 
 ### Fixed
+- **Every PDF tool blamed the user's file for an encrypted document.** Plain pdf-lib has no
+  decryption support and does not fail cleanly on a protected file — it fails mid-parse with
+  `Trying to parse invalid object`, which each tool caught and reported as *"make sure the file
+  is a valid PDF"*. The file was valid; it was locked. Now `src/lib/pdf-encrypted.ts` detects
+  it first and `PdfToolLayout` shows a notice saying there is nothing wrong with the file, with
+  a link to the new Unlock tool. Applied across all thirteen tools that read PDFs — but
+  deliberately **not** to Images→PDF, which consumes images and where the check would be
+  meaningless. Same class of bug as the Arabic watermark message, fixed the same way.
+- **The watermark tool blamed the user's file for our own limitation.** pdf-lib's standard
+  fonts are WinAnsi-encoded and cannot represent Arabic, so an Arabic watermark threw and
+  fell into the generic handler — *"make sure the file is a valid PDF"*. The file was
+  always fine, and no amount of trying another one would have helped. The text is now
+  checked before the document is opened, and the user is told exactly which characters
+  cannot be used and that their file is not the problem. The Arabic page also stopped
+  *suggesting* Arabic examples ("مسودة"، "سري") in its placeholder and steps, which were
+  the precise inputs guaranteed to fail.
 - Three documentation lines that had fallen behind reality: the Support page was built but
   documented as "not started", `tutorials` was indexable but documented as `noindex`, and the
   deferred loading of the PDF engines was implemented but still marked ⬜.
 
 ### Removed
+- **The "Choose an Amount" grid on `/support`**, in both languages — the five preset cards
+  ($2 / $5 / $10 / $20 / Custom) all pointed at the same Ko-fi URL, where the amount is
+  chosen anyway. The grid added a decision before the click without changing where the click
+  led, and made a thank-you page read like a price list. The page now goes hero → why support
+  → roadmap → CTA, with the Ko-fi button as the single call to action. The `amounts` array and
+  the `.amounts-grid` / `.amount-card` styles were removed with it.
 - The duplicated PDF tool list, previously maintained by hand in four separate places — both
   `/pdf-tools` hub pages, the homepage quick-actions grid, and a bespoke `related` array on
   every tool page.

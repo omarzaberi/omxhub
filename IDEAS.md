@@ -36,12 +36,51 @@ No backend, no paid API.**
 
 ### PDF — Phase 1 remainder
 
-- 🟡 **Phase 1 PDF set: 9 of 15 live.**
-- ⬜ **Compress** — needs a decision before it ships. In-browser compression means rasterising
-  pages through pdf.js, which destroys selectable text and can actually grow a text-only PDF.
-- ⬜ **Lock PDF / Unlock PDF** — impossible with pdf-lib, which has no encryption support.
-  Needs a new dependency that is still free and still client-side, such as `@cantoo/pdf-lib`.
-- ⬜ **Add Text · Crop · Add Page Numbers** — plain pdf-lib draw/box operations, no blockers.
+- 🟡 **Phase 1 PDF set: 14 of 15 live.** Only Add Text is left.
+- ⬜ **Add Text — one decision away, and the decision is about page weight.** It was filed as
+  a plain pdf-lib draw operation. It is not. pdf-lib's standard fonts are WinAnsi-encoded and
+  cannot represent Arabic at all, and embedding a TTF does not solve it: pdf-lib performs no
+  shaping and no bidi reordering, so Arabic comes out as disconnected letters in reverse
+  order — a worse failure than refusing, because it looks like it worked.
+  - **Measured cost of doing it properly** (2026-08-07): `@pdf-lib/fontkit` is **328 kB
+    gzipped — larger than pdf-lib itself (206 kB)**; an Arabic TTF adds roughly 200–400 kB
+    (`@fontsource` ships woff2 only, which fontkit cannot read, so this would be a new asset);
+    plus a presentation-forms reshaper and a bidi pass. Call it **600 kB–1 MB on that one
+    page**, lazily loaded. That would make it comfortably the heaviest thing on the site.
+  - **Options, none of them free:** ship it Latin-only and exclude half the audience; pay the
+    weight behind a lazy import and accept a slow page for a minor tool; subset the font at
+    build time to shrink the TTF; or leave it unbuilt and treat 14/15 as complete.
+  - Shipped in the meantime: `src/lib/pdf-text.ts` detects unencodable characters up front,
+    so the tools that draw text say what is actually wrong instead of blaming the file.
+
+### PDF — follow-ups from what shipped
+
+- ⬜ **Compress non-JPEG images.** Only `/DCTDecode` streams are recompressed today, which
+  covers scans and photographs — where the weight almost always is. `/FlateDecode` bitmaps
+  (screenshots, exports) are skipped on purpose, because converting them needs correct colour
+  space and alpha handling and a subtle mistake corrupts the image rather than shrinking it.
+  Worth doing carefully, not quickly.
+- ⬜ **Downscale oversized images during compression.** A 4000px-wide scan placed in an A4
+  page is carrying several times the resolution any printer will use. Re-encoding at lower
+  quality helps; resampling to a sensible DPI would help far more.
+- ⬜ **AES-256 encryption.** `@cantoo/pdf-lib` produces AES-128 only — `keyBits: 256`,
+  `version: 5` and `pdfVersion: '2.0'` were all tried and silently returned V4/R4. The Lock
+  FAQ states this plainly, and `tests/pdf-encrypted.test.mjs` asserts it, so the day the
+  library gains AES-256 the test fails and the FAQ gets corrected rather than going stale.
+- ⬜ **Preserve document structure when unlocking.** Removing a password requires copying
+  pages into a fresh document, which loses bookmarks, form fields, attachments and metadata.
+  The Unlock FAQ says so. Carrying them across is possible but is real work.
+- ⬜ **Permission-only locking** — restricting printing or copying without requiring a
+  password to open. The engine supports the permission flags already; it needs a UI and a
+  clear explanation that permissions are advisory and readers may ignore them.
+
+### Redaction
+
+- ⬜ **Real redaction.** Crop hides content, it does not remove it — the bytes stay in the
+  file and anyone can restore the full page, which the tool now says plainly in its FAQ.
+  A genuine redaction tool that rewrites the content stream is the honest answer to what
+  some people will reach for Crop hoping to do, and it is a distinct, high-trust feature
+  rather than a flag on an existing one.
 
 ### Image — Phase 2
 
